@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Warriors Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#D4AF37;--gold-l:#F5D060;--gold-d:#8B6914;
+  --pur:#6B3FA0;--pur-d:#3D1F6E;--pur-l:#9B6FD0;--pur-m:#4A2A7A;
+  --white:#fff;--off:#F8F5FF;--light:#F0ECF8;
+  --text:#1A1030;--muted:#6B7280;--border:rgba(107,63,160,0.15);
+  --green:#22C55E;--red:#EF4444;--yellow:#F59E0B;
+  --radius:12px;--shadow:0 4px 20px rgba(107,63,160,0.1);
+}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--off);color:var(--text);overflow-x:hidden}
+
+/* ────────────────── UTILS ────────────────── */
+.hide{display:none!important}
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-8{gap:8px}.gap-12{gap:12px}.w-full{width:100%}
+.text-center{text-align:center}.text-muted{color:var(--muted)}.text-sm{font-size:.82rem}.text-xs{font-size:.72rem}
+.font-bold{font-weight:700}.font-black{font-weight:900}
+.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}.mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}.mb-16{margin-bottom:16px}
+.p-16{padding:16px}.rounded{border-radius:var(--radius)}
+
+/* ────────────────── TOAST ────────────────── */
+#toast{position:fixed;top:68px;left:50%;transform:translateX(-50%);z-index:9999;
+  background:var(--pur-d);color:#fff;padding:11px 22px;border-radius:30px;
+  font-size:.84rem;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.25);
+  opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}
+#toast.on{opacity:1}
+
+/* ────────────────── AUTH ────────────────── */
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,var(--pur-d) 0%,var(--pur) 55%,#5C2E8A 100%);padding:20px}
+.auth-box{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:400px;
+  box-shadow:0 32px 80px rgba(0,0,0,.3)}
+.auth-brand{text-align:center;margin-bottom:24px}
+.auth-icon{width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,var(--pur-d),var(--pur));
+  margin:0 auto 12px;display:flex;align-items:center;justify-content:center;
+  font-size:2rem;border:3px solid var(--gold)}
+.auth-box h1{font-family:'Rubik',sans-serif;font-size:1.5rem;font-weight:900;color:var(--pur-d);text-align:center}
+.auth-box p{font-size:.83rem;color:var(--muted);text-align:center;margin-top:4px}
+
+/* ────────────────── FORM ELEMENTS ────────────────── */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.74rem;font-weight:700;color:var(--pur-d);
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
+.inp{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:9px;
+  font-family:'Inter',sans-serif;font-size:.88rem;color:var(--text);
+  background:var(--off);outline:none;transition:border-color .2s,box-shadow .2s}
+.inp:focus{border-color:var(--pur);box-shadow:0 0 0 3px rgba(107,63,160,.08)}
+select.inp{cursor:pointer}
+textarea.inp{resize:vertical;min-height:80px}
+
+/* ────────────────── BUTTONS ────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:11px 18px;border:none;border-radius:9px;cursor:pointer;
+  font-family:'Rubik',sans-serif;font-size:.84rem;font-weight:700;
+  transition:opacity .15s,transform .1s;text-decoration:none}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(135deg,var(--pur-d),var(--pur));color:#fff;
+  box-shadow:0 4px 16px rgba(107,63,160,.35);width:100%}
+.btn-gold{background:linear-gradient(135deg,var(--gold-d),var(--gold));color:var(--pur-d);
+  box-shadow:0 4px 16px rgba(212,175,55,.35);width:100%}
+.btn-outline{background:transparent;border:1.5px solid var(--pur);color:var(--pur)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-success{background:var(--green);color:#fff}
+.btn-sm{padding:7px 13px;font-size:.75rem;width:auto}
+.btn-xs{padding:5px 10px;font-size:.7rem;width:auto}
+
+/* ────────────────── ALERTS ────────────────── */
+.alert{padding:10px 14px;border-radius:8px;font-size:.82rem;margin-bottom:12px}
+.alert-err{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
+.alert-ok{background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0}
+
+/* ────────────────── APP SHELL ────────────────── */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+/* TOP BAR */
+.topbar{position:sticky;top:0;z-index:100;height:58px;
+  background:var(--pur-d);display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;
+  box-shadow:0 2px 16px rgba(0,0,0,.2)}
+.topbar-brand{display:flex;align-items:center;gap:10px;
+  font-family:'Rubik',sans-serif;font-weight:800;font-size:.95rem;color:var(--gold-l)}
+.topbar-brand .icon{width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--pur-m),var(--pur));
+  display:flex;align-items:center;justify-content:center;font-size:1rem;
+  border:2px solid var(--gold)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.chip{padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.04em}
+.chip-manager{background:var(--gold);color:var(--pur-d)}
+.chip-rep{background:rgba(155,111,208,.25);color:var(--gold-l)}
+.chip-name{background:rgba(255,255,255,.12);color:#fff;font-size:.72rem}
+.btn-signout{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);
+  padding:5px 12px;border-radius:8px;cursor:pointer;font-size:.72rem;font-weight:600;
+  transition:background .2s}
+.btn-signout:hover{background:rgba(255,255,255,.2)}
+
+/* BOTTOM NAV */
+.bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:#fff;border-top:1px solid var(--border);
+  display:flex;box-shadow:0 -4px 20px rgba(0,0,0,.07)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:9px 4px;cursor:pointer;
+  color:var(--muted);gap:3px;transition:color .2s;border:none;background:none}
+.bnav-item.on{color:var(--pur)}
+.bnav-item svg{width:21px;height:21px}
+.bnav-label{font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+
+/* SCROLL AREA */
+.scroll-area{flex:1;overflow-y:auto;padding:16px 16px 80px;max-width:680px;margin:0 auto;width:100%}
+
+/* ────────────────── PAGES ────────────────── */
+.page{display:none}
+.page.on{display:block}
+.page-title{font-family:'Rubik',sans-serif;font-size:1.35rem;font-weight:900;
+  color:var(--pur-d);margin-bottom:2px}
+.page-sub{font-size:.82rem;color:var(--muted);margin-bottom:18px}
+
+/* ────────────────── CARDS ────────────────── */
+.card{background:#fff;border-radius:var(--radius);padding:18px;
+  margin-bottom:14px;border:1px solid var(--border);
+  box-shadow:var(--shadow)}
+.card-title{font-family:'Rubik',sans-serif;font-size:.95rem;font-weight:800;
+  color:var(--pur-d);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* ────────────────── STAT GRID ────────────────── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-card{background:#fff;border-radius:var(--radius);padding:16px 14px;
+  border:1px solid var(--border);text-align:center;box-shadow:var(--shadow)}
+.stat-card.s-pur{background:linear-gradient(135deg,var(--pur-d),var(--pur));border:none;color:#fff}
+.stat-card.s-gold{background:linear-gradient(135deg,var(--gold-d),var(--gold));border:none;color:var(--pur-d)}
+.stat-num{font-family:'Rubik',sans-serif;font-size:1.9rem;font-weight:900;line-height:1}
+.stat-lbl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.8;margin-top:4px}
+
+/* ────────────────── CALENDAR ────────────────── */
+.cal-wrap{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:14px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border)}
+.cal-head h3{font-family:'Rubik',sans-serif;font-weight:700;font-size:.95rem;color:var(--pur-d)}
+.cal-btn{background:none;border:none;cursor:pointer;color:var(--pur);
+  font-size:1.3rem;padding:4px 10px;border-radius:7px;transition:background .15s}
+.cal-btn:hover{background:var(--off)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:10px 8px 14px}
+.cal-dn{text-align:center;font-size:.62rem;font-weight:700;color:var(--muted);
+  text-transform:uppercase;padding:6px 0}
+.cal-d{text-align:center;padding:7px 3px;border-radius:8px;cursor:pointer;
+  font-size:.8rem;font-weight:500;transition:all .15s;margin:1px;position:relative}
+.cal-d:hover:not(.cal-empty):not(.cal-past){background:var(--off)}
+.cal-d.cal-today{background:var(--pur);color:#fff;font-weight:700}
+.cal-d.cal-sel{background:var(--gold);color:var(--pur-d);font-weight:700}
+.cal-d.cal-has::after{content:'';position:absolute;bottom:2px;left:50%;
+  transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--pur-l)}
+.cal-d.cal-today.cal-has::after{background:var(--gold-l)}
+.cal-d.cal-past{color:#D1D5DB;cursor:default}
+.cal-d.cal-empty{cursor:default}
+
+/* ────────────────── TIME SLOTS ────────────────── */
+.slots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.slot{padding:10px 6px;border-radius:8px;text-align:center;cursor:pointer;
+  border:1.5px solid var(--border);font-size:.76rem;font-weight:600;
+  transition:all .15s;background:#fff;color:var(--text)}
+.slot.s-open:hover{border-color:var(--pur);background:var(--off)}
+.slot.s-taken{background:var(--light);color:#C4B5D0;cursor:not-allowed;border-color:transparent;font-size:.7rem}
+.slot.s-mine{background:var(--gold);color:var(--pur-d);border-color:var(--gold-d)}
+.slot.s-sel{background:var(--pur);color:#fff;border-color:var(--pur-d)}
+
+/* ────────────────── SALE ROW ────────────────── */
+.sale-row{display:flex;align-items:flex-start;justify-content:space-between;
+  padding:13px;background:var(--off);border-radius:10px;margin-bottom:8px;
+  border:1px solid var(--border)}
+.sale-row h4{font-family:'Rubik',sans-serif;font-size:.88rem;font-weight:700}
+.sale-row p{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.5}
+.sale-price{font-family:'Rubik',sans-serif;font-size:1rem;font-weight:900;color:var(--pur)}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.b-green{background:#DCFCE7;color:#15803D}
+.b-yellow{background:#FEF3C7;color:#92400E}
+.b-red{background:#FEE2E2;color:#991B1B}
+.b-pur{background:rgba(107,63,160,.1);color:var(--pur)}
+
+/* ────────────────── LEADERBOARD ────────────────── */
+.lb-row{display:flex;align-items:center;gap:12px;padding:13px;
+  border-radius:10px;margin-bottom:8px;background:var(--off);border:1px solid var(--border)}
+.lb-row.lb-me{border-color:var(--pur);background:rgba(107,63,160,.04)}
+.rank-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.88rem;font-weight:900;flex-shrink:0}
+.r1{background:var(--gold);color:var(--pur-d)}
+.r2{background:#C0C0C0;color:#fff}
+.r3{background:#CD7F32;color:#fff}
+.r-other{background:var(--light);color:var(--muted);font-size:.8rem}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-family:'Rubik',sans-serif;font-weight:700;font-size:.88rem;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-detail{font-size:.73rem;color:var(--muted);margin-top:2px}
+.progress{height:5px;background:var(--light);border-radius:3px;margin-top:6px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--pur),var(--pur-l));
+  border-radius:3px;transition:width .6s ease}
+.lb-rev{font-family:'Rubik',sans-serif;font-weight:900;font-size:.95rem;color:var(--pur);flex-shrink:0}
+
+/* ────────────────── TABS ────────────────── */
+.tabs{display:flex;background:var(--light);border-radius:10px;padding:4px;margin-bottom:16px}
+.tab{flex:1;text-align:center;padding:8px 6px;border-radius:8px;font-size:.76rem;
+  font-weight:700;cursor:pointer;transition:all .2s;color:var(--muted);
+  font-family:'Rubik',sans-serif}
+.tab.on{background:#fff;color:var(--pur);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+
+/* ────────────────── MAP ────────────────── */
+#map-el{height:360px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.map-toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center}
+.mark-btn{padding:7px 12px;border-radius:8px;border:2px solid;cursor:pointer;
+  font-size:.73rem;font-weight:700;transition:all .2s;background:transparent}
+.mark-btn.mb-knocked{border-color:var(--pur);color:var(--pur)}
+.mark-btn.mb-interested{border-color:var(--green);color:#15803D}
+.mark-btn.mb-noanswer{border-color:var(--yellow);color:#92400E}
+.mark-btn.mb-notint{border-color:var(--red);color:#991B1B}
+.mark-btn.active-mark{filter:brightness(.92);transform:scale(1.03);font-weight:900}
+.map-btn-active-knocked{background:rgba(107,63,160,.12)}
+.map-btn-active-interested{background:rgba(34,197,94,.12)}
+.map-btn-active-noanswer{background:rgba(245,158,11,.12)}
+.map-btn-active-notint{background:rgba(239,68,68,.12)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600}
+.leg-dot{width:10px;height:10px;border-radius:50%}
+
+/* ────────────────── WINNER BANNER ────────────────── */
+.winner-banner{background:linear-gradient(135deg,var(--pur-d),var(--pur));
+  border-radius:var(--radius);padding:20px;text-align:center;color:#fff;margin-bottom:14px}
+.winner-trophy{font-size:2.8rem;margin-bottom:8px}
+.winner-name{font-family:'Rubik',sans-serif;font-weight:900;font-size:1.2rem}
+.winner-stats{font-size:.8rem;opacity:.8;margin-top:4px}
+.winner-crown{display:inline-block;background:rgba(212,175,55,.2);
+  color:var(--gold-l);padding:5px 14px;border-radius:20px;
+  font-size:.72rem;font-weight:800;margin-top:10px;letter-spacing:.06em}
+
+/* ────────────────── EMPTY STATE ────────────────── */
+.empty{text-align:center;padding:36px 20px;color:var(--muted)}
+.empty svg{width:44px;height:44px;margin:0 auto 10px;opacity:.3}
+.empty p{font-size:.85rem}
+
+/* ────────────────── MODAL ────────────────── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:200;display:none;align-items:flex-end;justify-content:center;padding:0}
+.modal-bg.on{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px;
+  width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
+.modal h2{font-family:'Rubik',sans-serif;font-size:1.05rem;font-weight:800;
+  color:var(--pur-d);margin-bottom:18px}
+.modal-actions{display:flex;gap:10px;margin-top:18px}
+.modal-actions .btn{flex:1}
+
+/* ────────────────── FORM GRID ────────────────── */
+.form-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:400px){.form-2{grid-template-columns:1fr}}
+
+/* ────────────────── SCROLLBAR ────────────────── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--pur-l);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ══════════════ AUTH ══════════════ -->
+<div id="auth">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="auth-icon">⚔️</div>
+      <h1>Warriors Hub</h1>
+      <p>Window Warriors Team App</p>
+    </div>
+
+    <div id="auth-err" class="alert alert-err hide"></div>
+    <div id="auth-ok" class="alert alert-ok hide"></div>
+
+    <!-- LOGIN -->
+    <div id="frm-login">
+      <div class="field"><label>Email</label><input class="inp" type="email" id="l-email" placeholder="you@email.com"/></div>
+      <div class="field"><label>Password</label><input class="inp" type="password" id="l-pass" placeholder="••••••••"/></div>
+      <button class="btn btn-primary" onclick="doLogin()">Sign In →</button>
+      <p class="text-center text-sm mt-12 text-muted">No account? <a style="color:var(--pur);cursor:pointer;font-weight:700" onclick="toReg()">Register here</a></p>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="frm-reg" class="hide">
+      <div class="field"><label>Full Name</label><input class="inp" type="text" id="r-name" placeholder="Your full name"/></div>
+      <div class="field"><label>Email</label><input class="inp" type="email" id="r-email" placeholder="you@email.com"/></div>
+      <div class="field"><label>Password</label><input class="inp" type="password" id="r-pass" placeholder="Min 6 characters"/></div>
+      <div class="field">
+        <label>Role</label>
+        <select class="inp" id="r-role" onchange="toggleMgrCode()">
+          <option value="rep">Sales Representative</option>
+          <option value="manager">Manager</option>
+        </select>
+      </div>
+      <div class="field hide" id="mgr-code-field">
+        <label>Manager Access Code</label>
+        <input class="inp" type="password" id="r-code" placeholder="Enter code given by owner"/>
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()">Create Account →</button>
+      <p class="text-center text-sm mt-12 text-muted">Have an account? <a style="color:var(--pur);cursor:pointer;font-weight:700" onclick="toLogin()">Sign in</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="icon">⚔️</div>
+      Warriors Hub
+    </div>
+    <div class="topbar-right">
+      <span class="chip chip-name" id="tb-name"></span>
+      <span class="chip" id="tb-role"></span>
+      <button class="btn-signout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- PAGES -->
+  <div class="scroll-area">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page on" id="pg-dash">
+      <div class="page-title" id="dash-hi">Hey there! 👋</div>
+      <div class="page-sub" id="dash-date"></div>
+
+      <!-- REP VIEW -->
+      <div id="v-rep" class="hide">
+        <div class="stat-grid">
+          <div class="stat-card s-pur"><div class="stat-num" id="d-my-sales">0</div><div class="stat-lbl">My Sales</div></div>
+          <div class="stat-card s-gold"><div class="stat-num" id="d-my-rev">$0</div><div class="stat-lbl">My Revenue</div></div>
+          <div class="stat-card"><div class="stat-num" id="d-my-rank" style="color:var(--pur)">#-</div><div class="stat-lbl">My Rank</div></div>
+          <div class="stat-card"><div class="stat-num" id="d-my-jobs" style="color:var(--pur)">0</div><div class="stat-lbl">Upcoming Jobs</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏆 This Week's Leader</div>
+          <div id="d-week-leader"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 My Recent Sales</div>
+          <div id="d-rep-recent"></div>
+        </div>
+      </div>
+
+      <!-- MANAGER VIEW -->
+      <div id="v-mgr" class="hide">
+        <div class="stat-grid">
+          <div class="stat-card s-pur"><div class="stat-num" id="d-tot-sales">0</div><div class="stat-lbl">Total Sales</div></div>
+          <div class="stat-card s-gold"><div class="stat-num" id="d-tot-rev">$0</div><div class="stat-lbl">Total Revenue</div></div>
+          <div class="stat-card"><div class="stat-num" id="d-tot-reps" style="color:var(--pur)">0</div><div class="stat-lbl">Active Reps</div></div>
+          <div class="stat-card"><div class="stat-num" id="d-tot-jobs" style="color:var(--pur)">0</div><div class="stat-lbl">Jobs Booked</div></div>
+        </div>
+        <div id="d-winner-wrap"></div>
+        <div class="card">
+          <div class="card-title">📊 Recent Sales (All Team)</div>
+          <div id="d-mgr-recent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BOOK A JOB ── -->
+    <div class="page" id="pg-book">
+      <div class="page-title">Book a Job</div>
+      <div class="page-sub">Pick a date and time slot, then enter client details</div>
+
+      <div class="cal-wrap">
+        <div class="cal-head">
+          <button class="cal-btn" onclick="calNav(-1)">‹</button>
+          <h3 id="cal-title"></h3>
+          <button class="cal-btn" onclick="calNav(1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+
+      <div class="card hide" id="slots-wrap">
+        <div class="card-title">🕐 Time Slots — <span id="slots-date-lbl" style="color:var(--pur)"></span></div>
+        <p class="text-xs text-muted mb-8">🟡 = Your booking &nbsp; 🔒 = Taken &nbsp; Tap open slot to book</p>
+        <div class="slots-grid" id="slots-grid"></div>
+      </div>
+
+      <div class="card hide" id="booking-form-wrap">
+        <div class="card-title">📝 Client Details</div>
+        <div class="field"><label>Client Name *</label><input class="inp" type="text" id="b-cname" placeholder="Full name"/></div>
+        <div class="form-2">
+          <div class="field"><label>Phone *</label><input class="inp" type="tel" id="b-phone" placeholder="(647) 000-0000"/></div>
+          <div class="field"><label>Price ($) *</label><input class="inp" type="number" id="b-price" placeholder="150" min="0"/></div>
+        </div>
+        <div class="field"><label>Address *</label><input class="inp" type="text" id="b-addr" placeholder="123 Main St, Toronto, ON"/></div>
+        <div class="field">
+          <label>Service</label>
+          <select class="inp" id="b-service">
+            <option>Exterior Window Cleaning</option>
+            <option>Interior Window Cleaning</option>
+            <option>Eavestrough / Gutter Cleaning</option>
+            <option>Sliding Door Cleaning</option>
+            <option>Glass Staircase Cleaning</option>
+            <option>Full Package</option>
+          </select>
+        </div>
+        <div class="field"><label>Notes</label><textarea class="inp" id="b-notes" placeholder="Any special instructions..."></textarea></div>
+        <button class="btn btn-gold" onclick="submitBooking()">✓ Confirm Booking</button>
+      </div>
+    </div>
+
+    <!-- ── MY SALES ── -->
+    <div class="page" id="pg-sales">
+      <div class="page-title" id="sales-page-title">My Sales</div>
+      <div class="page-sub" id="sales-page-sub">Your recorded sales & booked jobs</div>
+      <div class="tabs">
+        <div class="tab on" onclick="salesTab('upcoming',this)">Upcoming</div>
+        <div class="tab" onclick="salesTab('completed',this)">Completed</div>
+        <div class="tab" onclick="salesTab('all',this)">All</div>
+      </div>
+      <div id="sales-list"></div>
+    </div>
+
+    <!-- ── LEADERBOARD ── -->
+    <div class="page" id="pg-lb">
+      <div class="page-title">Leaderboard</div>
+      <div class="page-sub">Who's crushing it 🔥</div>
+      <div class="tabs">
+        <div class="tab on" onclick="lbTab('week',this)">This Week</div>
+        <div class="tab" onclick="lbTab('month',this)">This Month</div>
+        <div class="tab" onclick="lbTab('all',this)">All Time</div>
+      </div>
+      <div id="lb-list"></div>
+      <div id="mgr-all-sales-wrap" class="hide">
+        <div class="card mt-16">
+          <div class="card-title">📋 All Team Sales</div>
+          <div id="mgr-all-sales"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MAP ── -->
+    <div class="page" id="pg-map">
+      <div class="page-title">Door Knock Map</div>
+      <div class="page-sub">Tap the map to mark a home you've knocked</div>
+      <div class="card" style="padding:14px">
+        <div class="map-toolbar">
+          <span class="text-xs font-bold" style="color:var(--pur-d)">Mark as:</span>
+          <button class="mark-btn mb-knocked active-mark map-btn-active-knocked" id="mb-knocked" onclick="setMark('knocked')">Knocked</button>
+          <button class="mark-btn mb-interested" id="mb-interested" onclick="setMark('interested')">⭐ Interested</button>
+          <button class="mark-btn mb-noanswer" id="mb-noanswer" onclick="setMark('noanswer')">No Answer</button>
+          <button class="mark-btn mb-notint" id="mb-notint" onclick="setMark('notint')">Not Interested</button>
+        </div>
+        <div id="map-el"></div>
+        <div class="legend">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--pur)"></div>Knocked</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Interested</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--yellow)"></div>No Answer</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Not Interested</div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num" id="map-total" style="color:var(--pur)">0</div><div class="stat-lbl">Total Knocked</div></div>
+        <div class="stat-card s-gold"><div class="stat-num" id="map-int">0</div><div class="stat-lbl">Interested</div></div>
+      </div>
+    </div>
+
+  </div><!-- scroll-area -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottomnav">
+    <button class="bnav-item on" onclick="goPage('dash',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span class="bnav-label">Dashboard</span>
+    </button>
+    <button class="bnav-item" onclick="goPage('book',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r=".5" fill="currentColor"/><circle cx="12" cy="15" r=".5" fill="currentColor"/><circle cx="16" cy="15" r=".5" fill="currentColor"/></svg>
+      <span class="bnav-label">Book</span>
+    </button>
+    <button class="bnav-item" onclick="goPage('sales',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <span class="bnav-label">Sales</span>
+    </button>
+    <button class="bnav-item" onclick="goPage('lb',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="bnav-label">Rankings</span>
+    </button>
+    <button class="bnav-item" onclick="goPage('map',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      <span class="bnav-label">Map</span>
+    </button>
+  </nav>
+
+</div><!-- app -->
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG — Replace these with your values
+// ══════════════════════════════════════════
+const SB_URL  = 'https://irbacwzacummrzfcrjzn.supabase.co';
+const SB_KEY  = 'sb_publishable_MCkmISRtKJ-i9Q3R2KbOtQ_MKq_78K5';
+const MGR_CODE = 'warriors2024'; // Secret code for manager registration
+
+const { createClient } = supabase;
+const db = createClient(SB_URL, SB_KEY);
+
+// ══════════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════════
+const SLOTS = ['8:00 AM','9:00 AM','10:00 AM','11:00 AM','12:00 PM',
+               '1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM'];
+const MARK_COLORS = {knocked:'#6B3FA0',interested:'#22C55E',noanswer:'#F59E0B',notint:'#EF4444'};
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let user=null, profile=null;
+let calY=new Date().getFullYear(), calM=new Date().getMonth();
+let selDate=null, selSlot=null;
+let mapObj=null, markStatus='knocked';
+let curLbTab='week', curSalesTab='upcoming';
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let toastTimer;
+function toast(msg,ms=2600){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('on'),ms);
+}
+
+// ══════════════════════════════════════════
+//  AUTH HELPERS
+// ══════════════════════════════════════════
+function toReg(){document.getElementById('frm-login').classList.add('hide');document.getElementById('frm-reg').classList.remove('hide');clearAlerts()}
+function toLogin(){document.getElementById('frm-reg').classList.add('hide');document.getElementById('frm-login').classList.remove('hide');clearAlerts()}
+function clearAlerts(){['auth-err','auth-ok'].forEach(id=>{const el=document.getElementById(id);el.classList.add('hide');el.textContent=''})}
+function authErr(m){const el=document.getElementById('auth-err');el.textContent=m;el.classList.remove('hide')}
+function authOk(m){const el=document.getElementById('auth-ok');el.textContent=m;el.classList.remove('hide')}
+function toggleMgrCode(){
+  const show=document.getElementById('r-role').value==='manager';
+  document.getElementById('mgr-code-field').classList.toggle('hide',!show);
+}
+
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  clearAlerts();
+  if(!email||!pass){authErr('Please fill in both fields');return}
+  const {data,error}=await db.auth.signInWithPassword({email,password:pass});
+  if(error){authErr(error.message);return}
+  await bootApp(data.user);
+}
+
+async function doRegister(){
+  const name=document.getElementById('r-name').value.trim();
+  const email=document.getElementById('r-email').value.trim();
+  const pass=document.getElementById('r-pass').value;
+  const role=document.getElementById('r-role').value;
+  const code=document.getElementById('r-code').value;
+  clearAlerts();
+  if(!name||!email||!pass){authErr('Please fill in all fields');return}
+  if(pass.length<6){authErr('Password must be at least 6 characters');return}
+  if(role==='manager'&&code!==MGR_CODE){authErr('Incorrect manager access code');return}
+  const {data,error}=await db.auth.signUp({email,password:pass,options:{data:{full_name:name,role}}});
+  if(error){authErr(error.message);return}
+  await db.from('profiles').upsert({id:data.user.id,full_name:name,email,role});
+  authOk('Account created! Signing you in...');
+  setTimeout(()=>bootApp(data.user),1200);
+}
+
+async function doLogout(){
+  await db.auth.signOut();
+  user=null;profile=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('auth').style.display='flex';
+}
+
+// ══════════════════════════════════════════
+//  BOOT APP
+// ══════════════════════════════════════════
+async function bootApp(u){
+  user=u;
+  let {data:p}=await db.from('profiles').select('*').eq('id',u.id).single();
+  if(!p){
+    p={id:u.id,full_name:u.user_metadata?.full_name||'User',email:u.email,role:u.user_metadata?.role||'rep'};
+    await db.from('profiles').upsert(p);
+  }
+  profile=p;
+
+  // UI
+  document.getElementById('auth').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('tb-name').textContent=profile.full_name;
+  const rb=document.getElementById('tb-role');
+  rb.textContent=profile.role==='manager'?'Manager':'Sales Rep';
+  rb.className='chip '+(profile.role==='manager'?'chip-manager':'chip-rep');
+
+  // Greeting
+  const now=new Date();
+  const hr=now.getHours();
+  const g=hr<12?'Good morning':'Good afternoon';
+  document.getElementById('dash-hi').textContent=g+', '+profile.full_name.split(' ')[0]+'! 👋';
+  document.getElementById('dash-date').textContent=now.toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  // Show correct dashboard
+  document.getElementById('v-rep').classList.toggle('hide',profile.role!=='rep');
+  document.getElementById('v-mgr').classList.toggle('hide',profile.role!=='manager');
+  document.getElementById('mgr-all-sales-wrap').classList.toggle('hide',profile.role!=='manager');
+
+  // Sales page title
+  if(profile.role==='manager'){
+    document.getElementById('sales-page-title').textContent='All Team Sales';
+    document.getElementById('sales-page-sub').textContent='View and manage every sale across the team';
+  }
+
+  buildCal();
+  loadDash();
+  loadSales();
+  loadLb();
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function goPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('on'));
+  document.getElementById('pg-'+id).classList.add('on');
+  if(el)el.classList.add('on');
+  if(id==='map'){initMap();setTimeout(()=>mapObj&&mapObj.invalidateSize(),300)}
+  if(id==='lb')loadLb();
+  if(id==='dash')loadDash();
+  if(id==='sales')loadSales();
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+async function loadDash(){
+  if(profile.role==='rep') await loadRepDash();
+  else await loadMgrDash();
+}
+
+async function loadRepDash(){
+  const {data:sales}=await db.from('sales').select('*').eq('rep_id',user.id);
+  const {data:upcoming}=await db.from('bookings').select('*').eq('rep_id',user.id).gte('date',today());
+  const arr=sales||[];
+  const rev=arr.reduce((s,x)=>s+parseFloat(x.price||0),0);
+  document.getElementById('d-my-sales').textContent=arr.length;
+  document.getElementById('d-my-rev').textContent='$'+fmtNum(rev);
+  document.getElementById('d-my-jobs').textContent=(upcoming||[]).length;
+
+  // Rank
+  const {data:all}=await db.from('sales').select('rep_id');
+  if(all){
+    const cnt={};all.forEach(s=>cnt[s.rep_id]=(cnt[s.rep_id]||0)+1);
+    const sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+    const rank=sorted.findIndex(x=>x[0]===user.id)+1;
+    document.getElementById('d-my-rank').textContent=rank>0?'#'+rank:'#1';
+  }
+
+  // Weekly leader
+  const wSales=await getWeekSales();
+  const el=document.getElementById('d-week-leader');
+  if(!wSales.length){el.innerHTML='<div class="empty"><p>No sales this week yet — be first! 💪</p></div>';return}
+  const top=wSales[0];
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:linear-gradient(135deg,rgba(212,175,55,.08),rgba(107,63,160,.08));border-radius:10px;border:1px solid rgba(212,175,55,.25)">
+    <div style="font-size:2rem">🏆</div>
+    <div><div style="font-family:'Rubik',sans-serif;font-weight:800">${top.name}</div>
+    <div class="text-sm text-muted">${top.count} sale${top.count!==1?'s':''} · $${fmtNum(top.rev)} this week</div></div>
+  </div>`;
+
+  // Rep recent
+  const {data:recent}=await db.from('sales').select('*').eq('rep_id',user.id).order('created_at',{ascending:false}).limit(4);
+  document.getElementById('d-rep-recent').innerHTML=renderSaleRows(recent||[],false);
+}
+
+async function loadMgrDash(){
+  const {data:sales}=await db.from('sales').select('*');
+  const {data:profs}=await db.from('profiles').select('*').eq('role','rep');
+  const {data:bks}=await db.from('bookings').select('*');
+  const arr=sales||[];
+  const rev=arr.reduce((s,x)=>s+parseFloat(x.price||0),0);
+  document.getElementById('d-tot-sales').textContent=arr.length;
+  document.getElementById('d-tot-rev').textContent='$'+fmtNum(rev);
+  document.getElementById('d-tot-reps').textContent=(profs||[]).length;
+  document.getElementById('d-tot-jobs').textContent=(bks||[]).length;
+
+  // Weekly winner
+  const wSales=await getWeekSales();
+  const wrap=document.getElementById('d-winner-wrap');
+  if(wSales.length){
+    const w=wSales[0];
+    wrap.innerHTML=`<div class="winner-banner">
+      <div class="winner-trophy">🏆</div>
+      <div class="winner-name">${w.name}</div>
+      <div class="winner-stats">${w.count} sale${w.count!==1?'s':''} · $${fmtNum(w.rev)} this week</div>
+      <div class="winner-crown">👑 THIS WEEK'S CHAMPION</div>
+    </div>`;
+  } else {
+    wrap.innerHTML='<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
+  }
+
+  // Recent
+  const {data:recent}=await db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false}).limit(6);
+  document.getElementById('d-mgr-recent').innerHTML=renderSaleRows(recent||[],true);
+}
+
+async function getWeekSales(){
+  const {data:sales}=await db.from('sales').select('rep_id,price,profiles(full_name)').gte('created_at',weekStart());
+  if(!sales||!sales.length) return [];
+  const cnt={};
+  sales.forEach(s=>{
+    if(!cnt[s.rep_id])cnt[s.rep_id]={name:s.profiles?.full_name||'Unknown',count:0,rev:0};
+    cnt[s.rep_id].count++;cnt[s.rep_id].rev+=parseFloat(s.price||0);
+  });
+  return Object.values(cnt).sort((a,b)=>b.count-a.count);
+}
+
+// ══════════════════════════════════════════
+//  CALENDAR
+// ══════════════════════════════════════════
+function buildCal(){
+  const MOS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-title').textContent=MOS[calM]+' '+calY;
+  const DNS=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const todayStr=today();
+  let h=DNS.map(d=>`<div class="cal-dn">${d}</div>`).join('');
+  const first=new Date(calY,calM,1).getDay();
+  const days=new Date(calY,calM+1,0).getDate();
+  for(let i=0;i<first;i++)h+=`<div class="cal-d cal-empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const ds=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isPast=ds<todayStr;
+    const isTod=ds===todayStr;
+    const isSel=ds===selDate;
+    let cls='cal-d';
+    if(isPast)cls+=' cal-past';
+    else if(isSel)cls+=' cal-sel';
+    else if(isTod)cls+=' cal-today';
+    const click=isPast?'':`onclick="pickDate('${ds}')"`;
+    h+=`<div class="${cls}" ${click}>${d}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=h;
+}
+
+function calNav(d){
+  calM+=d;if(calM<0){calM=11;calY--}if(calM>11){calM=0;calY++}
+  buildCal();
+}
+
+async function pickDate(ds){
+  selDate=ds;selSlot=null;
+  buildCal();
+  const lbl=new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('slots-date-lbl').textContent=lbl;
+  document.getElementById('slots-wrap').classList.remove('hide');
+  document.getElementById('booking-form-wrap').classList.add('hide');
+  await buildSlots(ds);
+}
+
+async function buildSlots(ds){
+  const {data:bks}=await db.from('bookings').select('time_slot,rep_id').eq('date',ds);
+  const taken={};(bks||[]).forEach(b=>taken[b.time_slot]=b.rep_id);
+  const h=SLOTS.map(s=>{
+    const owner=taken[s];
+    const mine=owner===user.id;
+    const open=!owner;
+    let cls='slot';
+    if(mine)cls+=' s-mine';
+    else if(!open)cls+=' s-taken';
+    else cls+=' s-open';
+    const lbl=mine?s+' ✓':!open?s+' 🔒':s;
+    const click=open||mine?`onclick="pickSlot('${s}')"`:'';
+    return `<div class="${cls}" ${click}>${lbl}</div>`;
+  }).join('');
+  document.getElementById('slots-grid').innerHTML=h;
+}
+
+function pickSlot(s){
+  selSlot=s;
+  document.querySelectorAll('.slot').forEach(el=>{
+    el.classList.remove('s-sel');
+    if(el.textContent.includes(s)&&!el.classList.contains('s-taken'))el.classList.add('s-sel');
+  });
+  document.getElementById('booking-form-wrap').classList.remove('hide');
+  document.getElementById('booking-form-wrap').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function submitBooking(){
+  const cn=document.getElementById('b-cname').value.trim();
+  const ph=document.getElementById('b-phone').value.trim();
+  const pr=document.getElementById('b-price').value;
+  const ad=document.getElementById('b-addr').value.trim();
+  const sv=document.getElementById('b-service').value;
+  const nt=document.getElementById('b-notes').value;
+  if(!cn||!ph||!pr||!ad){toast('⚠️ Please fill in all required fields');return}
+  if(!selDate||!selSlot){toast('⚠️ Select a date and time slot first');return}
+
+  const {error:e1}=await db.from('bookings').insert({rep_id:user.id,date:selDate,time_slot:selSlot,client_name:cn,client_phone:ph,client_address:ad,service_type:sv,notes:nt,status:'confirmed'});
+  if(e1){toast('❌ '+e1.message);return}
+  const {error:e2}=await db.from('sales').insert({rep_id:user.id,client_name:cn,client_phone:ph,client_address:ad,service_type:sv,price:parseFloat(pr),notes:nt,status:'confirmed',date:selDate});
+  if(e2){toast('❌ '+e2.message);return}
+
+  toast('✅ Job booked & sale recorded!');
+  ['b-cname','b-phone','b-price','b-addr','b-notes'].forEach(id=>document.getElementById(id).value='');
+  selSlot=null;
+  document.getElementById('booking-form-wrap').classList.add('hide');
+  await buildSlots(selDate);
+  loadDash();loadSales();
+}
+
+// ══════════════════════════════════════════
+//  SALES LIST
+// ══════════════════════════════════════════
+async function loadSales(){
+  let q=db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
+  if(profile.role==='rep')q=q.eq('rep_id',user.id);
+  const {data:all}=await q;
+  const arr=all||[];
+  const tod=today();
+  let filtered=arr;
+  if(curSalesTab==='upcoming')filtered=arr.filter(s=>s.date>=tod);
+  else if(curSalesTab==='completed')filtered=arr.filter(s=>s.date<tod);
+  document.getElementById('sales-list').innerHTML=renderSaleRows(filtered,profile.role==='manager');
+}
+
+function salesTab(t,el){
+  curSalesTab=t;
+  document.querySelectorAll('#pg-sales .tab').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  loadSales();
+}
+
+function renderSaleRows(arr,showRep){
+  if(!arr.length)return`<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><p>No sales here yet</p></div>`;
+  return arr.map(s=>`
+    <div class="sale-row">
+      <div style="flex:1;min-width:0">
+        <h4>${s.client_name}</h4>
+        <p>${showRep&&s.profiles?s.profiles.full_name+' · ':''} ${s.service_type||'Window Cleaning'}<br>
+        📅 ${s.date||'—'} &nbsp; 📞 ${s.client_phone||'—'}<br>
+        📍 ${s.client_address||'—'}</p>
+        <span class="badge b-green mt-8" style="display:inline-block">Confirmed</span>
+      </div>
+      <div style="text-align:right;flex-shrink:0;margin-left:10px">
+        <div class="sale-price">$${fmtNum(parseFloat(s.price||0))}</div>
+        ${profile.role==='manager'?`<button class="btn btn-danger btn-xs mt-8" onclick="delSale('${s.id}')">Delete</button>`:''}
+      </div>
+    </div>`).join('');
+}
+
+async function delSale(id){
+  if(!confirm('Delete this sale?'))return;
+  await db.from('sales').delete().eq('id',id);
+  toast('🗑️ Sale deleted');
+  loadSales();loadDash();
+}
+
+// ══════════════════════════════════════════
+//  LEADERBOARD
+// ══════════════════════════════════════════
+async function loadLb(){
+  let since=null;
+  if(curLbTab==='week')since=weekStart();
+  else if(curLbTab==='month')since=monthStart();
+
+  let q=db.from('sales').select('rep_id,price,profiles(full_name)');
+  if(since)q=q.gte('created_at',since);
+  const {data:sales}=await q;
+  const cnt={};
+  (sales||[]).forEach(s=>{
+    if(!cnt[s.rep_id])cnt[s.rep_id]={name:s.profiles?.full_name||'Unknown',count:0,rev:0};
+    cnt[s.rep_id].count++;cnt[s.rep_id].rev+=parseFloat(s.price||0);
+  });
+  const sorted=Object.entries(cnt).sort((a,b)=>b[1].count-a[1].count);
+  const max=sorted[0]?.[1]?.count||1;
+
+  if(!sorted.length){
+    document.getElementById('lb-list').innerHTML='<div class="empty"><p>No sales recorded yet. Get out there! 💪</p></div>';
+  } else {
+    document.getElementById('lb-list').innerHTML=sorted.map(([rid,d],i)=>{
+      const rCls=i===0?'r1':i===1?'r2':i===2?'r3':'r-other';
+      const rLbl=i===0?'👑':i===1?'🥈':i===2?'🥉':`#${i+1}`;
+      const isMe=rid===user.id;
+      const pct=Math.round((d.count/max)*100);
+      return `<div class="lb-row${isMe?' lb-me':''}">
+        <div class="rank-badge ${rCls}">${rLbl}</div>
+        <div class="lb-info">
+          <div class="lb-name">${d.name}${isMe?' (You)':''}</div>
+          <div class="lb-detail">${d.count} sale${d.count!==1?'s':''}</div>
+          <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
+        </div>
+        <div class="lb-rev">$${fmtNum(d.rev)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Manager sees all sales below
+  if(profile.role==='manager'){
+    let q2=db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
+    if(since)q2=q2.gte('created_at',since);
+    const {data:all}=await q2;
+    document.getElementById('mgr-all-sales').innerHTML=renderSaleRows(all||[],true);
+  }
+}
+
+function lbTab(t,el){
+  curLbTab=t;
+  document.querySelectorAll('#pg-lb .tab').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  loadLb();
+}
+
+// ══════════════════════════════════════════
+//  MAP
+// ══════════════════════════════════════════
+function initMap(){
+  if(mapObj)return;
+  mapObj=L.map('map-el').setView([43.7001,-79.4163],13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(mapObj);
+  mapObj.on('click',async e=>{
+    const {lat,lng}=e.latlng;
+    const {error}=await db.from('door_knocks').insert({rep_id:user.id,lat,lng,status:markStatus});
+    if(error){toast('❌ '+error.message);return}
+    plotPin({lat,lng,status:markStatus});
+    loadMapStats();
+    toast('📍 Marked as '+markStatus.replace('noanswer','no answer').replace('notint','not interested'));
+  });
+  loadPins();
+}
+
+async function loadPins(){
+  const {data}=await db.from('door_knocks').select('*');
+  (data||[]).forEach(k=>plotPin(k));
+  loadMapStats();
+}
+
+function plotPin(k){
+  const col=MARK_COLORS[k.status]||'#6B3FA0';
+  L.circleMarker([k.lat,k.lng],{radius:9,fillColor:col,color:'#fff',weight:2,fillOpacity:.9})
+   .addTo(mapObj)
+   .bindPopup(`<b>${k.status.replace('noanswer','No Answer').replace('notint','Not Interested')}</b>`);
+}
+
+async function loadMapStats(){
+  const {data}=await db.from('door_knocks').select('status');
+  const all=data||[];
+  document.getElementById('map-total').textContent=all.length;
+  document.getElementById('map-int').textContent=all.filter(x=>x.status==='interested').length;
+}
+
+function setMark(s){
+  markStatus=s;
+  document.querySelectorAll('.mark-btn').forEach(b=>{
+    b.classList.remove('active-mark','map-btn-active-knocked','map-btn-active-interested','map-btn-active-noanswer','map-btn-active-notint');
+  });
+  const el=document.getElementById('mb-'+s);
+  el.classList.add('active-mark','map-btn-active-'+s);
+  toast('📍 Now marking: '+s.replace('noanswer','No Answer').replace('notint','Not Interested'));
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function today(){return new Date().toISOString().split('T')[0]}
+function weekStart(){const d=new Date();d.setDate(d.getDate()-d.getDay());d.setHours(0,0,0,0);return d.toISOString()}
+function monthStart(){const d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d.toISOString()}
+function fmtNum(n){return n>=1000?(n/1000).toFixed(1)+'k':Math.round(n).toString()}
+
+// ══════════════════════════════════════════
+//  SESSION
+// ══════════════════════════════════════════
+window.addEventListener('load',async()=>{
+  const {data:{session}}=await db.auth.getSession();
+  if(session)await bootApp(session.user);
+});
+db.auth.onAuthStateChange(async(ev,session)=>{
+  if(ev==='SIGNED_IN'&&session)await bootApp(session.user);
+  if(ev==='SIGNED_OUT'){
+    document.getElementById('app').style.display='none';
+    document.getElementById('auth').style.display='flex';
+  }
+});
+</script>
+</body>
+</html>
