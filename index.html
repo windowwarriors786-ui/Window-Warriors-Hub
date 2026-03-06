@@ -890,7 +890,8 @@ async function buildSlots(ds){
     return;
   }
   // Load all bookings for this date to check overlaps per machine
-  const {data:bks}=await db.from('bookings').select('time_start,time_end,rep_id,machine_slot').eq('date',ds);
+  const {data:bks, error:slotErr}=await db.from('bookings').select('time_start,time_end,rep_id,machine_slot').eq('date',ds);
+  if(slotErr){ console.error('Slot load error:',slotErr); }
   const bookings=bks||[];
 
   G('slots-g').innerHTML=avail.map((sl,i)=>{
@@ -923,37 +924,85 @@ function pickSlot(label,start,end,idx){
   G('bform-wrap').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function submitBooking(){
-  const cn=G('b-cname').value.trim()||'TBD';
-  const ph=G('b-phone').value.trim();
-  const pr=parseFloat(G('b-price').value)||0;
-  const ad=G('b-addr').value.trim();
-  const sv=G('b-svc').value,nt=G('b-notes').value;
-  if(!selDate||!selSlot){toast('⚠️ Select a date and time window first');return}
-  // Assign next available machine number
-  const {data:existing}=await db.from('bookings').select('machine_slot').eq('date',selDate);
-  const used=(existing||[]).filter(b=>slotsOverlap(selSlot.start,selSlot.end,b.time_start,b.time_end)).map(b=>b.machine_slot);
-  let machineSlot=1;
-  while(used.includes(machineSlot))machineSlot++;
+  const cn  = G('b-cname').value.trim() || 'Client TBD';
+  const ph  = G('b-phone').value.trim() || '';
+  const pr  = parseFloat(G('b-price').value) || 0;
+  const ad  = G('b-addr').value.trim() || '';
+  const sv  = G('b-svc').value;
+  const nt  = G('b-notes').value || '';
 
-  const {error:e1}=await db.from('bookings').insert({
-    rep_id:user.id,date:selDate,
-    time_slot:selSlot.label,time_start:selSlot.start,time_end:selSlot.end,
-    machine_slot:machineSlot,
-    client_name:cn,client_phone:ph,client_address:ad,
-    service_type:sv,notes:nt,status:'confirmed'
-  });
-  if(e1){toast('❌ '+e1.message);return}
-  if(pr>0){
-    const {error:e2}=await db.from('sales').insert({
-      rep_id:user.id,client_name:cn,client_phone:ph,client_address:ad,
-      service_type:sv,price:pr,notes:nt,status:'confirmed',date:selDate
-    });
-    if(e2){toast('❌ '+e2.message);return}
+  if(!selDate || !selSlot){
+    toast('⚠️ Pick a date and time window first');
+    return;
   }
-  toast('✅ Job booked! Machine '+machineSlot+' · '+selSlot.label);
-  ['b-cname','b-phone','b-price','b-addr','b-notes'].forEach(id=>G(id).value='');
-  selSlot=null;selSlotIdx=null;G('bform-wrap').classList.add('hide');
-  await buildSlots(selDate);loadDash();loadSales();
+
+  // Work out which machine slot is free
+  const {data:existing, error:fetchErr} = await db
+    .from('bookings')
+    .select('machine_slot, time_start, time_end')
+    .eq('date', selDate);
+
+  if(fetchErr){ toast('❌ Could not check slots: '+fetchErr.message); return; }
+
+  const overlapping = (existing||[]).filter(b =>
+    slotsOverlap(selSlot.start, selSlot.end, b.time_start, b.time_end)
+  );
+  const usedMachines = overlapping.map(b => b.machine_slot);
+  let machineSlot = 1;
+  while(usedMachines.includes(machineSlot)) machineSlot++;
+
+  // ── INSERT BOOKING ──
+  const bookingPayload = {
+    rep_id       : user.id,
+    date         : selDate,
+    time_slot    : selSlot.label,
+    time_start   : selSlot.start,
+    time_end     : selSlot.end,
+    machine_slot : machineSlot,
+    client_name  : cn,
+    client_phone : ph,
+    client_address: ad,
+    service_type : sv,
+    notes        : nt,
+    status       : 'confirmed'
+  };
+
+  const {error: bErr} = await db.from('bookings').insert(bookingPayload);
+  if(bErr){
+    toast('❌ Booking failed: ' + bErr.message);
+    console.error('Booking error:', bErr);
+    return;
+  }
+
+  // ── INSERT SALE (always — even if price is 0) ──
+  const salePayload = {
+    rep_id        : user.id,
+    client_name   : cn,
+    client_phone  : ph,
+    client_address: ad,
+    service_type  : sv,
+    price         : pr,
+    notes         : nt,
+    status        : 'confirmed',
+    date          : selDate,
+    time_slot     : selSlot.label
+  };
+
+  const {error: sErr} = await db.from('sales').insert(salePayload);
+  if(sErr){
+    toast('❌ Sale record failed: ' + sErr.message);
+    console.error('Sale error:', sErr);
+    return;
+  }
+
+  // ── SUCCESS ──
+  toast('✅ Booked! ' + selSlot.label + ' · Machine ' + machineSlot);
+  ['b-cname','b-phone','b-price','b-addr','b-notes'].forEach(id => G(id).value = '');
+  selSlot = null; selSlotIdx = null;
+  G('bform-wrap').classList.add('hide');
+  await buildSlots(selDate);
+  await loadDash();
+  await loadSales();
 }
 
 // ══════════════════════════════
@@ -974,7 +1023,7 @@ function renderSaleRows(arr,showRep){
   if(!arr.length)return`<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><p>No sales here yet</p></div>`;
   return arr.map(s=>`<div class="sale-row"><div style="flex:1;min-width:0">
     <h4>${s.client_name}</h4>
-    <p>${showRep&&s.profiles?'👤 '+s.profiles.full_name+'<br>':''}${s.service_type||''}<br>📅 ${s.date||'—'} &nbsp;📞 ${s.client_phone||'—'}<br>📍 ${s.client_address||'—'}</p>
+    <p>${showRep&&s.profiles?'👤 '+s.profiles.full_name+'<br>':''}${s.service_type||''}<br>📅 ${s.date||'—'} ${s.time_slot?'· '+s.time_slot:''}<br>📞 ${s.client_phone||'—'}<br>📍 ${s.client_address||'—'}</p>
     <span class="badge b-green" style="margin-top:6px;display:inline-block">Confirmed</span></div>
     <div style="text-align:right;flex-shrink:0;margin-left:10px">
       <div class="sale-price">$${fmt(parseFloat(s.price||0))}</div>
@@ -1274,34 +1323,78 @@ async function initRepZoneMap(){
 // ══════════════════════════════
 //  SCHEDULE
 // ══════════════════════════════
+let schedDate = null; // null = tomorrow
+
 async function loadSchedule(){
-  const tom=tomorrow();
-  const lbl=new Date(tom+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  G('sched-sub').textContent='Jobs scheduled for '+lbl;
-  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',tom);
-  const jobs=bks||[];
-  if(!jobs.length){
-    G('sched-content').innerHTML=`<div class="sched-hd"><div class="sched-hd-title">📅 ${lbl}</div><div class="sched-hd-sub">Window Warriors Cleaning Schedule</div></div><div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><p>No jobs booked for tomorrow yet</p></div>`;
+  // Default to tomorrow, but manager can switch to today
+  const targetDate = schedDate || tomorrow();
+  const lbl = new Date(targetDate+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  G('sched-sub').textContent = 'Jobs scheduled for ' + lbl;
+
+  // Date switcher buttons
+  const tod = today(), tom = tomorrow();
+  const switcherHtml = `
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button onclick="switchSchedDate('${tod}')" class="btn btn-sm ${targetDate===tod?'btn-primary':'btn-ghost'}" style="flex:1">Today</button>
+      <button onclick="switchSchedDate('${tom}')" class="btn btn-sm ${targetDate===tom?'btn-primary':'btn-ghost'}" style="flex:1">Tomorrow</button>
+    </div>`;
+
+  const {data:bks, error:schedErr} = await db
+    .from('bookings')
+    .select('*, profiles(full_name)')
+    .eq('date', targetDate);
+
+  if(schedErr){
+    console.error('Schedule load error:', schedErr);
+    G('sched-content').innerHTML = switcherHtml + '<div class="empty"><p>Error loading schedule: '+schedErr.message+'</p></div>';
     return;
   }
-  const slotOrd=ALL_SLOTS.reduce((a,t,i)=>{a[t]=i;return a},{});
-  jobs.sort((a,b)=>timeToMins(a.time_start||'8:00 AM')-timeToMins(b.time_start||'8:00 AM'));
-  G('sched-content').innerHTML=`
-    <div class="sched-hd"><div class="sched-hd-title">📅 ${lbl}</div><div class="sched-hd-sub">Window Warriors — ${jobs.length} job${jobs.length!==1?'s':''} scheduled</div></div>
-    ${jobs.map(j=>`<div class="sched-row">
-      <div class="sched-time">${j.time_start||j.time_slot}<br><span style="font-size:.65rem;opacity:.7">to ${j.time_end||''}</span></div>
-      <div class="sched-info"><h4>${j.client_name}</h4>
+
+  const jobs = bks || [];
+  if(!jobs.length){
+    G('sched-content').innerHTML = switcherHtml + `<div class="sched-hd">
+      <div class="sched-hd-title">📅 ${lbl}</div>
+      <div class="sched-hd-sub">Window Warriors Cleaning Schedule</div>
+    </div>
+    <div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <p>No jobs booked for this day</p></div>`;
+    return;
+  }
+
+  jobs.sort((a,b) => timeToMins(a.time_start||'8:00 AM') - timeToMins(b.time_start||'8:00 AM'));
+
+  const rows = jobs.map(j => `
+    <div class="sched-row">
+      <div class="sched-time">${j.time_start||j.time_slot||'—'}<br>
+        <span style="font-size:.63rem;opacity:.7">to ${j.time_end||''}</span><br>
+        <span style="font-size:.63rem;background:rgba(107,63,160,.12);color:var(--pur);padding:1px 5px;border-radius:4px">M${j.machine_slot||1}</span>
+      </div>
+      <div class="sched-info">
+        <h4>${j.client_name||'Client TBD'}</h4>
         <p>📍 ${j.client_address||'—'}<br>📞 ${j.client_phone||'—'}<br>🧹 ${j.service_type||'Window Cleaning'}</p>
-        <span class="sched-rep">Booked by ${j.profiles?.full_name||'Unknown'}</span>
-      </div></div>`).join('')}`;
+        <span class="sched-rep">👤 ${j.profiles?.full_name||'Unknown'}</span>
+      </div>
+    </div>`).join('');
+
+  G('sched-content').innerHTML = switcherHtml + `
+    <div class="sched-hd">
+      <div class="sched-hd-title">📅 ${lbl}</div>
+      <div class="sched-hd-sub">Window Warriors — ${jobs.length} job${jobs.length!==1?'s':''} scheduled</div>
+    </div>
+    ${rows}`;
+}
+
+function switchSchedDate(d){
+  schedDate = d;
+  loadSchedule();
 }
 
 async function copySchedule(){
-  const tom=tomorrow();
-  const lbl=new Date(tom+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',tom);
+  const targetDate=schedDate||tomorrow();
+  const lbl=new Date(targetDate+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',targetDate);
   const jobs=bks||[];
-  if(!jobs.length){toast('No jobs for tomorrow');return}
+  if(!jobs.length){toast('No jobs for this day');return}
   const slotOrd=ALL_SLOTS.reduce((a,t,i)=>{a[t]=i;return a},{});
   jobs.sort((a,b)=>timeToMins(a.time_start||'8:00 AM')-timeToMins(b.time_start||'8:00 AM'));
   let txt=`⚔️ WINDOW WARRIORS — SCHEDULE\n📅 ${lbl}\n${'─'.repeat(34)}\n\n`;
@@ -1311,9 +1404,9 @@ async function copySchedule(){
 }
 
 async function shareSchedule(){
-  const tom=tomorrow();
-  const lbl=new Date(tom+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',tom);
+  const targetDate=schedDate||tomorrow();
+  const lbl=new Date(targetDate+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',targetDate);
   const jobs=bks||[];
   const slotOrd=ALL_SLOTS.reduce((a,t,i)=>{a[t]=i;return a},{});
   jobs.sort((a,b)=>timeToMins(a.time_start||'8:00 AM')-timeToMins(b.time_start||'8:00 AM'));
