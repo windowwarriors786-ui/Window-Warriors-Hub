@@ -6,292 +6,283 @@
 <title>Warriors Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --gold:#D4AF37;--gold-l:#F5D060;--gold-d:#8B6914;
   --pur:#6B3FA0;--pur-d:#3D1F6E;--pur-l:#9B6FD0;--pur-m:#4A2A7A;
-  --white:#fff;--off:#F8F5FF;--light:#F0ECF8;
-  --text:#1A1030;--muted:#6B7280;--border:rgba(107,63,160,0.15);
-  --green:#22C55E;--red:#EF4444;--yellow:#F59E0B;
-  --radius:12px;--shadow:0 4px 20px rgba(107,63,160,0.1);
+  --off:#F8F5FF;--light:#F0ECF8;--text:#1A1030;--muted:#6B7280;
+  --border:rgba(107,63,160,0.15);--green:#22C55E;--red:#EF4444;--yellow:#F59E0B;
+  --radius:12px;--shadow:0 4px 20px rgba(107,63,160,0.08);
 }
 html,body{height:100%;font-family:'Inter',sans-serif;background:var(--off);color:var(--text);overflow-x:hidden}
-
-/* ────────────────── UTILS ────────────────── */
 .hide{display:none!important}
-.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-8{gap:8px}.gap-12{gap:12px}.w-full{width:100%}
-.text-center{text-align:center}.text-muted{color:var(--muted)}.text-sm{font-size:.82rem}.text-xs{font-size:.72rem}
-.font-bold{font-weight:700}.font-black{font-weight:900}
-.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}.mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}.mb-16{margin-bottom:16px}
-.p-16{padding:16px}.rounded{border-radius:var(--radius)}
 
-/* ────────────────── TOAST ────────────────── */
-#toast{position:fixed;top:68px;left:50%;transform:translateX(-50%);z-index:9999;
-  background:var(--pur-d);color:#fff;padding:11px 22px;border-radius:30px;
-  font-size:.84rem;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.25);
-  opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap}
+/* TOAST */
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:9999;
+  background:var(--pur-d);color:#fff;padding:10px 22px;border-radius:30px;
+  font-size:.83rem;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.25);
+  opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap;max-width:92vw;text-align:center}
 #toast.on{opacity:1}
 
-/* ────────────────── AUTH ────────────────── */
+/* AUTH */
 #auth{min-height:100vh;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(150deg,var(--pur-d) 0%,var(--pur) 55%,#5C2E8A 100%);padding:20px}
-.auth-box{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:400px;
+.auth-box{background:#fff;border-radius:20px;padding:34px 28px;width:100%;max-width:400px;
   box-shadow:0 32px 80px rgba(0,0,0,.3)}
-.auth-brand{text-align:center;margin-bottom:24px}
-.auth-icon{width:72px;height:72px;border-radius:50%;
-  background:linear-gradient(135deg,var(--pur-d),var(--pur));
-  margin:0 auto 12px;display:flex;align-items:center;justify-content:center;
-  font-size:2rem;border:3px solid var(--gold)}
+.auth-icon{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--pur-d),var(--pur));
+  margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;border:3px solid var(--gold)}
 .auth-box h1{font-family:'Rubik',sans-serif;font-size:1.5rem;font-weight:900;color:var(--pur-d);text-align:center}
-.auth-box p{font-size:.83rem;color:var(--muted);text-align:center;margin-top:4px}
-
-/* ────────────────── FORM ELEMENTS ────────────────── */
-.field{margin-bottom:14px}
-.field label{display:block;font-size:.74rem;font-weight:700;color:var(--pur-d);
-  letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
-.inp{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:9px;
-  font-family:'Inter',sans-serif;font-size:.88rem;color:var(--text);
-  background:var(--off);outline:none;transition:border-color .2s,box-shadow .2s}
-.inp:focus{border-color:var(--pur);box-shadow:0 0 0 3px rgba(107,63,160,.08)}
-select.inp{cursor:pointer}
-textarea.inp{resize:vertical;min-height:80px}
-
-/* ────────────────── BUTTONS ────────────────── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:11px 18px;border:none;border-radius:9px;cursor:pointer;
-  font-family:'Rubik',sans-serif;font-size:.84rem;font-weight:700;
-  transition:opacity .15s,transform .1s;text-decoration:none}
-.btn:hover{opacity:.88;transform:translateY(-1px)}
-.btn:active{transform:translateY(0)}
-.btn-primary{background:linear-gradient(135deg,var(--pur-d),var(--pur));color:#fff;
-  box-shadow:0 4px 16px rgba(107,63,160,.35);width:100%}
-.btn-gold{background:linear-gradient(135deg,var(--gold-d),var(--gold));color:var(--pur-d);
-  box-shadow:0 4px 16px rgba(212,175,55,.35);width:100%}
-.btn-outline{background:transparent;border:1.5px solid var(--pur);color:var(--pur)}
-.btn-danger{background:var(--red);color:#fff}
-.btn-success{background:var(--green);color:#fff}
-.btn-sm{padding:7px 13px;font-size:.75rem;width:auto}
-.btn-xs{padding:5px 10px;font-size:.7rem;width:auto}
-
-/* ────────────────── ALERTS ────────────────── */
-.alert{padding:10px 14px;border-radius:8px;font-size:.82rem;margin-bottom:12px}
+.auth-sub{font-size:.82rem;color:var(--muted);text-align:center;margin-top:4px;margin-bottom:22px}
+.alert{padding:10px 13px;border-radius:8px;font-size:.82rem;margin-bottom:12px}
 .alert-err{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
 .alert-ok{background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0}
 
-/* ────────────────── APP SHELL ────────────────── */
+/* FORM */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:.73rem;font-weight:700;color:var(--pur-d);
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
+.inp{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;
+  font-family:'Inter',sans-serif;font-size:.88rem;color:var(--text);
+  background:var(--off);outline:none;transition:border-color .2s}
+.inp:focus{border-color:var(--pur);box-shadow:0 0 0 3px rgba(107,63,160,.08)}
+select.inp{cursor:pointer}
+textarea.inp{resize:vertical;min-height:72px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:11px 16px;border:none;border-radius:9px;cursor:pointer;
+  font-family:'Rubik',sans-serif;font-size:.83rem;font-weight:700;
+  transition:opacity .15s,transform .1s}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(135deg,var(--pur-d),var(--pur));color:#fff;
+  box-shadow:0 4px 16px rgba(107,63,160,.3);width:100%}
+.btn-gold{background:linear-gradient(135deg,var(--gold-d),var(--gold));color:var(--pur-d);
+  box-shadow:0 4px 16px rgba(212,175,55,.3);width:100%}
+.btn-danger{background:var(--red);color:#fff}
+.btn-success{background:var(--green);color:#fff}
+.btn-ghost{background:rgba(107,63,160,.08);color:var(--pur);border:none}
+.btn-sm{padding:7px 12px;font-size:.75rem;width:auto}
+.btn-xs{padding:5px 9px;font-size:.7rem;width:auto}
+
+/* APP */
 #app{display:none;flex-direction:column;min-height:100vh}
 
-/* TOP BAR */
-.topbar{position:sticky;top:0;z-index:100;height:58px;
-  background:var(--pur-d);display:flex;align-items:center;
-  justify-content:space-between;padding:0 16px;
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;height:56px;background:var(--pur-d);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;
   box-shadow:0 2px 16px rgba(0,0,0,.2)}
-.topbar-brand{display:flex;align-items:center;gap:10px;
-  font-family:'Rubik',sans-serif;font-weight:800;font-size:.95rem;color:var(--gold-l)}
-.topbar-brand .icon{width:34px;height:34px;border-radius:50%;
-  background:linear-gradient(135deg,var(--pur-m),var(--pur));
-  display:flex;align-items:center;justify-content:center;font-size:1rem;
-  border:2px solid var(--gold)}
-.topbar-right{display:flex;align-items:center;gap:8px}
-.chip{padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.04em}
-.chip-manager{background:var(--gold);color:var(--pur-d)}
+.tb-brand{display:flex;align-items:center;gap:9px;font-family:'Rubik',sans-serif;
+  font-weight:800;font-size:.93rem;color:var(--gold-l)}
+.tb-icon{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--pur-m),var(--pur));
+  display:flex;align-items:center;justify-content:center;font-size:.95rem;border:2px solid var(--gold)}
+.tb-right{display:flex;align-items:center;gap:7px}
+.chip{padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:700;letter-spacing:.04em}
+.chip-mgr{background:var(--gold);color:var(--pur-d)}
 .chip-rep{background:rgba(155,111,208,.25);color:var(--gold-l)}
-.chip-name{background:rgba(255,255,255,.12);color:#fff;font-size:.72rem}
-.btn-signout{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);
-  padding:5px 12px;border-radius:8px;cursor:pointer;font-size:.72rem;font-weight:600;
-  transition:background .2s}
-.btn-signout:hover{background:rgba(255,255,255,.2)}
+.chip-name{background:rgba(255,255,255,.12);color:#fff;font-size:.7rem}
+.btn-so{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);
+  padding:5px 11px;border-radius:7px;cursor:pointer;font-size:.7rem;font-weight:600}
+.btn-so:hover{background:rgba(255,255,255,.2)}
 
 /* BOTTOM NAV */
-.bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:100;
-  background:#fff;border-top:1px solid var(--border);
-  display:flex;box-shadow:0 -4px 20px rgba(0,0,0,.07)}
-.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:9px 4px;cursor:pointer;
-  color:var(--muted);gap:3px;transition:color .2s;border:none;background:none}
-.bnav-item.on{color:var(--pur)}
-.bnav-item svg{width:21px;height:21px}
-.bnav-label{font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;
+  border-top:1px solid var(--border);display:flex;box-shadow:0 -4px 20px rgba(0,0,0,.07)}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:8px 2px;cursor:pointer;color:var(--muted);gap:2px;transition:color .2s;border:none;background:none}
+.bn-item.on{color:var(--pur)}
+.bn-item svg{width:20px;height:20px}
+.bn-lbl{font-size:.57rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 
-/* SCROLL AREA */
-.scroll-area{flex:1;overflow-y:auto;padding:16px 16px 80px;max-width:680px;margin:0 auto;width:100%}
+/* SCROLL */
+.scroll{flex:1;overflow-y:auto;padding:14px 14px 82px;max-width:680px;margin:0 auto;width:100%}
 
-/* ────────────────── PAGES ────────────────── */
-.page{display:none}
-.page.on{display:block}
-.page-title{font-family:'Rubik',sans-serif;font-size:1.35rem;font-weight:900;
-  color:var(--pur-d);margin-bottom:2px}
-.page-sub{font-size:.82rem;color:var(--muted);margin-bottom:18px}
+/* PAGES */
+.page{display:none}.page.on{display:block}
+.pg-title{font-family:'Rubik',sans-serif;font-size:1.3rem;font-weight:900;color:var(--pur-d);margin-bottom:2px}
+.pg-sub{font-size:.8rem;color:var(--muted);margin-bottom:16px}
 
-/* ────────────────── CARDS ────────────────── */
-.card{background:#fff;border-radius:var(--radius);padding:18px;
-  margin-bottom:14px;border:1px solid var(--border);
-  box-shadow:var(--shadow)}
-.card-title{font-family:'Rubik',sans-serif;font-size:.95rem;font-weight:800;
-  color:var(--pur-d);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+/* CARDS */
+.card{background:#fff;border-radius:var(--radius);padding:16px;margin-bottom:12px;
+  border:1px solid var(--border);box-shadow:var(--shadow)}
+.card-title{font-family:'Rubik',sans-serif;font-size:.93rem;font-weight:800;
+  color:var(--pur-d);margin-bottom:12px;display:flex;align-items:center;gap:7px}
 
-/* ────────────────── STAT GRID ────────────────── */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.stat-card{background:#fff;border-radius:var(--radius);padding:16px 14px;
-  border:1px solid var(--border);text-align:center;box-shadow:var(--shadow)}
-.stat-card.s-pur{background:linear-gradient(135deg,var(--pur-d),var(--pur));border:none;color:#fff}
-.stat-card.s-gold{background:linear-gradient(135deg,var(--gold-d),var(--gold));border:none;color:var(--pur-d)}
-.stat-num{font-family:'Rubik',sans-serif;font-size:1.9rem;font-weight:900;line-height:1}
-.stat-lbl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.8;margin-top:4px}
+/* STATS */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.sc{background:#fff;border-radius:var(--radius);padding:14px 12px;border:1px solid var(--border);
+  text-align:center;box-shadow:var(--shadow)}
+.sc.s-pur{background:linear-gradient(135deg,var(--pur-d),var(--pur));border:none;color:#fff}
+.sc.s-gold{background:linear-gradient(135deg,var(--gold-d),var(--gold));border:none;color:var(--pur-d)}
+.sn{font-family:'Rubik',sans-serif;font-size:1.8rem;font-weight:900;line-height:1}
+.sl{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.8;margin-top:3px}
 
-/* ────────────────── CALENDAR ────────────────── */
-.cal-wrap{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:14px}
-.cal-head{display:flex;align-items:center;justify-content:space-between;
-  padding:14px 16px;border-bottom:1px solid var(--border)}
-.cal-head h3{font-family:'Rubik',sans-serif;font-weight:700;font-size:.95rem;color:var(--pur-d)}
-.cal-btn{background:none;border:none;cursor:pointer;color:var(--pur);
-  font-size:1.3rem;padding:4px 10px;border-radius:7px;transition:background .15s}
-.cal-btn:hover{background:var(--off)}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:10px 8px 14px}
-.cal-dn{text-align:center;font-size:.62rem;font-weight:700;color:var(--muted);
-  text-transform:uppercase;padding:6px 0}
-.cal-d{text-align:center;padding:7px 3px;border-radius:8px;cursor:pointer;
-  font-size:.8rem;font-weight:500;transition:all .15s;margin:1px;position:relative}
-.cal-d:hover:not(.cal-empty):not(.cal-past){background:var(--off)}
-.cal-d.cal-today{background:var(--pur);color:#fff;font-weight:700}
-.cal-d.cal-sel{background:var(--gold);color:var(--pur-d);font-weight:700}
-.cal-d.cal-has::after{content:'';position:absolute;bottom:2px;left:50%;
-  transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--pur-l)}
-.cal-d.cal-today.cal-has::after{background:var(--gold-l)}
-.cal-d.cal-past{color:#D1D5DB;cursor:default}
-.cal-d.cal-empty{cursor:default}
+/* CALENDAR */
+.cal{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:12px}
+.cal-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+.cal-hd h3{font-family:'Rubik',sans-serif;font-weight:700;font-size:.92rem;color:var(--pur-d)}
+.cal-nb{background:none;border:none;cursor:pointer;color:var(--pur);font-size:1.3rem;padding:3px 9px;border-radius:7px}
+.cal-nb:hover{background:var(--off)}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 6px 12px}
+.cal-dn{text-align:center;font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;padding:5px 0}
+.cal-d{text-align:center;padding:7px 2px;border-radius:8px;cursor:pointer;
+  font-size:.78rem;font-weight:500;transition:all .15s;margin:1px}
+.cal-d:hover:not(.cd-empty):not(.cd-past){background:var(--off)}
+.cal-d.cd-today{background:var(--pur);color:#fff;font-weight:700}
+.cal-d.cd-sel{background:var(--gold);color:var(--pur-d);font-weight:700}
+.cal-d.cd-past{color:#D1D5DB;cursor:default}
+.cal-d.cd-empty{cursor:default}
 
-/* ────────────────── TIME SLOTS ────────────────── */
-.slots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
-.slot{padding:10px 6px;border-radius:8px;text-align:center;cursor:pointer;
-  border:1.5px solid var(--border);font-size:.76rem;font-weight:600;
-  transition:all .15s;background:#fff;color:var(--text)}
+/* SLOTS */
+.slots-g{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
+.slot{padding:9px 4px;border-radius:8px;text-align:center;cursor:pointer;
+  border:1.5px solid var(--border);font-size:.72rem;font-weight:600;
+  transition:all .15s;background:#fff;color:var(--text);line-height:1.3}
 .slot.s-open:hover{border-color:var(--pur);background:var(--off)}
-.slot.s-taken{background:var(--light);color:#C4B5D0;cursor:not-allowed;border-color:transparent;font-size:.7rem}
+.slot.s-taken{background:var(--light);color:#C4B5D0;cursor:not-allowed;border-color:transparent}
 .slot.s-mine{background:var(--gold);color:var(--pur-d);border-color:var(--gold-d)}
 .slot.s-sel{background:var(--pur);color:#fff;border-color:var(--pur-d)}
 
-/* ────────────────── SALE ROW ────────────────── */
+/* SALE ROW */
 .sale-row{display:flex;align-items:flex-start;justify-content:space-between;
-  padding:13px;background:var(--off);border-radius:10px;margin-bottom:8px;
-  border:1px solid var(--border)}
-.sale-row h4{font-family:'Rubik',sans-serif;font-size:.88rem;font-weight:700}
-.sale-row p{font-size:.74rem;color:var(--muted);margin-top:2px;line-height:1.5}
-.sale-price{font-family:'Rubik',sans-serif;font-size:1rem;font-weight:900;color:var(--pur)}
-.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  padding:12px;background:var(--off);border-radius:10px;margin-bottom:7px;border:1px solid var(--border)}
+.sale-row h4{font-family:'Rubik',sans-serif;font-size:.86rem;font-weight:700}
+.sale-row p{font-size:.73rem;color:var(--muted);margin-top:2px;line-height:1.55}
+.sale-price{font-family:'Rubik',sans-serif;font-size:.98rem;font-weight:900;color:var(--pur)}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.63rem;font-weight:700;text-transform:uppercase}
 .b-green{background:#DCFCE7;color:#15803D}
-.b-yellow{background:#FEF3C7;color:#92400E}
-.b-red{background:#FEE2E2;color:#991B1B}
-.b-pur{background:rgba(107,63,160,.1);color:var(--pur)}
 
-/* ────────────────── LEADERBOARD ────────────────── */
-.lb-row{display:flex;align-items:center;gap:12px;padding:13px;
-  border-radius:10px;margin-bottom:8px;background:var(--off);border:1px solid var(--border)}
+/* LEADERBOARD */
+.lb-row{display:flex;align-items:center;gap:11px;padding:12px;
+  border-radius:10px;margin-bottom:7px;background:var(--off);border:1px solid var(--border)}
 .lb-row.lb-me{border-color:var(--pur);background:rgba(107,63,160,.04)}
-.rank-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:.88rem;font-weight:900;flex-shrink:0}
-.r1{background:var(--gold);color:var(--pur-d)}
-.r2{background:#C0C0C0;color:#fff}
-.r3{background:#CD7F32;color:#fff}
-.r-other{background:var(--light);color:var(--muted);font-size:.8rem}
+.rb{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:.85rem;font-weight:900;flex-shrink:0}
+.r1{background:var(--gold);color:var(--pur-d)}.r2{background:#C0C0C0;color:#fff}
+.r3{background:#CD7F32;color:#fff}.ro{background:var(--light);color:var(--muted);font-size:.78rem}
 .lb-info{flex:1;min-width:0}
-.lb-name{font-family:'Rubik',sans-serif;font-weight:700;font-size:.88rem;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lb-detail{font-size:.73rem;color:var(--muted);margin-top:2px}
-.progress{height:5px;background:var(--light);border-radius:3px;margin-top:6px;overflow:hidden}
-.progress-bar{height:100%;background:linear-gradient(90deg,var(--pur),var(--pur-l));
-  border-radius:3px;transition:width .6s ease}
-.lb-rev{font-family:'Rubik',sans-serif;font-weight:900;font-size:.95rem;color:var(--pur);flex-shrink:0}
+.lb-name{font-family:'Rubik',sans-serif;font-weight:700;font-size:.86rem}
+.lb-det{font-size:.72rem;color:var(--muted);margin-top:1px}
+.prog{height:5px;background:var(--light);border-radius:3px;margin-top:5px;overflow:hidden}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--pur),var(--pur-l));border-radius:3px;transition:width .5s}
+.lb-rev{font-family:'Rubik',sans-serif;font-weight:900;font-size:.93rem;color:var(--pur);flex-shrink:0}
 
-/* ────────────────── TABS ────────────────── */
-.tabs{display:flex;background:var(--light);border-radius:10px;padding:4px;margin-bottom:16px}
-.tab{flex:1;text-align:center;padding:8px 6px;border-radius:8px;font-size:.76rem;
-  font-weight:700;cursor:pointer;transition:all .2s;color:var(--muted);
-  font-family:'Rubik',sans-serif}
+/* TABS */
+.tabs{display:flex;background:var(--light);border-radius:10px;padding:3px;margin-bottom:14px}
+.tab{flex:1;text-align:center;padding:8px 4px;border-radius:8px;font-size:.74rem;
+  font-weight:700;cursor:pointer;transition:all .2s;color:var(--muted);font-family:'Rubik',sans-serif}
 .tab.on{background:#fff;color:var(--pur);box-shadow:0 2px 8px rgba(0,0,0,.08)}
 
-/* ────────────────── MAP ────────────────── */
-#map-el{height:360px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
-.map-toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center}
-.mark-btn{padding:7px 12px;border-radius:8px;border:2px solid;cursor:pointer;
-  font-size:.73rem;font-weight:700;transition:all .2s;background:transparent}
-.mark-btn.mb-knocked{border-color:var(--pur);color:var(--pur)}
-.mark-btn.mb-interested{border-color:var(--green);color:#15803D}
-.mark-btn.mb-noanswer{border-color:var(--yellow);color:#92400E}
-.mark-btn.mb-notint{border-color:var(--red);color:#991B1B}
-.mark-btn.active-mark{filter:brightness(.92);transform:scale(1.03);font-weight:900}
-.map-btn-active-knocked{background:rgba(107,63,160,.12)}
-.map-btn-active-interested{background:rgba(34,197,94,.12)}
-.map-btn-active-noanswer{background:rgba(245,158,11,.12)}
-.map-btn-active-notint{background:rgba(239,68,68,.12)}
-.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
-.leg-item{display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600}
-.leg-dot{width:10px;height:10px;border-radius:50%}
+/* MAP */
+#map-el{height:380px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+#zone-map-el{height:420px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.mapboxgl-canvas{border-radius:10px}
+.map-tb{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;align-items:center}
+.mk-btn{padding:7px 11px;border-radius:8px;border:2px solid;cursor:pointer;
+  font-size:.72rem;font-weight:700;transition:all .2s;background:transparent;font-family:'Rubik',sans-serif}
+.mk-knocked{border-color:var(--pur);color:var(--pur)}
+.mk-interested{border-color:var(--green);color:#15803D}
+.mk-noanswer{border-color:var(--yellow);color:#92400E}
+.mk-notint{border-color:var(--red);color:#991B1B}
+.mk-btn.mk-active{font-weight:900;transform:scale(1.05)}
+.mk-knocked.mk-active{background:rgba(107,63,160,.15)}
+.mk-interested.mk-active{background:rgba(34,197,94,.15)}
+.mk-noanswer.mk-active{background:rgba(245,158,11,.15)}
+.mk-notint.mk-active{background:rgba(239,68,68,.15)}
+.legend{display:flex;flex-wrap:wrap;gap:9px;margin-top:9px}
+.leg{display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
-/* ────────────────── WINNER BANNER ────────────────── */
+/* WINNER */
 .winner-banner{background:linear-gradient(135deg,var(--pur-d),var(--pur));
-  border-radius:var(--radius);padding:20px;text-align:center;color:#fff;margin-bottom:14px}
-.winner-trophy{font-size:2.8rem;margin-bottom:8px}
-.winner-name{font-family:'Rubik',sans-serif;font-weight:900;font-size:1.2rem}
-.winner-stats{font-size:.8rem;opacity:.8;margin-top:4px}
-.winner-crown{display:inline-block;background:rgba(212,175,55,.2);
-  color:var(--gold-l);padding:5px 14px;border-radius:20px;
-  font-size:.72rem;font-weight:800;margin-top:10px;letter-spacing:.06em}
+  border-radius:var(--radius);padding:18px;text-align:center;color:#fff;margin-bottom:12px}
+.winner-trophy{font-size:2.6rem;margin-bottom:6px}
+.winner-name{font-family:'Rubik',sans-serif;font-weight:900;font-size:1.15rem}
+.winner-stats{font-size:.78rem;opacity:.8;margin-top:3px}
+.winner-crown{display:inline-block;background:rgba(212,175,55,.2);color:var(--gold-l);
+  padding:4px 13px;border-radius:20px;font-size:.7rem;font-weight:800;margin-top:8px;letter-spacing:.06em}
 
-/* ────────────────── EMPTY STATE ────────────────── */
-.empty{text-align:center;padding:36px 20px;color:var(--muted)}
-.empty svg{width:44px;height:44px;margin:0 auto 10px;opacity:.3}
-.empty p{font-size:.85rem}
+/* EMPTY */
+.empty{text-align:center;padding:32px 16px;color:var(--muted)}
+.empty svg{width:40px;height:40px;margin:0 auto 10px;opacity:.3}
+.empty p{font-size:.83rem}
 
-/* ────────────────── MODAL ────────────────── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);
-  z-index:200;display:none;align-items:flex-end;justify-content:center;padding:0}
-.modal-bg.on{display:flex}
-.modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px;
-  width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
-.modal h2{font-family:'Rubik',sans-serif;font-size:1.05rem;font-weight:800;
-  color:var(--pur-d);margin-bottom:18px}
-.modal-actions{display:flex;gap:10px;margin-top:18px}
-.modal-actions .btn{flex:1}
+/* FORM GRID */
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+@media(max-width:380px){.f2{grid-template-columns:1fr}}
 
-/* ────────────────── FORM GRID ────────────────── */
-.form-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:400px){.form-2{grid-template-columns:1fr}}
+/* ZONE ASSIGNMENT */
+.zone-row{display:flex;align-items:center;gap:10px;padding:12px;
+  background:var(--off);border-radius:10px;margin-bottom:7px;border:1px solid var(--border)}
+.zone-color{width:18px;height:18px;border-radius:50%;flex-shrink:0;border:2px solid rgba(0,0,0,.1)}
+.zone-info{flex:1}
+.zone-name{font-family:'Rubik',sans-serif;font-weight:700;font-size:.86rem}
+.zone-rep{font-size:.73rem;color:var(--muted);margin-top:2px}
+.zone-actions{display:flex;gap:6px}
 
-/* ────────────────── SCROLLBAR ────────────────── */
+/* REP AREA BADGE */
+.rep-area-badge{background:linear-gradient(135deg,var(--pur-d),var(--pur));
+  color:#fff;border-radius:10px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
+.rep-area-color{width:32px;height:32px;border-radius:50%;border:3px solid rgba(255,255,255,.4);flex-shrink:0}
+.rep-area-info{}
+.rep-area-label{font-size:.72rem;opacity:.7;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.rep-area-name{font-family:'Rubik',sans-serif;font-weight:800;font-size:1rem;margin-top:2px}
+
+/* SLOT MANAGER */
+.slot-mgr-g{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
+.slot-toggle{padding:9px 4px;border-radius:8px;text-align:center;cursor:pointer;
+  border:1.5px solid var(--border);font-size:.7rem;font-weight:600;
+  transition:all .15s;background:var(--off);color:var(--muted);line-height:1.4}
+.slot-toggle.st-on{background:var(--pur);color:#fff;border-color:var(--pur-d)}
+.slot-toggle.st-2{background:var(--gold);color:var(--pur-d);border-color:var(--gold-d)}
+
+/* SCHED */
+.sched-hd{background:linear-gradient(135deg,var(--pur-d),var(--pur));
+  color:#fff;border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.sched-hd-title{font-family:'Rubik',sans-serif;font-weight:900;font-size:1rem}
+.sched-hd-sub{font-size:.75rem;opacity:.8;margin-top:2px}
+.sched-row{display:flex;align-items:flex-start;gap:12px;padding:12px;
+  background:#fff;border-radius:10px;margin-bottom:7px;border:1px solid var(--border)}
+.sched-time{font-family:'Rubik',sans-serif;font-weight:800;font-size:.82rem;
+  color:var(--pur);min-width:64px;flex-shrink:0;padding-top:1px}
+.sched-info h4{font-family:'Rubik',sans-serif;font-size:.86rem;font-weight:700}
+.sched-info p{font-size:.73rem;color:var(--muted);margin-top:2px;line-height:1.55}
+.sched-rep{display:inline-block;background:rgba(107,63,160,.1);color:var(--pur);
+  padding:2px 9px;border-radius:20px;font-size:.67rem;font-weight:700;margin-top:5px}
+.share-btns{display:flex;gap:9px;margin-bottom:14px}
+
+/* REP COLORS */
+.rep-colors{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.color-opt{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s}
+.color-opt.selected{border-color:var(--text);transform:scale(1.15)}
+
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--pur-l);border-radius:2px}
 </style>
 </head>
 <body>
-
 <div id="toast"></div>
 
-<!-- ══════════════ AUTH ══════════════ -->
+<!-- ══════════ AUTH ══════════ -->
 <div id="auth">
   <div class="auth-box">
-    <div class="auth-brand">
-      <div class="auth-icon">⚔️</div>
-      <h1>Warriors Hub</h1>
-      <p>Window Warriors Team App</p>
-    </div>
-
+    <div class="auth-icon">⚔️</div>
+    <h1>Warriors Hub</h1>
+    <p class="auth-sub">Window Warriors Team App</p>
     <div id="auth-err" class="alert alert-err hide"></div>
     <div id="auth-ok" class="alert alert-ok hide"></div>
-
-    <!-- LOGIN -->
     <div id="frm-login">
       <div class="field"><label>Email</label><input class="inp" type="email" id="l-email" placeholder="you@email.com"/></div>
       <div class="field"><label>Password</label><input class="inp" type="password" id="l-pass" placeholder="••••••••"/></div>
       <button class="btn btn-primary" onclick="doLogin()">Sign In →</button>
-      <p class="text-center text-sm mt-12 text-muted">No account? <a style="color:var(--pur);cursor:pointer;font-weight:700" onclick="toReg()">Register here</a></p>
+      <p style="text-align:center;font-size:.82rem;color:var(--muted);margin-top:12px">No account? <a style="color:var(--pur);cursor:pointer;font-weight:700" onclick="toReg()">Register</a></p>
     </div>
-
-    <!-- REGISTER -->
     <div id="frm-reg" class="hide">
       <div class="field"><label>Full Name</label><input class="inp" type="text" id="r-name" placeholder="Your full name"/></div>
       <div class="field"><label>Email</label><input class="inp" type="email" id="r-email" placeholder="you@email.com"/></div>
@@ -303,105 +294,84 @@ textarea.inp{resize:vertical;min-height:80px}
           <option value="manager">Manager</option>
         </select>
       </div>
-      <div class="field hide" id="mgr-code-field">
-        <label>Manager Access Code</label>
-        <input class="inp" type="password" id="r-code" placeholder="Enter code given by owner"/>
+      <div class="field hide" id="mgr-field">
+        <label>Manager Code</label>
+        <input class="inp" type="password" id="r-code" placeholder="Enter manager access code"/>
       </div>
       <button class="btn btn-primary" onclick="doRegister()">Create Account →</button>
-      <p class="text-center text-sm mt-12 text-muted">Have an account? <a style="color:var(--pur);cursor:pointer;font-weight:700" onclick="toLogin()">Sign in</a></p>
+      <p style="text-align:center;font-size:.82rem;color:var(--muted);margin-top:12px">Have account? <a style="color:var(--pur);cursor:pointer;font-weight:700" onclick="toLogin()">Sign in</a></p>
     </div>
   </div>
 </div>
 
-<!-- ══════════════ APP ══════════════ -->
+<!-- ══════════ APP ══════════ -->
 <div id="app">
-
-  <!-- TOP BAR -->
   <header class="topbar">
-    <div class="topbar-brand">
-      <div class="icon">⚔️</div>
-      Warriors Hub
-    </div>
-    <div class="topbar-right">
+    <div class="tb-brand"><div class="tb-icon">⚔️</div>Warriors Hub</div>
+    <div class="tb-right">
       <span class="chip chip-name" id="tb-name"></span>
       <span class="chip" id="tb-role"></span>
-      <button class="btn-signout" onclick="doLogout()">Sign Out</button>
+      <button class="btn-so" onclick="doLogout()">Sign Out</button>
     </div>
   </header>
 
-  <!-- PAGES -->
-  <div class="scroll-area">
+  <div class="scroll">
 
-    <!-- ── DASHBOARD ── -->
+    <!-- DASHBOARD -->
     <div class="page on" id="pg-dash">
-      <div class="page-title" id="dash-hi">Hey there! 👋</div>
-      <div class="page-sub" id="dash-date"></div>
-
-      <!-- REP VIEW -->
+      <div class="pg-title" id="dash-hi">Hey! 👋</div>
+      <div class="pg-sub" id="dash-date"></div>
       <div id="v-rep" class="hide">
+        <div id="rep-area-wrap"></div>
         <div class="stat-grid">
-          <div class="stat-card s-pur"><div class="stat-num" id="d-my-sales">0</div><div class="stat-lbl">My Sales</div></div>
-          <div class="stat-card s-gold"><div class="stat-num" id="d-my-rev">$0</div><div class="stat-lbl">My Revenue</div></div>
-          <div class="stat-card"><div class="stat-num" id="d-my-rank" style="color:var(--pur)">#-</div><div class="stat-lbl">My Rank</div></div>
-          <div class="stat-card"><div class="stat-num" id="d-my-jobs" style="color:var(--pur)">0</div><div class="stat-lbl">Upcoming Jobs</div></div>
+          <div class="sc s-pur"><div class="sn" id="d-my-sales">0</div><div class="sl">My Sales</div></div>
+          <div class="sc s-gold"><div class="sn" id="d-my-rev">$0</div><div class="sl">My Revenue</div></div>
+          <div class="sc"><div class="sn" id="d-my-rank" style="color:var(--pur)">#-</div><div class="sl">My Rank</div></div>
+          <div class="sc"><div class="sn" id="d-my-jobs" style="color:var(--pur)">0</div><div class="sl">Upcoming Jobs</div></div>
         </div>
-        <div class="card">
-          <div class="card-title">🏆 This Week's Leader</div>
-          <div id="d-week-leader"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">📋 My Recent Sales</div>
-          <div id="d-rep-recent"></div>
-        </div>
+        <div class="card"><div class="card-title">🏆 This Week's Leader</div><div id="d-week-leader"></div></div>
+        <div class="card"><div class="card-title">📋 My Recent Sales</div><div id="d-rep-recent"></div></div>
       </div>
-
-      <!-- MANAGER VIEW -->
       <div id="v-mgr" class="hide">
         <div class="stat-grid">
-          <div class="stat-card s-pur"><div class="stat-num" id="d-tot-sales">0</div><div class="stat-lbl">Total Sales</div></div>
-          <div class="stat-card s-gold"><div class="stat-num" id="d-tot-rev">$0</div><div class="stat-lbl">Total Revenue</div></div>
-          <div class="stat-card"><div class="stat-num" id="d-tot-reps" style="color:var(--pur)">0</div><div class="stat-lbl">Active Reps</div></div>
-          <div class="stat-card"><div class="stat-num" id="d-tot-jobs" style="color:var(--pur)">0</div><div class="stat-lbl">Jobs Booked</div></div>
+          <div class="sc s-pur"><div class="sn" id="d-tot-sales">0</div><div class="sl">Total Sales</div></div>
+          <div class="sc s-gold"><div class="sn" id="d-tot-rev">$0</div><div class="sl">Total Revenue</div></div>
+          <div class="sc"><div class="sn" id="d-tot-reps" style="color:var(--pur)">0</div><div class="sl">Active Reps</div></div>
+          <div class="sc"><div class="sn" id="d-tot-jobs" style="color:var(--pur)">0</div><div class="sl">Jobs Booked</div></div>
         </div>
         <div id="d-winner-wrap"></div>
-        <div class="card">
-          <div class="card-title">📊 Recent Sales (All Team)</div>
-          <div id="d-mgr-recent"></div>
-        </div>
+        <div class="card"><div class="card-title">📊 Recent Sales</div><div id="d-mgr-recent"></div></div>
       </div>
     </div>
 
-    <!-- ── BOOK A JOB ── -->
+    <!-- BOOK -->
     <div class="page" id="pg-book">
-      <div class="page-title">Book a Job</div>
-      <div class="page-sub">Pick a date and time slot, then enter client details</div>
-
-      <div class="cal-wrap">
-        <div class="cal-head">
-          <button class="cal-btn" onclick="calNav(-1)">‹</button>
+      <div class="pg-title">Book a Job</div>
+      <div class="pg-sub">Pick a date, select a slot, then enter client details</div>
+      <div class="cal">
+        <div class="cal-hd">
+          <button class="cal-nb" onclick="calNav(-1)">‹</button>
           <h3 id="cal-title"></h3>
-          <button class="cal-btn" onclick="calNav(1)">›</button>
+          <button class="cal-nb" onclick="calNav(1)">›</button>
         </div>
-        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-g" id="cal-g"></div>
       </div>
-
       <div class="card hide" id="slots-wrap">
-        <div class="card-title">🕐 Time Slots — <span id="slots-date-lbl" style="color:var(--pur)"></span></div>
-        <p class="text-xs text-muted mb-8">🟡 = Your booking &nbsp; 🔒 = Taken &nbsp; Tap open slot to book</p>
-        <div class="slots-grid" id="slots-grid"></div>
+        <div class="card-title">🕐 Time Slots — <span id="slots-lbl" style="color:var(--pur)"></span></div>
+        <p style="font-size:.72rem;color:var(--muted);margin-bottom:8px">🟡 Your booking &nbsp;🔒 Taken &nbsp;Tap open slot to select</p>
+        <div class="slots-g" id="slots-g"></div>
       </div>
-
-      <div class="card hide" id="booking-form-wrap">
+      <div class="card hide" id="bform-wrap">
         <div class="card-title">📝 Client Details</div>
         <div class="field"><label>Client Name *</label><input class="inp" type="text" id="b-cname" placeholder="Full name"/></div>
-        <div class="form-2">
+        <div class="f2">
           <div class="field"><label>Phone *</label><input class="inp" type="tel" id="b-phone" placeholder="(647) 000-0000"/></div>
           <div class="field"><label>Price ($) *</label><input class="inp" type="number" id="b-price" placeholder="150" min="0"/></div>
         </div>
         <div class="field"><label>Address *</label><input class="inp" type="text" id="b-addr" placeholder="123 Main St, Toronto, ON"/></div>
         <div class="field">
           <label>Service</label>
-          <select class="inp" id="b-service">
+          <select class="inp" id="b-svc">
             <option>Exterior Window Cleaning</option>
             <option>Interior Window Cleaning</option>
             <option>Eavestrough / Gutter Cleaning</option>
@@ -415,10 +385,10 @@ textarea.inp{resize:vertical;min-height:80px}
       </div>
     </div>
 
-    <!-- ── MY SALES ── -->
+    <!-- SALES -->
     <div class="page" id="pg-sales">
-      <div class="page-title" id="sales-page-title">My Sales</div>
-      <div class="page-sub" id="sales-page-sub">Your recorded sales & booked jobs</div>
+      <div class="pg-title" id="sales-pg-title">My Sales</div>
+      <div class="pg-sub" id="sales-pg-sub">Your recorded sales & booked jobs</div>
       <div class="tabs">
         <div class="tab on" onclick="salesTab('upcoming',this)">Upcoming</div>
         <div class="tab" onclick="salesTab('completed',this)">Completed</div>
@@ -427,146 +397,225 @@ textarea.inp{resize:vertical;min-height:80px}
       <div id="sales-list"></div>
     </div>
 
-    <!-- ── LEADERBOARD ── -->
+    <!-- LEADERBOARD -->
     <div class="page" id="pg-lb">
-      <div class="page-title">Leaderboard</div>
-      <div class="page-sub">Who's crushing it 🔥</div>
+      <div class="pg-title">Leaderboard</div>
+      <div class="pg-sub">Who's crushing it 🔥</div>
       <div class="tabs">
         <div class="tab on" onclick="lbTab('week',this)">This Week</div>
         <div class="tab" onclick="lbTab('month',this)">This Month</div>
         <div class="tab" onclick="lbTab('all',this)">All Time</div>
       </div>
       <div id="lb-list"></div>
-      <div id="mgr-all-sales-wrap" class="hide">
-        <div class="card mt-16">
+      <div id="mgr-sales-wrap" class="hide">
+        <div class="card" style="margin-top:14px">
           <div class="card-title">📋 All Team Sales</div>
           <div id="mgr-all-sales"></div>
         </div>
       </div>
     </div>
 
-    <!-- ── MAP ── -->
+    <!-- MAP PAGE -->
     <div class="page" id="pg-map">
-      <div class="page-title">Door Knock Map</div>
-      <div class="page-sub">Tap the map to mark a home you've knocked</div>
-      <div class="card" style="padding:14px">
-        <div class="map-toolbar">
-          <span class="text-xs font-bold" style="color:var(--pur-d)">Mark as:</span>
-          <button class="mark-btn mb-knocked active-mark map-btn-active-knocked" id="mb-knocked" onclick="setMark('knocked')">Knocked</button>
-          <button class="mark-btn mb-interested" id="mb-interested" onclick="setMark('interested')">⭐ Interested</button>
-          <button class="mark-btn mb-noanswer" id="mb-noanswer" onclick="setMark('noanswer')">No Answer</button>
-          <button class="mark-btn mb-notint" id="mb-notint" onclick="setMark('notint')">Not Interested</button>
+      <div class="pg-title">Door Knock Map</div>
+      <div class="pg-sub">Tap the map to mark a home you've knocked</div>
+      <div class="card" style="padding:13px">
+        <div class="map-tb">
+          <span style="font-size:.72rem;font-weight:700;color:var(--pur-d);width:100%;margin-bottom:4px">Mark door as:</span>
+          <button class="mk-btn mk-knocked mk-active" id="mb-knocked" onclick="setMark('knocked',this)">🚪 Knocked</button>
+          <button class="mk-btn mk-interested" id="mb-int" onclick="setMark('interested',this)">⭐ Interested</button>
+          <button class="mk-btn mk-noanswer" id="mb-na" onclick="setMark('noanswer',this)">🔇 No Answer</button>
+          <button class="mk-btn mk-notint" id="mb-ni" onclick="setMark('notint',this)">❌ Not Interested</button>
         </div>
+        <p style="font-size:.72rem;color:var(--muted);margin-bottom:8px">📍 Tap anywhere on the map to drop a pin on a door</p>
         <div id="map-el"></div>
         <div class="legend">
-          <div class="leg-item"><div class="leg-dot" style="background:var(--pur)"></div>Knocked</div>
-          <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Interested</div>
-          <div class="leg-item"><div class="leg-dot" style="background:var(--yellow)"></div>No Answer</div>
-          <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Not Interested</div>
+          <div class="leg"><div class="leg-dot" style="background:#6B3FA0"></div>Knocked</div>
+          <div class="leg"><div class="leg-dot" style="background:#22C55E"></div>Interested</div>
+          <div class="leg"><div class="leg-dot" style="background:#F59E0B"></div>No Answer</div>
+          <div class="leg"><div class="leg-dot" style="background:#EF4444"></div>Not Interested</div>
         </div>
       </div>
       <div class="stat-grid">
-        <div class="stat-card"><div class="stat-num" id="map-total" style="color:var(--pur)">0</div><div class="stat-lbl">Total Knocked</div></div>
-        <div class="stat-card s-gold"><div class="stat-num" id="map-int">0</div><div class="stat-lbl">Interested</div></div>
+        <div class="sc"><div class="sn" id="map-tot" style="color:var(--pur)">0</div><div class="sl">Total Knocked</div></div>
+        <div class="sc s-gold"><div class="sn" id="map-int">0</div><div class="sl">Interested</div></div>
       </div>
     </div>
 
-  </div><!-- scroll-area -->
+    <!-- ZONES PAGE -->
+    <div class="page" id="pg-zones">
+      <div class="pg-title">Territory Zones</div>
+      <div class="pg-sub" id="zones-sub">Draw zones and assign them to reps</div>
+
+      <!-- MANAGER VIEW -->
+      <div id="zones-mgr-view" class="hide">
+        <div class="card" style="padding:13px">
+          <div class="card-title">🗺️ Draw Territories</div>
+          <p style="font-size:.75rem;color:var(--muted);margin-bottom:10px">Use the draw tools on the map to paint a zone, then assign it to a rep below.</p>
+          <div id="zone-map-el"></div>
+        </div>
+
+        <div class="card" id="zone-assign-card" style="display:none">
+          <div class="card-title">✏️ Assign This Zone</div>
+          <div class="field">
+            <label>Zone Name</label>
+            <input class="inp" type="text" id="zone-name-inp" placeholder="e.g. North Mississauga"/>
+          </div>
+          <div class="field">
+            <label>Assign to Rep</label>
+            <select class="inp" id="zone-rep-sel"><option value="">Select a rep...</option></select>
+          </div>
+          <div class="field">
+            <label>Zone Color</label>
+            <div class="rep-colors" id="zone-color-picker"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn btn-gold btn-sm" style="flex:1" onclick="saveZone()">💾 Save Zone</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="cancelZoneDraw()">Cancel</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 Assigned Zones</div>
+          <div id="zones-list"></div>
+        </div>
+      </div>
+
+      <!-- REP VIEW -->
+      <div id="zones-rep-view" class="hide">
+        <div id="rep-zone-info"></div>
+        <div class="card" style="padding:13px">
+          <div class="card-title">🗺️ Your Territory</div>
+          <div id="zone-map-el-rep" style="height:380px;border-radius:10px;overflow:hidden;border:1px solid var(--border)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE PAGE -->
+    <div class="page" id="pg-sched">
+      <div class="pg-title">Tomorrow's Schedule</div>
+      <div class="pg-sub" id="sched-sub"></div>
+      <div class="share-btns">
+        <button class="btn btn-gold btn-sm" style="flex:1" onclick="copySchedule()">📋 Copy</button>
+        <button class="btn btn-primary btn-sm" style="flex:1" onclick="shareSchedule()">📤 Share</button>
+      </div>
+      <div id="sched-content"></div>
+      <div id="slot-mgr-wrap" class="hide">
+        <div class="card">
+          <div class="card-title">⚙️ Manage Time Slots</div>
+          <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px"><strong style="color:var(--gold-d)">Gold = 2 machines</strong> · <strong style="color:var(--pur)">Purple = 1 machine</strong> · Grey = off. Tap to cycle.</p>
+          <div class="slot-mgr-g" id="slot-mgr-g"></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary btn-sm" style="flex:1" onclick="saveSlots()">💾 Save Slots</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="resetSlots()">Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 
   <!-- BOTTOM NAV -->
-  <nav class="bottomnav">
-    <button class="bnav-item on" onclick="goPage('dash',this)">
+  <nav class="bnav">
+    <button class="bn-item on" onclick="goPage('dash',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      <span class="bnav-label">Dashboard</span>
+      <span class="bn-lbl">Dashboard</span>
     </button>
-    <button class="bnav-item" onclick="goPage('book',this)">
+    <button class="bn-item" onclick="goPage('book',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r=".5" fill="currentColor"/><circle cx="12" cy="15" r=".5" fill="currentColor"/><circle cx="16" cy="15" r=".5" fill="currentColor"/></svg>
-      <span class="bnav-label">Book</span>
+      <span class="bn-lbl">Book</span>
     </button>
-    <button class="bnav-item" onclick="goPage('sales',this)">
+    <button class="bn-item" onclick="goPage('sales',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-      <span class="bnav-label">Sales</span>
+      <span class="bn-lbl">Sales</span>
     </button>
-    <button class="bnav-item" onclick="goPage('lb',this)">
+    <button class="bn-item" onclick="goPage('lb',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span class="bnav-label">Rankings</span>
+      <span class="bn-lbl">Rankings</span>
     </button>
-    <button class="bnav-item" onclick="goPage('map',this)">
+    <button class="bn-item" onclick="goPage('map',this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-      <span class="bnav-label">Map</span>
+      <span class="bn-lbl">Map</span>
+    </button>
+    <button class="bn-item" onclick="goPage('zones',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+      <span class="bn-lbl">Zones</span>
+    </button>
+    <button class="bn-item" onclick="goPage('sched',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span class="bn-lbl">Schedule</span>
     </button>
   </nav>
-
-</div><!-- app -->
+</div>
 
 <script>
-// ══════════════════════════════════════════
-//  CONFIG — Replace these with your values
-// ══════════════════════════════════════════
+// ══════════════════════════════
+//  CONFIG
+// ══════════════════════════════
 const SB_URL  = 'https://irbacwzacummrzfcrjzn.supabase.co';
 const SB_KEY  = 'sb_publishable_MCkmISRtKJ-i9Q3R2KbOtQ_MKq_78K5';
-const MGR_CODE = 'warriors2024'; // Secret code for manager registration
+const MB_TOKEN = 'pk.eyJ1IjoiYWF5dXNoYW5lZWwiLCJhIjoiY21tZWc4OTBtMGVuOTJ2cHZ1c3pmYzEydiJ9.5KgaQSY-Gw4BPZz_3wnWMA';
+const MGR_CODE = 'warriors2024';
 
-const { createClient } = supabase;
+mapboxgl.accessToken = MB_TOKEN;
+const {createClient} = supabase;
 const db = createClient(SB_URL, SB_KEY);
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
 //  CONSTANTS
-// ══════════════════════════════════════════
-const SLOTS = ['8:00 AM','9:00 AM','10:00 AM','11:00 AM','12:00 PM',
-               '1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM'];
+// ══════════════════════════════
+const ALL_SLOTS = ['8:00 AM','9:00 AM','10:00 AM','11:00 AM','12:00 PM',
+                   '1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM'];
 const MARK_COLORS = {knocked:'#6B3FA0',interested:'#22C55E',noanswer:'#F59E0B',notint:'#EF4444'};
+const MARK_LABELS = {knocked:'Knocked',interested:'Interested',noanswer:'No Answer',notint:'Not Interested'};
+const ZONE_COLORS = ['#E74C3C','#3498DB','#2ECC71','#F39C12','#9B59B6','#1ABC9C','#E67E22','#E91E63','#00BCD4','#FF5722'];
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
 //  STATE
-// ══════════════════════════════════════════
+// ══════════════════════════════
 let user=null, profile=null;
 let calY=new Date().getFullYear(), calM=new Date().getMonth();
-let selDate=null, selSlot=null;
-let mapObj=null, markStatus='knocked';
+let selDate=null, selSlot=null, selSlotIdx=null;
+let mapKnock=null, mapZone=null, mapZoneRep=null, drawControl=null;
+let markStatus='knocked';
 let curLbTab='week', curSalesTab='upcoming';
+let slotConfig = ALL_SLOTS.map(t=>({time:t,machines:1}));
+let pendingZoneFeature=null, selZoneColor=ZONE_COLORS[0];
+let allReps=[], allZones=[];
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
 //  TOAST
-// ══════════════════════════════════════════
-let toastTimer;
-function toast(msg,ms=2600){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('on');
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>el.classList.remove('on'),ms);
+// ══════════════════════════════
+let tt;
+function toast(msg,ms=2800){
+  const el=G('toast');el.textContent=msg;el.classList.add('on');
+  clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),ms);
 }
 
-// ══════════════════════════════════════════
-//  AUTH HELPERS
-// ══════════════════════════════════════════
-function toReg(){document.getElementById('frm-login').classList.add('hide');document.getElementById('frm-reg').classList.remove('hide');clearAlerts()}
-function toLogin(){document.getElementById('frm-reg').classList.add('hide');document.getElementById('frm-login').classList.remove('hide');clearAlerts()}
-function clearAlerts(){['auth-err','auth-ok'].forEach(id=>{const el=document.getElementById(id);el.classList.add('hide');el.textContent=''})}
-function authErr(m){const el=document.getElementById('auth-err');el.textContent=m;el.classList.remove('hide')}
-function authOk(m){const el=document.getElementById('auth-ok');el.textContent=m;el.classList.remove('hide')}
-function toggleMgrCode(){
-  const show=document.getElementById('r-role').value==='manager';
-  document.getElementById('mgr-code-field').classList.toggle('hide',!show);
-}
+// ══════════════════════════════
+//  AUTH
+// ══════════════════════════════
+function G(id){return document.getElementById(id)}
+function toReg(){G('frm-login').classList.add('hide');G('frm-reg').classList.remove('hide');clrAuth()}
+function toLogin(){G('frm-reg').classList.add('hide');G('frm-login').classList.remove('hide');clrAuth()}
+function clrAuth(){['auth-err','auth-ok'].forEach(id=>{const e=G(id);e.classList.add('hide');e.textContent=''})}
+function authErr(m){const e=G('auth-err');e.textContent=m;e.classList.remove('hide')}
+function authOk(m){const e=G('auth-ok');e.textContent=m;e.classList.remove('hide')}
+function toggleMgrCode(){G('mgr-field').classList.toggle('hide',G('r-role').value!=='manager')}
 
 async function doLogin(){
-  const email=document.getElementById('l-email').value.trim();
-  const pass=document.getElementById('l-pass').value;
-  clearAlerts();
+  const email=G('l-email').value.trim(),pass=G('l-pass').value;
+  clrAuth();
   if(!email||!pass){authErr('Please fill in both fields');return}
   const {data,error}=await db.auth.signInWithPassword({email,password:pass});
   if(error){authErr(error.message);return}
-  await bootApp(data.user);
+  bootApp(data.user);
 }
 
 async function doRegister(){
-  const name=document.getElementById('r-name').value.trim();
-  const email=document.getElementById('r-email').value.trim();
-  const pass=document.getElementById('r-pass').value;
-  const role=document.getElementById('r-role').value;
-  const code=document.getElementById('r-code').value;
-  clearAlerts();
+  const name=G('r-name').value.trim(),email=G('r-email').value.trim();
+  const pass=G('r-pass').value,role=G('r-role').value,code=G('r-code').value;
+  clrAuth();
   if(!name||!email||!pass){authErr('Please fill in all fields');return}
   if(pass.length<6){authErr('Password must be at least 6 characters');return}
   if(role==='manager'&&code!==MGR_CODE){authErr('Incorrect manager access code');return}
@@ -579,145 +628,168 @@ async function doRegister(){
 
 async function doLogout(){
   await db.auth.signOut();
-  user=null;profile=null;
-  document.getElementById('app').style.display='none';
-  document.getElementById('auth').style.display='flex';
+  user=null;profile=null;mapKnock=null;mapZone=null;mapZoneRep=null;
+  G('app').style.display='none';G('auth').style.display='flex';
 }
 
-// ══════════════════════════════════════════
-//  BOOT APP
-// ══════════════════════════════════════════
+// ══════════════════════════════
+//  BOOT
+// ══════════════════════════════
 async function bootApp(u){
   user=u;
   let {data:p}=await db.from('profiles').select('*').eq('id',u.id).single();
-  if(!p){
-    p={id:u.id,full_name:u.user_metadata?.full_name||'User',email:u.email,role:u.user_metadata?.role||'rep'};
-    await db.from('profiles').upsert(p);
-  }
+  if(!p){p={id:u.id,full_name:u.user_metadata?.full_name||'User',email:u.email,role:u.user_metadata?.role||'rep'};await db.from('profiles').upsert(p)}
   profile=p;
-
-  // UI
-  document.getElementById('auth').style.display='none';
-  document.getElementById('app').style.display='flex';
-  document.getElementById('tb-name').textContent=profile.full_name;
-  const rb=document.getElementById('tb-role');
+  G('auth').style.display='none';
+  G('app').style.display='flex';
+  G('tb-name').textContent=profile.full_name;
+  const rb=G('tb-role');
   rb.textContent=profile.role==='manager'?'Manager':'Sales Rep';
-  rb.className='chip '+(profile.role==='manager'?'chip-manager':'chip-rep');
-
-  // Greeting
-  const now=new Date();
-  const hr=now.getHours();
-  const g=hr<12?'Good morning':'Good afternoon';
-  document.getElementById('dash-hi').textContent=g+', '+profile.full_name.split(' ')[0]+'! 👋';
-  document.getElementById('dash-date').textContent=now.toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-
-  // Show correct dashboard
-  document.getElementById('v-rep').classList.toggle('hide',profile.role!=='rep');
-  document.getElementById('v-mgr').classList.toggle('hide',profile.role!=='manager');
-  document.getElementById('mgr-all-sales-wrap').classList.toggle('hide',profile.role!=='manager');
-
-  // Sales page title
+  rb.className='chip '+(profile.role==='manager'?'chip-mgr':'chip-rep');
+  const now=new Date(),hr=now.getHours();
+  const g=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
+  G('dash-hi').textContent=g+', '+profile.full_name.split(' ')[0]+'! 👋';
+  G('dash-date').textContent=now.toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  G('v-rep').classList.toggle('hide',profile.role!=='rep');
+  G('v-mgr').classList.toggle('hide',profile.role!=='manager');
+  G('mgr-sales-wrap').classList.toggle('hide',profile.role!=='manager');
+  G('slot-mgr-wrap').classList.toggle('hide',profile.role!=='manager');
+  G('zones-mgr-view').classList.toggle('hide',profile.role!=='manager');
+  G('zones-rep-view').classList.toggle('hide',profile.role!=='rep');
+  G('zones-sub').textContent=profile.role==='manager'?'Draw zones on the map and assign them to reps':'Your assigned knocking territory';
   if(profile.role==='manager'){
-    document.getElementById('sales-page-title').textContent='All Team Sales';
-    document.getElementById('sales-page-sub').textContent='View and manage every sale across the team';
+    G('sales-pg-title').textContent='All Team Sales';
+    G('sales-pg-sub').textContent='View and manage all team sales';
   }
-
+  await loadSlotConfig();
+  await loadReps();
   buildCal();
   loadDash();
   loadSales();
   loadLb();
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
 //  NAVIGATION
-// ══════════════════════════════════════════
+// ══════════════════════════════
 function goPage(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('on'));
-  document.getElementById('pg-'+id).classList.add('on');
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('on'));
+  G('pg-'+id).classList.add('on');
   if(el)el.classList.add('on');
-  if(id==='map'){initMap();setTimeout(()=>mapObj&&mapObj.invalidateSize(),300)}
+  if(id==='map')setTimeout(()=>initKnockMap(),120);
+  if(id==='zones')setTimeout(()=>initZoneMap(),120);
   if(id==='lb')loadLb();
   if(id==='dash')loadDash();
   if(id==='sales')loadSales();
+  if(id==='sched'){loadSchedule();if(profile.role==='manager')buildSlotMgr()}
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
+//  SLOT CONFIG
+// ══════════════════════════════
+async function loadSlotConfig(){
+  const {data}=await db.from('slot_config').select('*').eq('id','global').single();
+  if(data?.config){try{slotConfig=JSON.parse(data.config)}catch(e){}}
+}
+async function saveSlots(){
+  const newConfig=ALL_SLOTS.map(t=>{
+    const btn=document.querySelector(`.slot-toggle[data-slot="${t}"]`);
+    if(!btn)return{time:t,machines:0};
+    if(btn.classList.contains('st-2'))return{time:t,machines:2};
+    if(btn.classList.contains('st-on'))return{time:t,machines:1};
+    return{time:t,machines:0};
+  });
+  slotConfig=newConfig;
+  await db.from('slot_config').upsert({id:'global',config:JSON.stringify(slotConfig)});
+  toast('✅ Slots saved!');
+}
+function resetSlots(){slotConfig=ALL_SLOTS.map(t=>({time:t,machines:1}));buildSlotMgr();toast('↩️ Reset to default')}
+function buildSlotMgr(){
+  G('slot-mgr-g').innerHTML=slotConfig.map(sc=>{
+    const m=sc.machines||0;
+    let cls='slot-toggle',lbl=sc.time;
+    if(m===2){cls+=' st-2';lbl+=`<br><small>×2</small>`}
+    else if(m===1){cls+=' st-on';lbl+=`<br><small>×1</small>`}
+    else lbl+=`<br><small>off</small>`;
+    return`<div class="${cls}" data-slot="${sc.time}" onclick="cycleSlot(this)">${lbl}</div>`;
+  }).join('');
+}
+function cycleSlot(el){
+  const s=el.dataset.slot;
+  if(el.classList.contains('st-2')){el.classList.remove('st-2','st-on');el.innerHTML=s+`<br><small>off</small>`}
+  else if(el.classList.contains('st-on')){el.classList.remove('st-on');el.classList.add('st-2');el.innerHTML=s+`<br><small>×2</small>`}
+  else{el.classList.add('st-on');el.innerHTML=s+`<br><small>×1</small>`}
+}
+function getAvailableSlots(){return slotConfig.filter(s=>s.machines>0).map(s=>({time:s.time,capacity:s.machines}))}
+
+// ══════════════════════════════
+//  REPS
+// ══════════════════════════════
+async function loadReps(){
+  const {data}=await db.from('profiles').select('*').eq('role','rep');
+  allReps=data||[];
+}
+
+// ══════════════════════════════
 //  DASHBOARD
-// ══════════════════════════════════════════
+// ══════════════════════════════
 async function loadDash(){
-  if(profile.role==='rep') await loadRepDash();
-  else await loadMgrDash();
+  if(profile.role==='rep')await loadRepDash();else await loadMgrDash();
 }
-
 async function loadRepDash(){
   const {data:sales}=await db.from('sales').select('*').eq('rep_id',user.id);
   const {data:upcoming}=await db.from('bookings').select('*').eq('rep_id',user.id).gte('date',today());
   const arr=sales||[];
   const rev=arr.reduce((s,x)=>s+parseFloat(x.price||0),0);
-  document.getElementById('d-my-sales').textContent=arr.length;
-  document.getElementById('d-my-rev').textContent='$'+fmtNum(rev);
-  document.getElementById('d-my-jobs').textContent=(upcoming||[]).length;
-
-  // Rank
+  G('d-my-sales').textContent=arr.length;
+  G('d-my-rev').textContent='$'+fmt(rev);
+  G('d-my-jobs').textContent=(upcoming||[]).length;
   const {data:all}=await db.from('sales').select('rep_id');
   if(all){
     const cnt={};all.forEach(s=>cnt[s.rep_id]=(cnt[s.rep_id]||0)+1);
     const sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
     const rank=sorted.findIndex(x=>x[0]===user.id)+1;
-    document.getElementById('d-my-rank').textContent=rank>0?'#'+rank:'#1';
+    G('d-my-rank').textContent=rank>0?'#'+rank:'#1';
   }
-
-  // Weekly leader
-  const wSales=await getWeekSales();
-  const el=document.getElementById('d-week-leader');
-  if(!wSales.length){el.innerHTML='<div class="empty"><p>No sales this week yet — be first! 💪</p></div>';return}
-  const top=wSales[0];
-  el.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:linear-gradient(135deg,rgba(212,175,55,.08),rgba(107,63,160,.08));border-radius:10px;border:1px solid rgba(212,175,55,.25)">
-    <div style="font-size:2rem">🏆</div>
-    <div><div style="font-family:'Rubik',sans-serif;font-weight:800">${top.name}</div>
-    <div class="text-sm text-muted">${top.count} sale${top.count!==1?'s':''} · $${fmtNum(top.rev)} this week</div></div>
-  </div>`;
-
-  // Rep recent
-  const {data:recent}=await db.from('sales').select('*').eq('rep_id',user.id).order('created_at',{ascending:false}).limit(4);
-  document.getElementById('d-rep-recent').innerHTML=renderSaleRows(recent||[],false);
+  // Show assigned area
+  const {data:zones}=await db.from('zones').select('*');
+  const myZone=(zones||[]).find(z=>z.rep_id===user.id);
+  const wrap=G('rep-area-wrap');
+  if(myZone){
+    wrap.innerHTML=`<div class="rep-area-badge">
+      <div class="rep-area-color" style="background:${myZone.color}"></div>
+      <div class="rep-area-info">
+        <div class="rep-area-label">Your Assigned Territory</div>
+        <div class="rep-area-name">${myZone.name}</div>
+      </div>
+    </div>`;
+  } else wrap.innerHTML='';
+  const wl=await getWeekRanks();
+  const el=G('d-week-leader');
+  if(!wl.length){el.innerHTML='<div class="empty"><p>No sales this week — be first! 💪</p></div>'}
+  else{const top=wl[0];el.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:linear-gradient(135deg,rgba(212,175,55,.08),rgba(107,63,160,.08));border-radius:10px;border:1px solid rgba(212,175,55,.25)"><div style="font-size:1.8rem">🏆</div><div><div style="font-family:'Rubik',sans-serif;font-weight:800">${top.name}</div><div style="font-size:.78rem;color:var(--muted)">${top.count} sale${top.count!==1?'s':''} · $${fmt(top.rev)} this week</div></div></div>`}
+  const {data:rec}=await db.from('sales').select('*').eq('rep_id',user.id).order('created_at',{ascending:false}).limit(4);
+  G('d-rep-recent').innerHTML=renderSaleRows(rec||[],false);
 }
-
 async function loadMgrDash(){
   const {data:sales}=await db.from('sales').select('*');
   const {data:profs}=await db.from('profiles').select('*').eq('role','rep');
   const {data:bks}=await db.from('bookings').select('*');
   const arr=sales||[];
   const rev=arr.reduce((s,x)=>s+parseFloat(x.price||0),0);
-  document.getElementById('d-tot-sales').textContent=arr.length;
-  document.getElementById('d-tot-rev').textContent='$'+fmtNum(rev);
-  document.getElementById('d-tot-reps').textContent=(profs||[]).length;
-  document.getElementById('d-tot-jobs').textContent=(bks||[]).length;
-
-  // Weekly winner
-  const wSales=await getWeekSales();
-  const wrap=document.getElementById('d-winner-wrap');
-  if(wSales.length){
-    const w=wSales[0];
-    wrap.innerHTML=`<div class="winner-banner">
-      <div class="winner-trophy">🏆</div>
-      <div class="winner-name">${w.name}</div>
-      <div class="winner-stats">${w.count} sale${w.count!==1?'s':''} · $${fmtNum(w.rev)} this week</div>
-      <div class="winner-crown">👑 THIS WEEK'S CHAMPION</div>
-    </div>`;
-  } else {
-    wrap.innerHTML='<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
-  }
-
-  // Recent
-  const {data:recent}=await db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false}).limit(6);
-  document.getElementById('d-mgr-recent').innerHTML=renderSaleRows(recent||[],true);
+  G('d-tot-sales').textContent=arr.length;G('d-tot-rev').textContent='$'+fmt(rev);
+  G('d-tot-reps').textContent=(profs||[]).length;G('d-tot-jobs').textContent=(bks||[]).length;
+  const wl=await getWeekRanks();
+  const wrap=G('d-winner-wrap');
+  if(wl.length){const w=wl[0];wrap.innerHTML=`<div class="winner-banner"><div class="winner-trophy">🏆</div><div class="winner-name">${w.name}</div><div class="winner-stats">${w.count} sale${w.count!==1?'s':''} · $${fmt(w.rev)} this week</div><div class="winner-crown">👑 THIS WEEK'S CHAMPION</div></div>`}
+  else wrap.innerHTML='<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
+  const {data:rec}=await db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false}).limit(6);
+  G('d-mgr-recent').innerHTML=renderSaleRows(rec||[],true);
 }
-
-async function getWeekSales(){
+async function getWeekRanks(){
   const {data:sales}=await db.from('sales').select('rep_id,price,profiles(full_name)').gte('created_at',weekStart());
-  if(!sales||!sales.length) return [];
+  if(!sales?.length)return[];
   const cnt={};
   sales.forEach(s=>{
     if(!cnt[s.rep_id])cnt[s.rep_id]={name:s.profiles?.full_name||'Unknown',count:0,rev:0};
@@ -726,154 +798,109 @@ async function getWeekSales(){
   return Object.values(cnt).sort((a,b)=>b.count-a.count);
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
 //  CALENDAR
-// ══════════════════════════════════════════
+// ══════════════════════════════
 function buildCal(){
   const MOS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('cal-title').textContent=MOS[calM]+' '+calY;
+  G('cal-title').textContent=MOS[calM]+' '+calY;
   const DNS=['Su','Mo','Tu','We','Th','Fr','Sa'];
-  const todayStr=today();
+  const tod=today();
   let h=DNS.map(d=>`<div class="cal-dn">${d}</div>`).join('');
-  const first=new Date(calY,calM,1).getDay();
-  const days=new Date(calY,calM+1,0).getDate();
-  for(let i=0;i<first;i++)h+=`<div class="cal-d cal-empty"></div>`;
+  const first=new Date(calY,calM,1).getDay(),days=new Date(calY,calM+1,0).getDate();
+  for(let i=0;i<first;i++)h+=`<div class="cal-d cd-empty"></div>`;
   for(let d=1;d<=days;d++){
     const ds=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isPast=ds<todayStr;
-    const isTod=ds===todayStr;
-    const isSel=ds===selDate;
+    const past=ds<tod,isTod=ds===tod,isSel=ds===selDate;
     let cls='cal-d';
-    if(isPast)cls+=' cal-past';
-    else if(isSel)cls+=' cal-sel';
-    else if(isTod)cls+=' cal-today';
-    const click=isPast?'':`onclick="pickDate('${ds}')"`;
-    h+=`<div class="${cls}" ${click}>${d}</div>`;
+    if(past)cls+=' cd-past';else if(isSel)cls+=' cd-sel';else if(isTod)cls+=' cd-today';
+    h+=`<div class="${cls}" ${past?'':`onclick="pickDate('${ds}')"`}>${d}</div>`;
   }
-  document.getElementById('cal-grid').innerHTML=h;
+  G('cal-g').innerHTML=h;
 }
-
-function calNav(d){
-  calM+=d;if(calM<0){calM=11;calY--}if(calM>11){calM=0;calY++}
-  buildCal();
-}
+function calNav(d){calM+=d;if(calM<0){calM=11;calY--}if(calM>11){calM=0;calY++}buildCal()}
 
 async function pickDate(ds){
-  selDate=ds;selSlot=null;
-  buildCal();
-  const lbl=new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});
-  document.getElementById('slots-date-lbl').textContent=lbl;
-  document.getElementById('slots-wrap').classList.remove('hide');
-  document.getElementById('booking-form-wrap').classList.add('hide');
+  selDate=ds;selSlot=null;selSlotIdx=null;buildCal();
+  G('slots-lbl').textContent=new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});
+  G('slots-wrap').classList.remove('hide');G('bform-wrap').classList.add('hide');
   await buildSlots(ds);
 }
-
 async function buildSlots(ds){
+  const avail=getAvailableSlots();
+  if(!avail.length){G('slots-g').innerHTML='<p style="grid-column:1/-1;font-size:.8rem;color:var(--muted);padding:8px">No slots set up yet. Manager must configure slots first.</p>';return}
   const {data:bks}=await db.from('bookings').select('time_slot,rep_id').eq('date',ds);
-  const taken={};(bks||[]).forEach(b=>taken[b.time_slot]=b.rep_id);
-  const h=SLOTS.map(s=>{
-    const owner=taken[s];
-    const mine=owner===user.id;
-    const open=!owner;
-    let cls='slot';
-    if(mine)cls+=' s-mine';
-    else if(!open)cls+=' s-taken';
-    else cls+=' s-open';
-    const lbl=mine?s+' ✓':!open?s+' 🔒':s;
-    const click=open||mine?`onclick="pickSlot('${s}')"`:'';
-    return `<div class="${cls}" ${click}>${lbl}</div>`;
+  const bkCnt={};
+  (bks||[]).forEach(b=>{if(!bkCnt[b.time_slot])bkCnt[b.time_slot]={count:0,mine:false};bkCnt[b.time_slot].count++;if(b.rep_id===user.id)bkCnt[b.time_slot].mine=true});
+  G('slots-g').innerHTML=avail.map((sl,i)=>{
+    const bk=bkCnt[sl.time]||{count:0,mine:false};
+    const full=bk.count>=sl.capacity,mine=bk.mine;
+    let cls='slot',lbl=sl.time;
+    if(mine){cls+=' s-mine';lbl+=sl.capacity>1?`<br><small>✓ (${bk.count}/${sl.capacity})</small>`:'<br><small>✓ Yours</small>'}
+    else if(full){cls+=' s-taken';lbl+='<br><small>🔒 Full</small>'}
+    else{cls+=' s-open';if(sl.capacity>1&&bk.count>0)lbl+=`<br><small>${sl.capacity-bk.count} left</small>`}
+    return`<div class="${cls}" data-idx="${i}" ${(!full||mine)?`onclick="pickSlot('${sl.time}',${i})"`:''} >${lbl}</div>`;
   }).join('');
-  document.getElementById('slots-grid').innerHTML=h;
 }
-
-function pickSlot(s){
-  selSlot=s;
-  document.querySelectorAll('.slot').forEach(el=>{
-    el.classList.remove('s-sel');
-    if(el.textContent.includes(s)&&!el.classList.contains('s-taken'))el.classList.add('s-sel');
-  });
-  document.getElementById('booking-form-wrap').classList.remove('hide');
-  document.getElementById('booking-form-wrap').scrollIntoView({behavior:'smooth',block:'start'});
+function pickSlot(s,idx){
+  selSlot=s;selSlotIdx=idx;
+  document.querySelectorAll('.slot').forEach(el=>{if(!el.classList.contains('s-taken'))el.classList.remove('s-sel')});
+  document.querySelector(`.slot[data-idx="${idx}"]`)?.classList.add('s-sel');
+  G('bform-wrap').classList.remove('hide');
+  G('bform-wrap').scrollIntoView({behavior:'smooth',block:'start'});
 }
-
 async function submitBooking(){
-  const cn=document.getElementById('b-cname').value.trim();
-  const ph=document.getElementById('b-phone').value.trim();
-  const pr=document.getElementById('b-price').value;
-  const ad=document.getElementById('b-addr').value.trim();
-  const sv=document.getElementById('b-service').value;
-  const nt=document.getElementById('b-notes').value;
-  if(!cn||!ph||!pr||!ad){toast('⚠️ Please fill in all required fields');return}
-  if(!selDate||!selSlot){toast('⚠️ Select a date and time slot first');return}
-
+  const cn=G('b-cname').value.trim(),ph=G('b-phone').value.trim();
+  const pr=G('b-price').value,ad=G('b-addr').value.trim(),sv=G('b-svc').value,nt=G('b-notes').value;
+  if(!cn||!ph||!pr||!ad){toast('⚠️ Fill in all required fields');return}
+  if(!selDate||!selSlot){toast('⚠️ Select a date and slot first');return}
   const {error:e1}=await db.from('bookings').insert({rep_id:user.id,date:selDate,time_slot:selSlot,client_name:cn,client_phone:ph,client_address:ad,service_type:sv,notes:nt,status:'confirmed'});
   if(e1){toast('❌ '+e1.message);return}
   const {error:e2}=await db.from('sales').insert({rep_id:user.id,client_name:cn,client_phone:ph,client_address:ad,service_type:sv,price:parseFloat(pr),notes:nt,status:'confirmed',date:selDate});
   if(e2){toast('❌ '+e2.message);return}
-
   toast('✅ Job booked & sale recorded!');
-  ['b-cname','b-phone','b-price','b-addr','b-notes'].forEach(id=>document.getElementById(id).value='');
-  selSlot=null;
-  document.getElementById('booking-form-wrap').classList.add('hide');
-  await buildSlots(selDate);
-  loadDash();loadSales();
+  ['b-cname','b-phone','b-price','b-addr','b-notes'].forEach(id=>G(id).value='');
+  selSlot=null;selSlotIdx=null;G('bform-wrap').classList.add('hide');
+  await buildSlots(selDate);loadDash();loadSales();
 }
 
-// ══════════════════════════════════════════
-//  SALES LIST
-// ══════════════════════════════════════════
+// ══════════════════════════════
+//  SALES
+// ══════════════════════════════
 async function loadSales(){
   let q=db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
   if(profile.role==='rep')q=q.eq('rep_id',user.id);
   const {data:all}=await q;
-  const arr=all||[];
-  const tod=today();
-  let filtered=arr;
-  if(curSalesTab==='upcoming')filtered=arr.filter(s=>s.date>=tod);
-  else if(curSalesTab==='completed')filtered=arr.filter(s=>s.date<tod);
-  document.getElementById('sales-list').innerHTML=renderSaleRows(filtered,profile.role==='manager');
+  const arr=all||[],tod=today();
+  let f=arr;
+  if(curSalesTab==='upcoming')f=arr.filter(s=>s.date>=tod);
+  else if(curSalesTab==='completed')f=arr.filter(s=>s.date<tod);
+  G('sales-list').innerHTML=renderSaleRows(f,profile.role==='manager');
 }
-
-function salesTab(t,el){
-  curSalesTab=t;
-  document.querySelectorAll('#pg-sales .tab').forEach(x=>x.classList.remove('on'));
-  el.classList.add('on');
-  loadSales();
-}
-
+function salesTab(t,el){curSalesTab=t;document.querySelectorAll('#pg-sales .tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');loadSales()}
 function renderSaleRows(arr,showRep){
   if(!arr.length)return`<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><p>No sales here yet</p></div>`;
-  return arr.map(s=>`
-    <div class="sale-row">
-      <div style="flex:1;min-width:0">
-        <h4>${s.client_name}</h4>
-        <p>${showRep&&s.profiles?s.profiles.full_name+' · ':''} ${s.service_type||'Window Cleaning'}<br>
-        📅 ${s.date||'—'} &nbsp; 📞 ${s.client_phone||'—'}<br>
-        📍 ${s.client_address||'—'}</p>
-        <span class="badge b-green mt-8" style="display:inline-block">Confirmed</span>
-      </div>
-      <div style="text-align:right;flex-shrink:0;margin-left:10px">
-        <div class="sale-price">$${fmtNum(parseFloat(s.price||0))}</div>
-        ${profile.role==='manager'?`<button class="btn btn-danger btn-xs mt-8" onclick="delSale('${s.id}')">Delete</button>`:''}
-      </div>
-    </div>`).join('');
+  return arr.map(s=>`<div class="sale-row"><div style="flex:1;min-width:0">
+    <h4>${s.client_name}</h4>
+    <p>${showRep&&s.profiles?'👤 '+s.profiles.full_name+'<br>':''}${s.service_type||''}<br>📅 ${s.date||'—'} &nbsp;📞 ${s.client_phone||'—'}<br>📍 ${s.client_address||'—'}</p>
+    <span class="badge b-green" style="margin-top:6px;display:inline-block">Confirmed</span></div>
+    <div style="text-align:right;flex-shrink:0;margin-left:10px">
+      <div class="sale-price">$${fmt(parseFloat(s.price||0))}</div>
+      ${profile.role==='manager'?`<button class="btn btn-danger btn-xs" style="margin-top:7px" onclick="delSale('${s.id}')">Delete</button>`:''}
+    </div></div>`).join('');
 }
-
 async function delSale(id){
   if(!confirm('Delete this sale?'))return;
   await db.from('sales').delete().eq('id',id);
-  toast('🗑️ Sale deleted');
-  loadSales();loadDash();
+  toast('🗑️ Sale deleted');loadSales();loadDash();
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
 //  LEADERBOARD
-// ══════════════════════════════════════════
+// ══════════════════════════════
 async function loadLb(){
   let since=null;
-  if(curLbTab==='week')since=weekStart();
-  else if(curLbTab==='month')since=monthStart();
-
+  if(curLbTab==='week')since=weekStart();else if(curLbTab==='month')since=monthStart();
   let q=db.from('sales').select('rep_id,price,profiles(full_name)');
   if(since)q=q.gte('created_at',since);
   const {data:sales}=await q;
@@ -884,112 +911,345 @@ async function loadLb(){
   });
   const sorted=Object.entries(cnt).sort((a,b)=>b[1].count-a[1].count);
   const max=sorted[0]?.[1]?.count||1;
-
-  if(!sorted.length){
-    document.getElementById('lb-list').innerHTML='<div class="empty"><p>No sales recorded yet. Get out there! 💪</p></div>';
-  } else {
-    document.getElementById('lb-list').innerHTML=sorted.map(([rid,d],i)=>{
-      const rCls=i===0?'r1':i===1?'r2':i===2?'r3':'r-other';
-      const rLbl=i===0?'👑':i===1?'🥈':i===2?'🥉':`#${i+1}`;
-      const isMe=rid===user.id;
-      const pct=Math.round((d.count/max)*100);
-      return `<div class="lb-row${isMe?' lb-me':''}">
-        <div class="rank-badge ${rCls}">${rLbl}</div>
-        <div class="lb-info">
-          <div class="lb-name">${d.name}${isMe?' (You)':''}</div>
-          <div class="lb-detail">${d.count} sale${d.count!==1?'s':''}</div>
-          <div class="progress"><div class="progress-bar" style="width:${pct}%"></div></div>
-        </div>
-        <div class="lb-rev">$${fmtNum(d.rev)}</div>
-      </div>`;
-    }).join('');
-  }
-
-  // Manager sees all sales below
+  G('lb-list').innerHTML=sorted.length?sorted.map(([rid,d],i)=>{
+    const rC=i===0?'r1':i===1?'r2':i===2?'r3':'ro';
+    const rL=i===0?'👑':i===1?'🥈':i===2?'🥉':`#${i+1}`;
+    const isMe=rid===user.id,pct=Math.round((d.count/max)*100);
+    return`<div class="lb-row${isMe?' lb-me':''}">
+      <div class="rb ${rC}">${rL}</div>
+      <div class="lb-info"><div class="lb-name">${d.name}${isMe?' (You)':''}</div>
+      <div class="lb-det">${d.count} sale${d.count!==1?'s':''}</div>
+      <div class="prog"><div class="prog-bar" style="width:${pct}%"></div></div></div>
+      <div class="lb-rev">$${fmt(d.rev)}</div></div>`;
+  }).join(''):'<div class="empty"><p>No sales yet. Get out there! 💪</p></div>';
   if(profile.role==='manager'){
     let q2=db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
     if(since)q2=q2.gte('created_at',since);
     const {data:all}=await q2;
-    document.getElementById('mgr-all-sales').innerHTML=renderSaleRows(all||[],true);
+    G('mgr-all-sales').innerHTML=renderSaleRows(all||[],true);
   }
 }
+function lbTab(t,el){curLbTab=t;document.querySelectorAll('#pg-lb .tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');loadLb()}
 
-function lbTab(t,el){
-  curLbTab=t;
-  document.querySelectorAll('#pg-lb .tab').forEach(x=>x.classList.remove('on'));
-  el.classList.add('on');
-  loadLb();
-}
-
-// ══════════════════════════════════════════
-//  MAP
-// ══════════════════════════════════════════
-function initMap(){
-  if(mapObj)return;
-  mapObj=L.map('map-el').setView([43.7001,-79.4163],13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(mapObj);
-  mapObj.on('click',async e=>{
-    const {lat,lng}=e.latlng;
-    const {error}=await db.from('door_knocks').insert({rep_id:user.id,lat,lng,status:markStatus});
-    if(error){toast('❌ '+error.message);return}
-    plotPin({lat,lng,status:markStatus});
-    loadMapStats();
-    toast('📍 Marked as '+markStatus.replace('noanswer','no answer').replace('notint','not interested'));
+// ══════════════════════════════
+//  KNOCK MAP (Mapbox)
+// ══════════════════════════════
+async function initKnockMap(){
+  if(mapKnock){mapKnock.resize();return}
+  mapKnock=new mapboxgl.Map({
+    container:'map-el',
+    style:'mapbox://styles/mapbox/streets-v12',
+    center:[-79.6441,43.5890],zoom:12
   });
-  loadPins();
+  mapKnock.addControl(new mapboxgl.NavigationControl(),'top-right');
+  mapKnock.addControl(new mapboxgl.GeolocateControl({positionOptions:{enableHighAccuracy:true},trackUserLocation:false}),'top-right');
+
+  mapKnock.on('load',async()=>{
+    // Load zones as background
+    const {data:zones}=await db.from('zones').select('*');
+    (zones||[]).forEach(z=>{
+      try{
+        const geo=JSON.parse(z.geojson);
+        const srcId='zone-'+z.id;
+        mapKnock.addSource(srcId,{type:'geojson',data:geo});
+        mapKnock.addLayer({id:srcId+'-fill',type:'fill',source:srcId,paint:{'fill-color':z.color,'fill-opacity':0.15}});
+        mapKnock.addLayer({id:srcId+'-line',type:'line',source:srcId,paint:{'line-color':z.color,'line-width':2}});
+      }catch(e){}
+    });
+    // Load pins
+    await loadKnockPins();
+  });
+
+  mapKnock.on('click',async e=>{
+    const {lng,lat}=e.lngLat;
+    const {data,error}=await db.from('door_knocks').insert({rep_id:user.id,lat,lng,status:markStatus}).select();
+    if(error){toast('❌ '+error.message);return}
+    addKnockPin({lat,lng,status:markStatus,id:data?.[0]?.id});
+    loadMapStats();
+    toast('📍 '+MARK_LABELS[markStatus]);
+  });
 }
 
-async function loadPins(){
-  const {data}=await db.from('door_knocks').select('*');
-  (data||[]).forEach(k=>plotPin(k));
+async function loadKnockPins(){
+  const {data,error}=await db.from('door_knocks').select('*');
+  if(error){console.error(error);return}
+  (data||[]).forEach(k=>addKnockPin(k));
   loadMapStats();
 }
 
-function plotPin(k){
-  const col=MARK_COLORS[k.status]||'#6B3FA0';
-  L.circleMarker([k.lat,k.lng],{radius:9,fillColor:col,color:'#fff',weight:2,fillOpacity:.9})
-   .addTo(mapObj)
-   .bindPopup(`<b>${k.status.replace('noanswer','No Answer').replace('notint','Not Interested')}</b>`);
+function addKnockPin(k){
+  if(!mapKnock)return;
+  const el=document.createElement('div');
+  el.style.cssText=`width:16px;height:16px;border-radius:50%;background:${MARK_COLORS[k.status]||'#6B3FA0'};border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer`;
+  const popup=new mapboxgl.Popup({offset:10,closeButton:false}).setHTML(`<strong style="color:${MARK_COLORS[k.status]}">${MARK_LABELS[k.status]||k.status}</strong>`);
+  new mapboxgl.Marker({element:el}).setLngLat([k.lng,k.lat]).setPopup(popup).addTo(mapKnock);
 }
 
 async function loadMapStats(){
   const {data}=await db.from('door_knocks').select('status');
   const all=data||[];
-  document.getElementById('map-total').textContent=all.length;
-  document.getElementById('map-int').textContent=all.filter(x=>x.status==='interested').length;
+  G('map-tot').textContent=all.length;
+  G('map-int').textContent=all.filter(x=>x.status==='interested').length;
 }
 
-function setMark(s){
+function setMark(s,btn){
   markStatus=s;
-  document.querySelectorAll('.mark-btn').forEach(b=>{
-    b.classList.remove('active-mark','map-btn-active-knocked','map-btn-active-interested','map-btn-active-noanswer','map-btn-active-notint');
-  });
-  const el=document.getElementById('mb-'+s);
-  el.classList.add('active-mark','map-btn-active-'+s);
-  toast('📍 Now marking: '+s.replace('noanswer','No Answer').replace('notint','Not Interested'));
+  document.querySelectorAll('.mk-btn').forEach(b=>b.classList.remove('mk-active'));
+  btn.classList.add('mk-active');
+  toast('📍 Marking: '+MARK_LABELS[s]);
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
+//  ZONE MAP (Manager)
+// ══════════════════════════════
+async function initZoneMap(){
+  if(profile.role==='manager') await initMgrZoneMap();
+  else await initRepZoneMap();
+}
+
+async function initMgrZoneMap(){
+  // Build rep selector
+  const sel=G('zone-rep-sel');
+  sel.innerHTML='<option value="">Select a rep...</option>'+allReps.map(r=>`<option value="${r.id}">${r.full_name}</option>`).join('');
+  // Build color picker
+  G('zone-color-picker').innerHTML=ZONE_COLORS.map((c,i)=>`<div class="color-opt${i===0?' selected':''}" style="background:${c}" onclick="pickColor('${c}',this)"></div>`).join('');
+
+  if(mapZone){mapZone.resize();await loadZonesList();return}
+
+  mapZone=new mapboxgl.Map({
+    container:'zone-map-el',
+    style:'mapbox://styles/mapbox/streets-v12',
+    center:[-79.6441,43.5890],zoom:11
+  });
+  mapZone.addControl(new mapboxgl.NavigationControl(),'top-right');
+
+  drawControl=new MapboxDraw({
+    displayControlsDefault:false,
+    controls:{polygon:true,trash:true},
+    defaultMode:'draw_polygon'
+  });
+  mapZone.addControl(drawControl);
+
+  mapZone.on('load',async()=>{
+    await renderZonesOnMgrMap();
+  });
+
+  mapZone.on('draw.create',e=>{
+    pendingZoneFeature=e.features[0];
+    G('zone-assign-card').style.display='block';
+    G('zone-assign-card').scrollIntoView({behavior:'smooth',block:'start'});
+    toast('✏️ Zone drawn! Now name and assign it below');
+  });
+  mapZone.on('draw.delete',()=>{
+    pendingZoneFeature=null;
+    G('zone-assign-card').style.display='none';
+  });
+
+  await loadZonesList();
+}
+
+async function renderZonesOnMgrMap(){
+  const {data:zones}=await db.from('zones').select('*');
+  allZones=zones||[];
+  allZones.forEach(z=>{
+    try{
+      const geo=JSON.parse(z.geojson);
+      const sid='mgr-zone-'+z.id;
+      if(mapZone.getSource(sid)){mapZone.getSource(sid).setData(geo);return}
+      mapZone.addSource(sid,{type:'geojson',data:geo});
+      mapZone.addLayer({id:sid+'-fill',type:'fill',source:sid,paint:{'fill-color':z.color,'fill-opacity':0.2}});
+      mapZone.addLayer({id:sid+'-line',type:'line',source:sid,paint:{'line-color':z.color,'line-width':2.5}});
+      // Zone label
+      const coords=geo.features?.[0]?.geometry?.coordinates?.[0]||geo.geometry?.coordinates?.[0]||[];
+      if(coords.length){
+        const cx=coords.reduce((s,c)=>s+c[0],0)/coords.length;
+        const cy=coords.reduce((s,c)=>s+c[1],0)/coords.length;
+        const lsid=sid+'-label';
+        if(!mapZone.getSource(lsid)){
+          mapZone.addSource(lsid,{type:'geojson',data:{type:'Feature',geometry:{type:'Point',coordinates:[cx,cy]},properties:{label:z.name}}});
+          mapZone.addLayer({id:lsid,type:'symbol',source:lsid,layout:{'text-field':['get','label'],'text-size':13,'text-font':['DIN Offc Pro Bold','Arial Unicode MS Bold']},paint:{'text-color':z.color,'text-halo-color':'#fff','text-halo-width':2}});
+        }
+      }
+    }catch(e){console.error('Zone render error',e)}
+  });
+}
+
+function pickColor(c,el){
+  selZoneColor=c;
+  document.querySelectorAll('.color-opt').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function saveZone(){
+  if(!pendingZoneFeature){toast('⚠️ Draw a zone on the map first');return}
+  const name=G('zone-name-inp').value.trim();
+  const repId=G('zone-rep-sel').value;
+  if(!name){toast('⚠️ Enter a zone name');return}
+  if(!repId){toast('⚠️ Select a rep to assign');return}
+
+  const geojson=JSON.stringify({type:'FeatureCollection',features:[pendingZoneFeature]});
+  // Delete existing zone for this rep
+  await db.from('zones').delete().eq('rep_id',repId);
+  const {error}=await db.from('zones').insert({name,rep_id:repId,color:selZoneColor,geojson});
+  if(error){toast('❌ '+error.message);return}
+
+  toast('✅ Zone saved and assigned!');
+  drawControl.deleteAll();
+  pendingZoneFeature=null;
+  G('zone-assign-card').style.display='none';
+  G('zone-name-inp').value='';
+  // Reload zones on map
+  if(mapZone?.isStyleLoaded())await renderZonesOnMgrMap();
+  await loadZonesList();
+}
+
+function cancelZoneDraw(){
+  drawControl?.deleteAll();
+  pendingZoneFeature=null;
+  G('zone-assign-card').style.display='none';
+}
+
+async function loadZonesList(){
+  const {data:zones}=await db.from('zones').select('*,profiles(full_name)');
+  allZones=zones||[];
+  const container=G('zones-list');
+  if(!allZones.length){container.innerHTML='<div class="empty"><p>No zones assigned yet. Draw a zone on the map above!</p></div>';return}
+  container.innerHTML=allZones.map(z=>`
+    <div class="zone-row">
+      <div class="zone-color" style="background:${z.color}"></div>
+      <div class="zone-info">
+        <div class="zone-name">${z.name}</div>
+        <div class="zone-rep">👤 ${z.profiles?.full_name||'Unassigned'}</div>
+      </div>
+      <div class="zone-actions">
+        <button class="btn btn-danger btn-xs" onclick="deleteZone('${z.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function deleteZone(id){
+  if(!confirm('Delete this zone?'))return;
+  await db.from('zones').delete().eq('id',id);
+  // Remove from map
+  const sid='mgr-zone-'+id;
+  ['-fill','-line','-label'].forEach(s=>{
+    if(mapZone?.getLayer(sid+s))mapZone.removeLayer(sid+s);
+    if(mapZone?.getSource(sid+s))mapZone.removeSource(sid+s);
+  });
+  if(mapZone?.getLayer(sid+'-fill'))mapZone.removeLayer(sid+'-fill');
+  if(mapZone?.getSource(sid))mapZone.removeSource(sid);
+  toast('🗑️ Zone deleted');
+  await loadZonesList();
+}
+
+// Rep zone view
+async function initRepZoneMap(){
+  const {data:zones}=await db.from('zones').select('*').eq('rep_id',user.id);
+  const myZone=zones?.[0];
+  const infoEl=G('rep-zone-info');
+  if(!myZone){
+    infoEl.innerHTML='<div class="empty"><p>No territory assigned yet. Ask your manager to assign you a zone.</p></div>';
+    return;
+  }
+  infoEl.innerHTML=`<div class="rep-area-badge" style="margin-bottom:12px">
+    <div class="rep-area-color" style="background:${myZone.color}"></div>
+    <div><div class="rep-area-label">Your Assigned Zone</div><div class="rep-area-name">${myZone.name}</div></div>
+  </div>`;
+  if(mapZoneRep){mapZoneRep.resize();return}
+  mapZoneRep=new mapboxgl.Map({
+    container:'zone-map-el-rep',
+    style:'mapbox://styles/mapbox/streets-v12',
+    center:[-79.6441,43.5890],zoom:12
+  });
+  mapZoneRep.addControl(new mapboxgl.NavigationControl(),'top-right');
+  mapZoneRep.addControl(new mapboxgl.GeolocateControl({positionOptions:{enableHighAccuracy:true},trackUserLocation:true}),'top-right');
+  mapZoneRep.on('load',()=>{
+    try{
+      const geo=JSON.parse(myZone.geojson);
+      mapZoneRep.addSource('my-zone',{type:'geojson',data:geo});
+      mapZoneRep.addLayer({id:'my-zone-fill',type:'fill',source:'my-zone',paint:{'fill-color':myZone.color,'fill-opacity':0.2}});
+      mapZoneRep.addLayer({id:'my-zone-line',type:'line',source:'my-zone',paint:{'line-color':myZone.color,'line-width':3}});
+      // Fit to zone bounds
+      const coords=geo.features?.[0]?.geometry?.coordinates?.[0]||geo.geometry?.coordinates?.[0]||[];
+      if(coords.length){
+        const bounds=coords.reduce((b,c)=>b.extend(c),new mapboxgl.LngLatBounds(coords[0],coords[0]));
+        mapZoneRep.fitBounds(bounds,{padding:40});
+      }
+    }catch(e){console.error(e)}
+  });
+}
+
+// ══════════════════════════════
+//  SCHEDULE
+// ══════════════════════════════
+async function loadSchedule(){
+  const tom=tomorrow();
+  const lbl=new Date(tom+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  G('sched-sub').textContent='Jobs scheduled for '+lbl;
+  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',tom);
+  const jobs=bks||[];
+  if(!jobs.length){
+    G('sched-content').innerHTML=`<div class="sched-hd"><div class="sched-hd-title">📅 ${lbl}</div><div class="sched-hd-sub">Window Warriors Cleaning Schedule</div></div><div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><p>No jobs booked for tomorrow yet</p></div>`;
+    return;
+  }
+  const slotOrd=ALL_SLOTS.reduce((a,t,i)=>{a[t]=i;return a},{});
+  jobs.sort((a,b)=>(slotOrd[a.time_slot]||0)-(slotOrd[b.time_slot]||0));
+  G('sched-content').innerHTML=`
+    <div class="sched-hd"><div class="sched-hd-title">📅 ${lbl}</div><div class="sched-hd-sub">Window Warriors — ${jobs.length} job${jobs.length!==1?'s':''} scheduled</div></div>
+    ${jobs.map(j=>`<div class="sched-row">
+      <div class="sched-time">${j.time_slot}</div>
+      <div class="sched-info"><h4>${j.client_name}</h4>
+        <p>📍 ${j.client_address||'—'}<br>📞 ${j.client_phone||'—'}<br>🧹 ${j.service_type||'Window Cleaning'}</p>
+        <span class="sched-rep">Booked by ${j.profiles?.full_name||'Unknown'}</span>
+      </div></div>`).join('')}`;
+}
+
+async function copySchedule(){
+  const tom=tomorrow();
+  const lbl=new Date(tom+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',tom);
+  const jobs=bks||[];
+  if(!jobs.length){toast('No jobs for tomorrow');return}
+  const slotOrd=ALL_SLOTS.reduce((a,t,i)=>{a[t]=i;return a},{});
+  jobs.sort((a,b)=>(slotOrd[a.time_slot]||0)-(slotOrd[b.time_slot]||0));
+  let txt=`⚔️ WINDOW WARRIORS — SCHEDULE\n📅 ${lbl}\n${'─'.repeat(34)}\n\n`;
+  jobs.forEach((j,i)=>{txt+=`${i+1}. ${j.time_slot}\n   👤 ${j.client_name}\n   📍 ${j.client_address||'—'}\n   📞 ${j.client_phone||'—'}\n   🧹 ${j.service_type||'Window Cleaning'}\n\n`});
+  txt+=`${'─'.repeat(34)}\n${jobs.length} job${jobs.length!==1?'s':''} | windowwarriors.ca`;
+  try{await navigator.clipboard.writeText(txt);toast('📋 Copied to clipboard!')}catch(e){toast('Use Share button instead')}
+}
+
+async function shareSchedule(){
+  const tom=tomorrow();
+  const lbl=new Date(tom+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',tom);
+  const jobs=bks||[];
+  const slotOrd=ALL_SLOTS.reduce((a,t,i)=>{a[t]=i;return a},{});
+  jobs.sort((a,b)=>(slotOrd[a.time_slot]||0)-(slotOrd[b.time_slot]||0));
+  let txt=`⚔️ WINDOW WARRIORS SCHEDULE\n📅 ${lbl}\n\n`;
+  jobs.forEach((j,i)=>{txt+=`${i+1}. ${j.time_slot} — ${j.client_name}\n   ${j.client_address||''}\n   ${j.client_phone||''}\n\n`});
+  if(navigator.share){try{await navigator.share({title:'Warriors Schedule',text:txt});return}catch(e){}}
+  copySchedule();
+}
+
+// ══════════════════════════════
 //  HELPERS
-// ══════════════════════════════════════════
+// ══════════════════════════════
 function today(){return new Date().toISOString().split('T')[0]}
+function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0]}
 function weekStart(){const d=new Date();d.setDate(d.getDate()-d.getDay());d.setHours(0,0,0,0);return d.toISOString()}
 function monthStart(){const d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d.toISOString()}
-function fmtNum(n){return n>=1000?(n/1000).toFixed(1)+'k':Math.round(n).toString()}
+function fmt(n){if(n>=1000)return(n/1000).toFixed(1)+'k';return Math.round(n).toLocaleString()}
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
 //  SESSION
-// ══════════════════════════════════════════
+// ══════════════════════════════
 window.addEventListener('load',async()=>{
   const {data:{session}}=await db.auth.getSession();
   if(session)await bootApp(session.user);
 });
 db.auth.onAuthStateChange(async(ev,session)=>{
   if(ev==='SIGNED_IN'&&session)await bootApp(session.user);
-  if(ev==='SIGNED_OUT'){
-    document.getElementById('app').style.display='none';
-    document.getElementById('auth').style.display='flex';
-  }
+  if(ev==='SIGNED_OUT'){G('app').style.display='none';G('auth').style.display='flex'}
 });
 </script>
 </body>
