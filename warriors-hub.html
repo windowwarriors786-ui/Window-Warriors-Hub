@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>Warriors Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --ink:#111827;--ink2:#1F2937;--ink3:#374151;
+  --gold:#F59E0B;--gold-l:#FCD34D;
+  --slate:#6B7280;--border:#E5E7EB;--off:#F9FAFB;
+  --green:#059669;--red:#DC2626;--blue:#2563EB;
+  --m1:#7C3AED;--m2:#0891B2;
+  --r:12px;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--off);color:var(--ink);overflow:hidden}
+.syne{font-family:'Syne',sans-serif}
+
+/* TOAST */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:var(--ink);color:#fff;padding:10px 20px;border-radius:30px;
+  font-size:.82rem;font-weight:500;z-index:9999;opacity:0;transition:all .25s;
+  pointer-events:none;white-space:nowrap;max-width:88vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* AUTH */
+#auth{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;
+  justify-content:center;padding:20px;z-index:100}
+.auth-box{width:100%;max-width:360px}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-icon{width:60px;height:60px;background:var(--gold);border-radius:14px;
+  display:inline-flex;align-items:center;justify-content:center;font-size:1.7rem;margin-bottom:10px}
+.auth-logo h1{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:#fff}
+.auth-logo p{font-size:.8rem;color:#6B7280;margin-top:3px}
+.auth-card{background:#1F2937;border-radius:16px;padding:24px;border:1px solid #374151}
+.auth-card h2{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:#fff;margin-bottom:18px}
+.err{background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);color:#FCA5A5;
+  padding:9px 12px;border-radius:8px;font-size:.78rem;margin-bottom:12px;display:none}
+
+/* FORM */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.7rem;font-weight:600;color:#9CA3AF;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.inp{width:100%;padding:10px 13px;background:#374151;border:1.5px solid transparent;
+  border-radius:8px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;transition:border .15s}
+.inp:focus{border-color:var(--gold)}
+.inp::placeholder{color:#6B7280}
+select.inp option{background:#374151}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:11px 16px;border:none;border-radius:9px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-gold{background:var(--gold);color:#fff;width:100%;font-family:'Syne',sans-serif;font-weight:700}
+.btn-ink{background:var(--ink);color:#fff}
+.btn-off{background:var(--off);color:var(--ink);border:1px solid var(--border)}
+.btn-red{background:var(--red);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-sm{padding:7px 12px;font-size:.78rem;width:auto}
+.btn-xs{padding:5px 9px;font-size:.7rem;width:auto}
+.link{color:var(--gold);cursor:pointer;font-weight:600;font-size:.82rem}
+
+/* APP */
+#app{position:fixed;inset:0;display:none;flex-direction:column}
+
+/* TOPBAR */
+.topbar{background:var(--ink);height:52px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 14px;flex-shrink:0}
+.tb-left{display:flex;align-items:center;gap:9px}
+.tb-mark{width:30px;height:30px;background:var(--gold);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.tb-title{font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:#fff}
+.tb-right{display:flex;align-items:center;gap:7px}
+.role-tag{padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;letter-spacing:.04em}
+.role-mgr{background:var(--gold);color:#fff}
+.role-rep{background:#374151;color:#9CA3AF}
+.tb-user{font-size:.72rem;color:#9CA3AF;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.so-btn{background:none;border:1px solid #374151;color:#9CA3AF;padding:4px 9px;
+  border-radius:6px;cursor:pointer;font-size:.7rem;font-family:'DM Sans',sans-serif}
+.so-btn:hover{border-color:#6B7280;color:#fff}
+
+/* SCROLL AREA */
+.scroll{flex:1;overflow-y:auto;overscroll-behavior:contain}
+
+/* PAGES */
+.page{display:none;padding:14px 14px 80px;max-width:640px;margin:0 auto}
+.page.on{display:block}
+.pg-h{font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800;color:var(--ink);
+  letter-spacing:-.02em;margin-bottom:2px}
+.pg-s{font-size:.78rem;color:var(--slate);margin-bottom:16px}
+
+/* BOTTOM NAV */
+.bnav{flex-shrink:0;background:#fff;border-top:1px solid var(--border);display:flex;height:56px}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;background:none;border:none;cursor:pointer;color:#9CA3AF;font-family:'DM Sans',sans-serif;transition:color .15s}
+.nb.on{color:var(--ink)}
+.nb svg{width:19px;height:19px;stroke-width:1.8}
+.nb span{font-size:.56rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  padding:15px;margin-bottom:11px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-t{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;color:var(--ink);
+  margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+/* STATS */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.sc{padding:13px;border-radius:var(--r);border:1px solid var(--border)}
+.sc.dk{background:var(--ink);border-color:var(--ink)}
+.sc.gd{background:var(--gold);border-color:var(--gold)}
+.sc.m1{background:var(--m1);border-color:var(--m1)}
+.sc.m2{background:var(--m2);border-color:var(--m2)}
+.sn{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;line-height:1}
+.dk .sn,.gd .sn,.m1 .sn,.m2 .sn{color:#fff}
+.sl{font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+  margin-top:3px;color:rgba(255,255,255,.65)}
+.sc:not(.dk):not(.gd):not(.m1):not(.m2) .sn{color:var(--ink)}
+.sc:not(.dk):not(.gd):not(.m1):not(.m2) .sl{color:var(--slate)}
+
+/* MACHINE TABS */
+.mtabs{display:flex;gap:8px;margin-bottom:14px}
+.mtab{flex:1;padding:10px 8px;border-radius:10px;border:2px solid var(--border);
+  text-align:center;cursor:pointer;background:#fff;transition:all .15s}
+.mtab.on.m1{background:var(--m1);border-color:var(--m1);color:#fff}
+.mtab.on.m2{background:var(--m2);border-color:var(--m2);color:#fff}
+.mtab:not(.on){color:var(--slate)}
+.mtab-icon{font-size:1.1rem;margin-bottom:3px}
+.mtab-label{font-family:'Syne',sans-serif;font-size:.78rem;font-weight:700}
+.mtab-count{font-size:.67rem;opacity:.8;margin-top:1px}
+
+/* CALENDAR */
+.cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-hd h3{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700}
+.cal-nb{background:var(--off);border:1px solid var(--border);border-radius:7px;
+  padding:4px 10px;cursor:pointer;font-size:.85rem;color:var(--slate)}
+.cal-nb:hover{background:var(--border)}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cdn{text-align:center;font-size:.6rem;font-weight:700;color:var(--slate);
+  text-transform:uppercase;padding:4px 0;letter-spacing:.04em}
+.cd{text-align:center;padding:7px 2px;border-radius:7px;cursor:pointer;
+  font-size:.78rem;font-weight:500;transition:background .1s;color:var(--ink);position:relative}
+.cd:hover:not(.cdis):not(.cem){background:var(--off)}
+.cd.cdt{background:var(--ink);color:#fff;font-weight:700}
+.cd.cdsel{font-weight:700}
+.cd.cdsel.m1{background:var(--m1);color:#fff}
+.cd.cdsel.m2{background:var(--m2);color:#fff}
+.cd.cdis{color:#D1D5DB;cursor:default}
+.cd.cem{cursor:default}
+.cd-dot{width:4px;height:4px;border-radius:50%;margin:2px auto 0}
+.cd-dot.m1{background:var(--m1)}
+.cd-dot.m2{background:var(--m2)}
+.cd-dot.both{background:var(--gold)}
+
+/* SLOT ROWS */
+.slot-row{display:flex;align-items:center;justify-content:space-between;
+  padding:13px 15px;border-radius:10px;border:1.5px solid var(--border);
+  margin-bottom:7px;cursor:pointer;transition:all .15s;background:#fff}
+.slot-row:hover:not(.taken){border-color:var(--ink)}
+.slot-row.taken{opacity:.6;cursor:not-allowed;background:var(--off)}
+.slot-row.mine-m1{border-color:var(--m1);background:rgba(124,58,237,.05)}
+.slot-row.mine-m2{border-color:var(--m2);background:rgba(8,145,178,.05)}
+.slot-row.selected{border-color:var(--ink);background:var(--ink)}
+.slot-row.selected .slot-time,.slot-row.selected .slot-sub{color:#fff}
+.slot-time{font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem}
+.slot-sub{font-size:.7rem;color:var(--slate);margin-top:2px}
+.sbadge{padding:4px 10px;border-radius:20px;font-size:.67rem;font-weight:700;text-transform:uppercase}
+.sb-open{background:#D1FAE5;color:#065F46}
+.sb-taken{background:#FEE2E2;color:#991B1B}
+.sb-mine{background:var(--gold-l);color:#92400E}
+.sb-part{background:#FEF3C7;color:#92400E}
+
+/* BOOKING BANNER */
+.book-banner{background:var(--ink);color:#fff;border-radius:10px;
+  padding:12px 15px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.book-banner-ico{font-size:1.3rem}
+.book-banner-t{font-family:'Syne',sans-serif;font-weight:700;font-size:.88rem}
+.book-banner-s{font-size:.7rem;color:#9CA3AF;margin-top:2px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:360px){.f2{grid-template-columns:1fr}}
+.finp{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-size:.87rem;color:var(--ink);background:#fff;outline:none}
+.finp:focus{border-color:var(--ink)}
+.finp::placeholder{color:#9CA3AF}
+textarea.finp{resize:vertical;min-height:64px}
+select.finp{cursor:pointer}
+
+/* SALES */
+.sale-item{padding:12px;border-radius:10px;border:1px solid var(--border);
+  margin-bottom:7px;background:#fff}
+.si-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.si-name{font-weight:700;font-size:.88rem}
+.si-price{font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;flex-shrink:0}
+.si-meta{font-size:.72rem;color:var(--slate);margin-top:4px;line-height:1.6}
+.si-tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.62rem;
+  font-weight:700;text-transform:uppercase;background:#D1FAE5;color:#065F46;margin-top:5px}
+.si-m1{border-left:3px solid var(--m1)}
+.si-m2{border-left:3px solid var(--m2)}
+
+/* LEADERBOARD */
+.lb-row{display:flex;align-items:center;gap:11px;padding:12px;
+  border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:#fff}
+.lb-row.me{border-color:var(--gold)}
+.lbr{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:.82rem;flex-shrink:0}
+.r1{background:var(--gold);color:#fff}.r2{background:#E5E7EB;color:#374151}
+.r3{background:#FED7AA;color:#92400E}.rn{background:var(--off);color:var(--slate);font-size:.75rem}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-weight:700;font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-sub{font-size:.7rem;color:var(--slate);margin-top:1px}
+.lb-bar{height:4px;background:var(--off);border-radius:2px;margin-top:5px;overflow:hidden}
+.lb-fill{height:100%;background:var(--ink);border-radius:2px;transition:width .5s}
+.lb-amt{font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;flex-shrink:0}
+
+/* WINNER */
+.winner{background:var(--ink);border-radius:var(--r);padding:18px;
+  text-align:center;margin-bottom:12px}
+.w-trophy{font-size:2.3rem;margin-bottom:6px}
+.w-name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:#fff}
+.w-stat{font-size:.75rem;color:#9CA3AF;margin-top:3px}
+.w-crown{display:inline-block;background:var(--gold);color:#fff;
+  padding:3px 12px;border-radius:20px;font-size:.68rem;font-weight:800;
+  letter-spacing:.06em;margin-top:8px}
+
+/* TABS */
+.tabs{display:flex;background:var(--off);border-radius:9px;padding:3px;
+  margin-bottom:14px;border:1px solid var(--border)}
+.tab{flex:1;text-align:center;padding:7px 4px;border-radius:7px;
+  font-size:.73rem;font-weight:600;cursor:pointer;color:var(--slate);
+  background:none;border:none;font-family:'DM Sans',sans-serif;transition:all .15s}
+.tab.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* MAP */
+#knock-map{height:340px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.mark-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+.mk{padding:6px 11px;border-radius:7px;border:2px solid;cursor:pointer;
+  font-size:.71rem;font-weight:700;transition:all .15s;background:transparent;
+  font-family:'DM Sans',sans-serif}
+.mk.on{transform:scale(1.04)}
+.mk-kn{border-color:#7C3AED;color:#7C3AED}.mk-kn.on{background:rgba(124,58,237,.1)}
+.mk-in{border-color:#059669;color:#059669}.mk-in.on{background:rgba(5,150,105,.1)}
+.mk-na{border-color:#D97706;color:#D97706}.mk-na.on{background:rgba(217,119,6,.1)}
+.mk-ni{border-color:#DC2626;color:#DC2626}.mk-ni.on{background:rgba(220,38,38,.1)}
+.leg{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.li{display:flex;align-items:center;gap:4px;font-size:.69rem;font-weight:600;color:var(--slate)}
+.ld{width:9px;height:9px;border-radius:50%}
+
+/* SCHEDULE */
+.sched-dtabs{display:flex;gap:8px;margin-bottom:13px}
+.sdtab{flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);
+  text-align:center;cursor:pointer;background:#fff;transition:all .15s}
+.sdtab.on{background:var(--ink);border-color:var(--ink)}
+.sdtab.on .sdt-d,.sdtab.on .sdt-n{color:#fff}
+.sdtab.on .sdt-d{color:#9CA3AF}
+.sdt-n{font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;color:var(--ink)}
+.sdt-d{font-size:.68rem;color:var(--slate);margin-top:2px}
+.sched-job{display:flex;align-items:flex-start;gap:11px;padding:12px;
+  border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:#fff}
+.sj-time{min-width:68px;flex-shrink:0}
+.sj-t{font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem}
+.sj-te{font-size:.66rem;color:var(--slate);margin-top:2px}
+.sj-m{display:inline-block;padding:1px 6px;border-radius:4px;font-size:.63rem;
+  font-weight:700;margin-top:4px}
+.sj-m.m1{background:rgba(124,58,237,.1);color:var(--m1)}
+.sj-m.m2{background:rgba(8,145,178,.1);color:var(--m2)}
+.sj-info h4{font-weight:700;font-size:.86rem}
+.sj-info p{font-size:.71rem;color:var(--slate);margin-top:3px;line-height:1.6}
+.sj-rep{display:inline-block;background:var(--off);color:var(--slate);
+  padding:2px 7px;border-radius:4px;font-size:.63rem;font-weight:600;margin-top:4px}
+
+/* SLOT MANAGER */
+.smgr-row{display:flex;align-items:center;gap:7px;padding:10px;
+  border-radius:9px;border:1px solid var(--border);margin-bottom:7px;background:#fff}
+.smgr-row input,.smgr-row select{padding:7px 9px;border:1.5px solid var(--border);
+  border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.78rem;outline:none;color:var(--ink)}
+.smgr-row input:focus,.smgr-row select:focus{border-color:var(--ink)}
+
+/* EMPTY */
+.empty{text-align:center;padding:30px 16px;color:var(--slate)}
+.empty svg{width:34px;height:34px;margin:0 auto 9px;opacity:.25;stroke:var(--slate)}
+.empty p{font-size:.81rem}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- ═══════ AUTH ═══════ -->
+<div id="auth">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-icon">⚔️</div>
+      <h1>Warriors Hub</h1>
+      <p>Window Warriors Team App</p>
+    </div>
+    <div class="auth-card">
+      <div id="err" class="err"></div>
+
+      <div id="p-login">
+        <h2>Sign In</h2>
+        <div class="field"><label>Email</label>
+          <input class="inp" id="l-em" type="email" placeholder="you@email.com" autocomplete="email"/>
+        </div>
+        <div class="field"><label>Password</label>
+          <input class="inp" id="l-pw" type="password" placeholder="••••••••"
+            onkeydown="if(event.key==='Enter')doLogin()"/>
+        </div>
+        <button class="btn btn-gold" id="login-btn" onclick="doLogin()">Sign In →</button>
+        <p style="text-align:center;margin-top:12px">
+          <span class="link" onclick="showP('register')">Create an account</span>
+        </p>
+      </div>
+
+      <div id="p-register" style="display:none">
+        <h2>Create Account</h2>
+        <div class="field"><label>Full Name</label>
+          <input class="inp" id="r-nm" type="text" placeholder="Your full name"/>
+        </div>
+        <div class="field"><label>Email</label>
+          <input class="inp" id="r-em" type="email" placeholder="you@email.com"/>
+        </div>
+        <div class="field"><label>Password</label>
+          <input class="inp" id="r-pw" type="password" placeholder="Min 6 characters"/>
+        </div>
+        <div class="field"><label>Role</label>
+          <select class="inp" id="r-role" onchange="toggleMgr()">
+            <option value="rep">Sales Rep</option>
+            <option value="manager">Manager</option>
+          </select>
+        </div>
+        <div class="field" id="mgr-f" style="display:none"><label>Manager Code</label>
+          <input class="inp" id="r-code" type="password" placeholder="Access code"/>
+        </div>
+        <button class="btn btn-gold" id="reg-btn" onclick="doRegister()">Create Account →</button>
+        <p style="text-align:center;margin-top:12px">
+          <span class="link" onclick="showP('login')">Already have an account</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ APP ═══════ -->
+<div id="app">
+  <header class="topbar">
+    <div class="tb-left">
+      <div class="tb-mark">⚔️</div>
+      <span class="tb-title">Warriors Hub</span>
+    </div>
+    <div class="tb-right">
+      <span class="tb-user" id="tb-user"></span>
+      <span class="role-tag" id="tb-role"></span>
+      <button class="so-btn" onclick="doSignOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="scroll">
+
+    <!-- ──── DASHBOARD ──── -->
+    <div class="page on" id="pg-dash">
+      <div class="pg-h" id="dash-hi">Hey! 👋</div>
+      <div class="pg-s" id="dash-date"></div>
+
+      <!-- REP VIEW -->
+      <div id="dv-rep" style="display:none">
+        <div class="sg">
+          <div class="sc dk"><div class="sn" id="r-sales">0</div><div class="sl">My Sales</div></div>
+          <div class="sc gd"><div class="sn" id="r-rev">$0</div><div class="sl">My Revenue</div></div>
+          <div class="sc"><div class="sn" id="r-rank" style="color:var(--ink)">—</div><div class="sl" style="color:var(--slate)">My Rank</div></div>
+          <div class="sc"><div class="sn" id="r-upcoming" style="color:var(--ink)">0</div><div class="sl" style="color:var(--slate)">Upcoming Jobs</div></div>
+        </div>
+        <div class="card"><div class="card-t">🏆 This Week's Leader</div><div id="r-leader"></div></div>
+        <div class="card"><div class="card-t">📋 My Recent Sales</div><div id="r-recent"></div></div>
+      </div>
+
+      <!-- MANAGER VIEW -->
+      <div id="dv-mgr" style="display:none">
+        <div class="sg">
+          <div class="sc dk"><div class="sn" id="m-sales">0</div><div class="sl">Total Sales</div></div>
+          <div class="sc gd"><div class="sn" id="m-rev">$0</div><div class="sl">Total Revenue</div></div>
+          <div class="sc m1"><div class="sn" id="m-m1">0</div><div class="sl">Machine 1 Jobs</div></div>
+          <div class="sc m2"><div class="sn" id="m-m2">0</div><div class="sl">Machine 2 Jobs</div></div>
+        </div>
+        <div id="m-winner"></div>
+        <div class="card"><div class="card-t">📊 Recent Sales</div><div id="m-recent"></div></div>
+      </div>
+    </div>
+
+    <!-- ──── BOOK ──── -->
+    <div class="page" id="pg-book">
+      <div class="pg-h">Book a Job</div>
+      <div class="pg-s">Choose machine → pick date → pick slot → add details</div>
+
+      <!-- Machine tabs -->
+      <div class="mtabs">
+        <div class="mtab on m1" id="mt-1" onclick="setMachine(1)">
+          <div class="mtab-icon">🔵</div>
+          <div class="mtab-label">Machine 1</div>
+          <div class="mtab-count" id="mt1-count">— booked today</div>
+        </div>
+        <div class="mtab m2" id="mt-2" onclick="setMachine(2)">
+          <div class="mtab-icon">🟦</div>
+          <div class="mtab-label">Machine 2</div>
+          <div class="mtab-count" id="mt2-count">— booked today</div>
+        </div>
+      </div>
+
+      <!-- Calendar -->
+      <div class="card">
+        <div class="cal-hd">
+          <button class="cal-nb" onclick="calPrev()">‹</button>
+          <h3 id="cal-title"></h3>
+          <button class="cal-nb" onclick="calNext()">›</button>
+        </div>
+        <div class="cg" id="cal-grid"></div>
+      </div>
+
+      <!-- Slots -->
+      <div id="slots-section" style="display:none">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;
+          margin-bottom:10px;color:var(--ink)">
+          🕐 Slots for <span id="slots-date"></span>
+        </div>
+        <div id="slots-list"></div>
+      </div>
+
+      <!-- Form -->
+      <div id="form-section" style="display:none">
+        <div class="book-banner">
+          <div class="book-banner-ico" id="bb-ico">🔵</div>
+          <div>
+            <div class="book-banner-t" id="bb-title">Machine 1</div>
+            <div class="book-banner-s" id="bb-sub">Date · Time</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-t">📝 Client Details <span style="font-size:.7rem;font-weight:400;color:var(--slate)">(all optional)</span></div>
+          <div class="field"><label>Client Name</label>
+            <input class="finp" id="b-name" type="text" placeholder="Full name"/>
+          </div>
+          <div class="f2">
+            <div class="field"><label>Phone</label>
+              <input class="finp" id="b-phone" type="tel" placeholder="(647) 000-0000"/>
+            </div>
+            <div class="field"><label>Price ($)</label>
+              <input class="finp" id="b-price" type="number" placeholder="0" min="0"/>
+            </div>
+          </div>
+          <div class="field"><label>Address</label>
+            <input class="finp" id="b-addr" type="text" placeholder="123 Main St, Mississauga"/>
+          </div>
+          <div class="field"><label>Service</label>
+            <select class="finp" id="b-svc">
+              <option>Exterior Window Cleaning</option>
+              <option>Interior Window Cleaning</option>
+              <option>Eavestrough / Gutter Cleaning</option>
+              <option>Sliding Door Cleaning</option>
+              <option>Glass Staircase Cleaning</option>
+              <option>Full Package</option>
+            </select>
+          </div>
+          <div class="field"><label>Notes</label>
+            <textarea class="finp" id="b-notes" placeholder="Any instructions..."></textarea>
+          </div>
+          <button class="btn btn-gold" id="confirm-btn" onclick="confirmBooking()">✓ Confirm Booking</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── SALES ──── -->
+    <div class="page" id="pg-sales">
+      <div class="pg-h" id="sales-title">My Sales</div>
+      <div class="pg-s">Your recorded bookings</div>
+      <div class="tabs">
+        <button class="tab on" onclick="setSalesTab('upcoming',this)">Upcoming</button>
+        <button class="tab" onclick="setSalesTab('past',this)">Completed</button>
+        <button class="tab" onclick="setSalesTab('all',this)">All</button>
+      </div>
+      <div id="sales-list"></div>
+    </div>
+
+    <!-- ──── LEADERBOARD ──── -->
+    <div class="page" id="pg-lb">
+      <div class="pg-h">Leaderboard</div>
+      <div class="pg-s">Weekly competition rankings 🔥</div>
+      <div class="tabs">
+        <button class="tab on" onclick="setLbTab('week',this)">This Week</button>
+        <button class="tab" onclick="setLbTab('month',this)">This Month</button>
+        <button class="tab" onclick="setLbTab('all',this)">All Time</button>
+      </div>
+      <div id="lb-list"></div>
+      <div id="lb-mgr" style="display:none;margin-top:16px">
+        <div class="card-t" style="margin-bottom:10px">📋 All Team Sales</div>
+        <div id="lb-all"></div>
+      </div>
+    </div>
+
+    <!-- ──── MAP ──── -->
+    <div class="page" id="pg-map">
+      <div class="pg-h">Door Knock Map</div>
+      <div class="pg-s">Tap the map to mark a door</div>
+      <div class="card" style="padding:12px">
+        <div class="mark-bar">
+          <span style="font-size:.7rem;font-weight:700;color:var(--slate);width:100%;margin-bottom:3px">Mark as:</span>
+          <button class="mk mk-kn on" id="mb-kn" onclick="setMark('knocked',this)">🚪 Knocked</button>
+          <button class="mk mk-in" id="mb-in" onclick="setMark('interested',this)">⭐ Interested</button>
+          <button class="mk mk-na" id="mb-na" onclick="setMark('noanswer',this)">🔇 No Answer</button>
+          <button class="mk mk-ni" id="mb-ni" onclick="setMark('notint',this)">❌ Not Interested</button>
+        </div>
+        <p style="font-size:.7rem;color:var(--slate);margin-bottom:7px">📍 Tap anywhere on the map to drop a pin</p>
+        <div id="knock-map"></div>
+        <div class="leg">
+          <div class="li"><div class="ld" style="background:#7C3AED"></div>Knocked</div>
+          <div class="li"><div class="ld" style="background:#059669"></div>Interested</div>
+          <div class="li"><div class="ld" style="background:#D97706"></div>No Answer</div>
+          <div class="li"><div class="ld" style="background:#DC2626"></div>Not Interested</div>
+        </div>
+      </div>
+      <div class="sg">
+        <div class="sc dk"><div class="sn" id="map-tot">0</div><div class="sl">Total Knocked</div></div>
+        <div class="sc gd"><div class="sn" id="map-int">0</div><div class="sl">Interested</div></div>
+      </div>
+    </div>
+
+    <!-- ──── SCHEDULE ──── -->
+    <div class="page" id="pg-sched">
+      <div class="pg-h">Schedule</div>
+      <div class="pg-s">Today & tomorrow's jobs</div>
+
+      <div class="sched-dtabs">
+        <div class="sdtab on" id="sd-today" onclick="setSchedDay('today')">
+          <div class="sdt-n">Today</div>
+          <div class="sdt-d" id="sd-today-lbl"></div>
+        </div>
+        <div class="sdtab" id="sd-tom" onclick="setSchedDay('tomorrow')">
+          <div class="sdt-n">Tomorrow</div>
+          <div class="sdt-d" id="sd-tom-lbl"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-ink btn-sm" style="flex:1" onclick="copySchedule()">📋 Copy</button>
+        <button class="btn btn-gold btn-sm" style="flex:1" onclick="shareSchedule()">📤 Share</button>
+      </div>
+
+      <div id="sched-jobs"></div>
+
+      <!-- MANAGER ONLY: Slot Manager -->
+      <div id="slot-mgr" style="display:none;margin-top:20px">
+        <div class="card-t" style="margin-bottom:4px">⚙️ Manage Time Slots</div>
+        <p style="font-size:.75rem;color:var(--slate);margin-bottom:12px">
+          These slots are shared across both machines. Each slot allows up to 2 bookings (1 per machine).
+        </p>
+        <div id="slot-rows"></div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-off btn-sm" style="flex:1" onclick="addSlotRow()">+ Add Slot</button>
+          <button class="btn btn-gold btn-sm" style="flex:1" onclick="saveSlots()">💾 Save Slots</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bnav">
+    <button class="nb on" onclick="nav('dash',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nb" onclick="nav('book',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Book</span>
+    </button>
+    <button class="nb" onclick="nav('sales',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <span>Sales</span>
+    </button>
+    <button class="nb" onclick="nav('lb',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Rankings</span>
+    </button>
+    <button class="nb" onclick="nav('map',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      <span>Map</span>
+    </button>
+    <button class="nb" onclick="nav('sched',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Schedule</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+// ════════════════════════════
+//  CONFIG
+// ════════════════════════════
+const SB_URL = 'https://ysorzjfetvsduxubgrtn.supabase.co';
+const SB_KEY = 'sb_publishable_0Wzmj739chAV3zWCmoFr5A_we3XKkSA';
+const MB_TOK = 'pk.eyJ1IjoiYWF5dXNoYW5lZWwiLCJhIjoiY21tZWc4OTBtMGVuOTJ2cHZ1c3pmYzEydiJ9.5KgaQSY-Gw4BPZz_3wnWMA';
+const MGR_CODE = 'warriors2024';
+mapboxgl.accessToken = MB_TOK;
+const { createClient } = supabase;
+const sb = createClient(SB_URL, SB_KEY);
+
+// ════════════════════════════
+//  STATE
+// ════════════════════════════
+let ME = null, PROF = null;
+let calY = new Date().getFullYear(), calM = new Date().getMonth();
+let selDate = null, selSlot = null, selMachine = 1;
+let slots = [];
+let lbPer = 'week', salesPer = 'upcoming', schedDay = 'today';
+let kmap = null, markMode = 'knocked';
+const MC = { knocked:'#7C3AED', interested:'#059669', noanswer:'#D97706', notint:'#DC2626' };
+const ML = { knocked:'Knocked', interested:'Interested', noanswer:'No Answer', notint:'Not Interested' };
+
+// ════════════════════════════
+//  UTILS
+// ════════════════════════════
+const G = id => document.getElementById(id);
+let tt; function toast(msg,ms=2800){const e=G('toast');e.textContent=msg;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),ms)}
+function todayS(){return new Date().toISOString().split('T')[0]}
+function tomorrowS(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0]}
+function fmtD(ds){return new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})}
+function fmtDL(ds){return new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+function fmtMoney(n){n=parseFloat(n)||0;return n>=1000?'$'+(n/1000).toFixed(1)+'k':'$'+Math.round(n)}
+function weekAgo(){const d=new Date();d.setDate(d.getDate()-7);d.setHours(0,0,0,0);return d.toISOString()}
+function monthAgo(){const d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d.toISOString()}
+
+// ════════════════════════════
+//  AUTH
+// ════════════════════════════
+function showP(p){G('p-login').style.display=p==='login'?'block':'none';G('p-register').style.display=p==='register'?'block':'none';G('err').style.display='none'}
+function toggleMgr(){G('mgr-f').style.display=G('r-role').value==='manager'?'block':'none'}
+function showErr(m){const e=G('err');e.textContent=m;e.style.display='block'}
+
+async function doLogin(){
+  const btn=G('login-btn'); btn.disabled=true; btn.textContent='Signing in...';
+  const email=G('l-em').value.trim(), pass=G('l-pw').value;
+  if(!email||!pass){showErr('Enter email and password');btn.disabled=false;btn.textContent='Sign In →';return}
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){showErr(error.message);btn.disabled=false;btn.textContent='Sign In →';return}
+  await boot(data.user);
+}
+
+async function doRegister(){
+  const btn=G('reg-btn'); btn.disabled=true; btn.textContent='Creating...';
+  const name=G('r-nm').value.trim(), email=G('r-em').value.trim();
+  const pass=G('r-pw').value, role=G('r-role').value, code=G('r-code').value;
+  if(!name||!email||!pass){showErr('Fill in all fields');btn.disabled=false;btn.textContent='Create Account →';return}
+  if(pass.length<6){showErr('Password must be 6+ characters');btn.disabled=false;btn.textContent='Create Account →';return}
+  if(role==='manager'&&code!==MGR_CODE){showErr('Wrong manager code');btn.disabled=false;btn.textContent='Create Account →';return}
+  const {data,error}=await sb.auth.signUp({email,password:pass});
+  if(error){showErr(error.message);btn.disabled=false;btn.textContent='Create Account →';return}
+  await sb.from('profiles').upsert({id:data.user.id,full_name:name,email,role});
+  await boot(data.user);
+}
+
+async function doSignOut(){
+  await sb.auth.signOut();
+  ME=null; PROF=null; kmap=null;
+  G('app').style.display='none'; G('auth').style.display='flex'; showP('login');
+}
+
+// ════════════════════════════
+//  BOOT
+// ════════════════════════════
+async function boot(user){
+  ME=user;
+  let {data:p}=await sb.from('profiles').select('*').eq('id',user.id).single();
+  if(!p){p={id:user.id,full_name:user.email.split('@')[0],email:user.email,role:'rep'};await sb.from('profiles').upsert(p)}
+  PROF=p;
+  G('auth').style.display='none'; G('app').style.display='flex';
+  G('tb-user').textContent=PROF.full_name;
+  const rp=G('tb-role'); rp.textContent=PROF.role==='manager'?'Manager':'Rep';
+  rp.className='role-tag '+(PROF.role==='manager'?'role-mgr':'role-rep');
+  const h=new Date().getHours();
+  const gr=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+  G('dash-hi').textContent=gr+', '+PROF.full_name.split(' ')[0]+'! 👋';
+  G('dash-date').textContent=new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  G('dv-rep').style.display=PROF.role==='rep'?'block':'none';
+  G('dv-mgr').style.display=PROF.role==='manager'?'block':'none';
+  G('lb-mgr').style.display=PROF.role==='manager'?'block':'none';
+  G('slot-mgr').style.display=PROF.role==='manager'?'block':'none';
+  if(PROF.role==='manager') G('sales-title').textContent='All Team Sales';
+  G('sd-today-lbl').textContent=fmtD(todayS());
+  G('sd-tom-lbl').textContent=fmtD(tomorrowS());
+  await loadSlots();
+  buildCal();
+  await loadDash();
+  await loadSales();
+  await loadLb();
+}
+
+// ════════════════════════════
+//  NAVIGATION
+// ════════════════════════════
+function nav(pg,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  G('pg-'+pg).classList.add('on'); if(btn)btn.classList.add('on');
+  document.querySelector('.scroll').scrollTop=0;
+  if(pg==='map') setTimeout(initMap,150);
+  if(pg==='sched'){loadSchedule();if(PROF.role==='manager')buildSlotMgr()}
+  if(pg==='lb') loadLb();
+  if(pg==='dash') loadDash();
+  if(pg==='sales') loadSales();
+}
+
+// ════════════════════════════
+//  SLOTS — load from DB
+// ════════════════════════════
+async function loadSlots(){
+  const {data}=await sb.from('slots').select('*').order('sort_order',{ascending:true});
+  slots=data||[];
+}
+
+// ════════════════════════════
+//  MACHINE SELECTION
+// ════════════════════════════
+function setMachine(m){
+  selMachine=m; selDate=null; selSlot=null;
+  G('mt-1').className='mtab '+(m===1?'on m1':'');
+  G('mt-2').className='mtab '+(m===2?'on m2':'');
+  G('slots-section').style.display='none';
+  G('form-section').style.display='none';
+  buildCal();
+  updateMachineCounts();
+}
+
+async function updateMachineCounts(){
+  const tod=todayS();
+  const {data}=await sb.from('bookings').select('machine_num').eq('date',tod);
+  const bks=data||[];
+  G('mt1-count').textContent=bks.filter(b=>b.machine_num===1).length+' booked today';
+  G('mt2-count').textContent=bks.filter(b=>b.machine_num===2).length+' booked today';
+}
+
+// ════════════════════════════
+//  CALENDAR
+// ════════════════════════════
+function buildCal(){
+  const MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DN=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  G('cal-title').textContent=MO[calM]+' '+calY;
+  const tod=todayS();
+  let h=DN.map(d=>`<div class="cdn">${d}</div>`).join('');
+  const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate();
+  for(let i=0;i<first;i++) h+=`<div class="cd cem"></div>`;
+  for(let d=1;d<=days;d++){
+    const ds=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const past=ds<tod, isTod=ds===tod, isSel=ds===selDate;
+    let cls='cd';
+    if(past) cls+=' cdis';
+    else if(isSel) cls+=` cdsel m${selMachine}`;
+    else if(isTod) cls+=' cdt';
+    const click=past?'':` onclick="pickDay('${ds}')"`;
+    h+=`<div class="${cls}"${click}>${d}<div class="cd-dot" id="dot-${ds}"></div></div>`;
+  }
+  G('cal-grid').innerHTML=h;
+  updateMachineCounts();
+}
+
+function calPrev(){calM--;if(calM<0){calM=11;calY--}buildCal()}
+function calNext(){calM++;if(calM>11){calM=0;calY++}buildCal()}
+
+async function pickDay(ds){
+  selDate=ds; selSlot=null;
+  buildCal();
+  G('slots-section').style.display='block';
+  G('form-section').style.display='none';
+  G('slots-date').textContent=fmtDL(ds)+` — Machine ${selMachine}`;
+  await renderSlots(ds);
+}
+
+// ════════════════════════════
+//  RENDER SLOTS
+// ════════════════════════════
+async function renderSlots(ds){
+  const el=G('slots-list');
+  el.innerHTML='<div style="color:var(--slate);font-size:.82rem;padding:8px">Loading...</div>';
+  if(!slots.length){
+    el.innerHTML='<div class="empty"><p>No slots set up yet.<br>Manager can add slots in the Schedule tab.</p></div>';
+    return;
+  }
+  // Bookings for this date
+  const {data:bks,error}=await sb.from('bookings').select('slot_id,rep_id,machine_num').eq('date',ds);
+  if(error){el.innerHTML=`<div style="color:var(--red);padding:8px;font-size:.82rem">Error: ${error.message}</div>`;return}
+  const booked=bks||[];
+  let html='';
+  slots.forEach((sl,i)=>{
+    // This machine's booking for this slot
+    const thisMachine=booked.filter(b=>b.slot_id===sl.id&&b.machine_num===selMachine);
+    const isMine=thisMachine.some(b=>b.rep_id===ME.id);
+    const isTaken=thisMachine.length>0;
+    let cls='slot-row', badge='', onclick='';
+    if(isMine){
+      cls+=` mine-m${selMachine}`;
+      badge=`<span class="sbadge sb-mine">✓ Yours</span>`;
+      onclick=`onclick="selectSlot('${sl.id}','${sl.label}','${sl.time_start}','${sl.time_end}',${i})"`;
+    } else if(isTaken){
+      cls+=' taken';
+      badge=`<span class="sbadge sb-taken">🔒 Taken</span>`;
+    } else {
+      badge=`<span class="sbadge sb-open">Open</span>`;
+      onclick=`onclick="selectSlot('${sl.id}','${sl.label}','${sl.time_start}','${sl.time_end}',${i})"`;
+    }
+    html+=`<div class="${cls}" ${onclick} data-i="${i}">
+      <div><div class="slot-time">${sl.time_start} – ${sl.time_end}</div>
+      <div class="slot-sub">${sl.label||''}</div></div>
+      ${badge}</div>`;
+  });
+  el.innerHTML=html;
+}
+
+function selectSlot(id,label,start,end,i){
+  selSlot={id,label,start,end};
+  document.querySelectorAll('.slot-row').forEach(r=>r.classList.remove('selected'));
+  const rows=document.querySelectorAll('.slot-row');
+  if(rows[i]) rows[i].classList.add('selected');
+  G('bb-ico').textContent=selMachine===1?'🔵':'🟦';
+  G('bb-title').textContent=`Machine ${selMachine} — ${start} – ${end}`;
+  G('bb-sub').textContent=fmtDL(selDate);
+  G('form-section').style.display='block';
+  setTimeout(()=>G('form-section').scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+// ════════════════════════════
+//  CONFIRM BOOKING
+// ════════════════════════════
+async function confirmBooking(){
+  const btn=G('confirm-btn');
+  btn.disabled=true; btn.textContent='Saving...';
+  try{
+    if(!selDate||!selSlot){toast('⚠️ Pick a date and slot first');return}
+    // Double-check slot isn't taken
+    const {data:check}=await sb.from('bookings').select('id,rep_id')
+      .eq('date',selDate).eq('slot_id',selSlot.id).eq('machine_num',selMachine);
+    const existing=check||[];
+    const alreadyMine=existing.some(b=>b.rep_id===ME.id);
+    if(!alreadyMine&&existing.length>0){
+      toast('⚠️ Slot just taken! Pick another.');
+      await renderSlots(selDate);
+      G('form-section').style.display='none';
+      return;
+    }
+    const name=G('b-name').value.trim()||'TBD';
+    const phone=G('b-phone').value.trim()||'';
+    const price=parseFloat(G('b-price').value)||0;
+    const addr=G('b-addr').value.trim()||'';
+    const svc=G('b-svc').value;
+    const notes=G('b-notes').value.trim()||'';
+
+    // INSERT BOOKING
+    const {error:bErr}=await sb.from('bookings').insert({
+      rep_id:ME.id, date:selDate, slot_id:selSlot.id,
+      time_start:selSlot.start, time_end:selSlot.end,
+      machine_num:selMachine, client_name:name,
+      phone, price, address:addr, service:svc, notes, status:'confirmed'
+    });
+    if(bErr){toast('❌ '+bErr.message);console.error(bErr);return}
+
+    // INSERT SALE
+    const {error:sErr}=await sb.from('sales').insert({
+      rep_id:ME.id, date:selDate,
+      time_start:selSlot.start, time_end:selSlot.end,
+      machine_num:selMachine, client_name:name,
+      phone, price, address:addr, service:svc, notes, status:'confirmed'
+    });
+    if(sErr){toast('❌ Sale: '+sErr.message);console.error(sErr);return}
+
+    toast(`✅ Booked! Machine ${selMachine} · ${selSlot.start}`);
+    ['b-name','b-phone','b-price','b-addr','b-notes'].forEach(id=>G(id).value='');
+    selSlot=null;
+    G('form-section').style.display='none';
+    await renderSlots(selDate);
+    await loadDash();
+    await loadSales();
+  } finally {
+    btn.disabled=false; btn.textContent='✓ Confirm Booking';
+  }
+}
+
+// ════════════════════════════
+//  DASHBOARD
+// ════════════════════════════
+async function loadDash(){
+  if(PROF.role==='rep') await loadRepDash(); else await loadMgrDash();
+}
+
+async function loadRepDash(){
+  const {data:mySales}=await sb.from('sales').select('*').eq('rep_id',ME.id);
+  const {data:myUp}=await sb.from('bookings').select('id').eq('rep_id',ME.id).gte('date',todayS());
+  const arr=mySales||[];
+  const rev=arr.reduce((s,x)=>s+(parseFloat(x.price)||0),0);
+  G('r-sales').textContent=arr.length; G('r-rev').textContent=fmtMoney(rev);
+  G('r-upcoming').textContent=(myUp||[]).length;
+  const {data:all}=await sb.from('sales').select('rep_id');
+  if(all){
+    const cnt={};all.forEach(s=>cnt[s.rep_id]=(cnt[s.rep_id]||0)+1);
+    const sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+    const rank=sorted.findIndex(([id])=>id===ME.id)+1;
+    G('r-rank').textContent=rank>0?'#'+rank:'#1';
+  }
+  const ranks=await getWeekRanks();
+  const lel=G('r-leader');
+  if(!ranks.length) lel.innerHTML='<div class="empty"><p>No sales this week yet 💪</p></div>';
+  else {const t=ranks[0];lel.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:11px;background:var(--off);border-radius:9px;border:1px solid var(--border)"><div style="font-size:1.6rem">🏆</div><div><div style="font-weight:700">${t.name}</div><div style="font-size:.73rem;color:var(--slate)">${t.count} sale${t.count!==1?'s':''} · ${fmtMoney(t.rev)} this week</div></div></div>`}
+  const {data:rec}=await sb.from('sales').select('*').eq('rep_id',ME.id).order('created_at',{ascending:false}).limit(4);
+  G('r-recent').innerHTML=renderSales(rec||[],false);
+}
+
+async function loadMgrDash(){
+  const {data:all}=await sb.from('sales').select('*');
+  const {data:profs}=await sb.from('profiles').select('id').eq('role','rep');
+  const arr=all||[];
+  const rev=arr.reduce((s,x)=>s+(parseFloat(x.price)||0),0);
+  G('m-sales').textContent=arr.length; G('m-rev').textContent=fmtMoney(rev);
+  G('m-m1').textContent=arr.filter(s=>s.machine_num===1).length;
+  G('m-m2').textContent=arr.filter(s=>s.machine_num===2).length;
+  const ranks=await getWeekRanks();
+  if(ranks.length){const w=ranks[0];G('m-winner').innerHTML=`<div class="winner"><div class="w-trophy">🏆</div><div class="w-name">${w.name}</div><div class="w-stat">${w.count} sale${w.count!==1?'s':''} · ${fmtMoney(w.rev)} this week</div><div class="w-crown">👑 WEEKLY CHAMPION</div></div>`}
+  else G('m-winner').innerHTML='<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
+  const {data:rec}=await sb.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false}).limit(6);
+  G('m-recent').innerHTML=renderSales(rec||[],true);
+}
+
+async function getWeekRanks(){
+  const {data}=await sb.from('sales').select('rep_id,price,profiles(full_name)').gte('created_at',weekAgo());
+  if(!data?.length) return [];
+  const cnt={};
+  data.forEach(s=>{if(!cnt[s.rep_id])cnt[s.rep_id]={name:s.profiles?.full_name||'Unknown',count:0,rev:0};cnt[s.rep_id].count++;cnt[s.rep_id].rev+=parseFloat(s.price)||0});
+  return Object.values(cnt).sort((a,b)=>b.count-a.count);
+}
+
+// ════════════════════════════
+//  SALES
+// ════════════════════════════
+async function loadSales(){
+  let q=sb.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
+  if(PROF.role==='rep') q=q.eq('rep_id',ME.id);
+  const {data}=await q;
+  const arr=data||[], tod=todayS();
+  let f=arr;
+  if(salesPer==='upcoming') f=arr.filter(s=>s.date>=tod);
+  else if(salesPer==='past') f=arr.filter(s=>s.date<tod);
+  G('sales-list').innerHTML=renderSales(f,PROF.role==='manager');
+}
+
+function setSalesTab(p,btn){salesPer=p;document.querySelectorAll('#pg-sales .tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');loadSales()}
+
+function renderSales(arr,showRep){
+  if(!arr.length) return `<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><p>Nothing here yet</p></div>`;
+  return arr.map(s=>`
+    <div class="sale-item si-m${s.machine_num||1}">
+      <div class="si-top">
+        <div>
+          <div class="si-name">${s.client_name||'TBD'}</div>
+          <div class="si-meta">
+            ${showRep&&s.profiles?'👤 '+s.profiles.full_name+'<br>':''}
+            📅 ${s.date||'—'} · Machine ${s.machine_num||1}<br>
+            ${s.time_start?'🕐 '+s.time_start+' – '+s.time_end+'<br>':''}
+            ${s.phone?'📞 '+s.phone+'<br>':''}
+            ${s.address?'📍 '+s.address:''}
+          </div>
+          <span class="si-tag">Confirmed</span>
+        </div>
+        <div style="text-align:right">
+          <div class="si-price">${fmtMoney(s.price)}</div>
+          ${PROF.role==='manager'?`<button class="btn btn-xs btn-red" style="margin-top:6px" onclick="delSale('${s.id}')">Delete</button>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function delSale(id){
+  if(!confirm('Delete this sale?')) return;
+  await sb.from('sales').delete().eq('id',id);
+  toast('🗑️ Deleted'); loadSales(); loadDash();
+}
+
+// ════════════════════════════
+//  LEADERBOARD
+// ════════════════════════════
+async function loadLb(){
+  let since=null;
+  if(lbPer==='week') since=weekAgo();
+  if(lbPer==='month') since=monthAgo();
+  let q=sb.from('sales').select('rep_id,price,profiles(full_name)');
+  if(since) q=q.gte('created_at',since);
+  const {data}=await q;
+  const cnt={};
+  (data||[]).forEach(s=>{if(!cnt[s.rep_id])cnt[s.rep_id]={name:s.profiles?.full_name||'Unknown',count:0,rev:0};cnt[s.rep_id].count++;cnt[s.rep_id].rev+=parseFloat(s.price)||0});
+  const sorted=Object.entries(cnt).sort((a,b)=>b[1].count-a[1].count);
+  const max=sorted[0]?.[1]?.count||1;
+  G('lb-list').innerHTML=sorted.length?sorted.map(([rid,d],i)=>{
+    const rc=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    const rl=i===0?'👑':i===1?'🥈':i===2?'🥉':`${i+1}`;
+    const isMe=rid===ME.id, pct=Math.round((d.count/max)*100);
+    return`<div class="lb-row${isMe?' me':''}">
+      <div class="lbr ${rc}">${rl}</div>
+      <div class="lb-info">
+        <div class="lb-name">${d.name}${isMe?' <span style="font-size:.68rem;color:var(--slate)">(you)</span>':''}</div>
+        <div class="lb-sub">${d.count} sale${d.count!==1?'s':''}</div>
+        <div class="lb-bar"><div class="lb-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="lb-amt">${fmtMoney(d.rev)}</div></div>`;
+  }).join(''):'<div class="empty"><p>No sales in this period yet 💪</p></div>';
+  if(PROF.role==='manager'){
+    let q2=sb.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
+    if(since) q2=q2.gte('created_at',since);
+    const {data:a}=await q2;
+    G('lb-all').innerHTML=renderSales(a||[],true);
+  }
+}
+
+function setLbTab(p,btn){lbPer=p;document.querySelectorAll('#pg-lb .tab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');loadLb()}
+
+// ════════════════════════════
+//  MAP
+// ════════════════════════════
+function initMap(){
+  if(kmap){kmap.resize();return}
+  const el=G('knock-map');
+  if(!el||el.offsetHeight===0){setTimeout(initMap,200);return}
+  kmap=new mapboxgl.Map({container:'knock-map',style:'mapbox://styles/mapbox/streets-v12',center:[-79.6441,43.5890],zoom:13});
+  kmap.addControl(new mapboxgl.NavigationControl(),'top-right');
+  kmap.addControl(new mapboxgl.GeolocateControl({positionOptions:{enableHighAccuracy:true},trackUserLocation:false}),'top-right');
+  kmap.on('load',async()=>{
+    const {data}=await sb.from('door_knocks').select('*');
+    (data||[]).forEach(addPin);
+    updateMapStats();
+  });
+  kmap.on('click',async e=>{
+    const {lng,lat}=e.lngLat;
+    const {data,error}=await sb.from('door_knocks').insert({rep_id:ME.id,lat,lng,status:markMode}).select().single();
+    if(error){toast('❌ '+error.message);console.error(error);return}
+    addPin(data); updateMapStats(); toast('📍 '+ML[markMode]);
+  });
+}
+
+function addPin(k){
+  if(!kmap) return;
+  const el=document.createElement('div');
+  const c=MC[k.status]||'#7C3AED';
+  el.style.cssText=`width:13px;height:13px;border-radius:50%;background:${c};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer`;
+  new mapboxgl.Marker({element:el}).setLngLat([k.lng,k.lat])
+    .setPopup(new mapboxgl.Popup({offset:10,closeButton:false}).setHTML(`<b style="color:${c}">${ML[k.status]||k.status}</b>`))
+    .addTo(kmap);
+}
+
+async function updateMapStats(){
+  const {data}=await sb.from('door_knocks').select('status');
+  G('map-tot').textContent=(data||[]).length;
+  G('map-int').textContent=(data||[]).filter(x=>x.status==='interested').length;
+}
+
+function setMark(s,btn){
+  markMode=s;
+  document.querySelectorAll('.mk').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  toast('📍 Marking: '+ML[s]);
+}
+
+// ════════════════════════════
+//  SCHEDULE
+// ════════════════════════════
+async function loadSchedule(){
+  const ds=schedDay==='today'?todayS():tomorrowS();
+  const {data:bks,error}=await sb.from('bookings').select('*,profiles(full_name)').eq('date',ds).order('time_start',{ascending:true});
+  if(error){G('sched-jobs').innerHTML=`<div class="empty"><p>Error: ${error.message}</p></div>`;return}
+  const jobs=bks||[];
+  const hdr=`<div style="background:var(--ink);color:#fff;border-radius:10px;padding:14px;margin-bottom:11px">
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem">${fmtDL(ds)}</div>
+    <div style="font-size:.73rem;color:#9CA3AF;margin-top:3px">Window Warriors · ${jobs.length} job${jobs.length!==1?'s':''}</div>
+  </div>`;
+  if(!jobs.length){G('sched-jobs').innerHTML=hdr+`<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><p>No jobs booked yet</p></div>`;return}
+  G('sched-jobs').innerHTML=hdr+jobs.map(j=>`
+    <div class="sched-job">
+      <div class="sj-time">
+        <div class="sj-t">${j.time_start||'—'}</div>
+        <div class="sj-te">to ${j.time_end||''}</div>
+        <span class="sj-m m${j.machine_num||1}">M${j.machine_num||1}</span>
+      </div>
+      <div class="sj-info">
+        <h4>${j.client_name||'TBD'}</h4>
+        <p>${j.address?'📍 '+j.address+'<br>':''}${j.phone?'📞 '+j.phone+'<br>':''}🧹 ${j.service||'Window Cleaning'}</p>
+        <span class="sj-rep">👤 ${j.profiles?.full_name||'Unknown'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function setSchedDay(d){
+  schedDay=d;
+  G('sd-today').classList.toggle('on',d==='today');
+  G('sd-tom').classList.toggle('on',d==='tomorrow');
+  loadSchedule();
+}
+
+async function copySchedule(){
+  const ds=schedDay==='today'?todayS():tomorrowS();
+  const {data:bks}=await sb.from('bookings').select('*,profiles(full_name)').eq('date',ds).order('time_start',{ascending:true});
+  const jobs=bks||[];
+  if(!jobs.length){toast('No jobs to copy');return}
+  let txt=`⚔️ WINDOW WARRIORS SCHEDULE\n📅 ${fmtDL(ds)}\n${'─'.repeat(30)}\n\n`;
+  jobs.forEach((j,i)=>{
+    txt+=`${i+1}. [Machine ${j.machine_num||1}] ${j.time_start} – ${j.time_end}\n`;
+    txt+=`   Client: ${j.client_name||'TBD'}\n`;
+    if(j.address) txt+=`   📍 ${j.address}\n`;
+    if(j.phone)   txt+=`   📞 ${j.phone}\n`;
+    txt+=`   Service: ${j.service||'Window Cleaning'}\n`;
+    txt+=`   Rep: ${j.profiles?.full_name||'Unknown'}\n\n`;
+  });
+  txt+=`${'─'.repeat(30)}\n${jobs.length} job${jobs.length!==1?'s':''} · windowwarriors.ca`;
+  try{await navigator.clipboard.writeText(txt);toast('📋 Copied!')}
+  catch{toast('Use Share instead')}
+}
+
+async function shareSchedule(){
+  const ds=schedDay==='today'?todayS():tomorrowS();
+  const {data:bks}=await sb.from('bookings').select('*,profiles(full_name)').eq('date',ds).order('time_start',{ascending:true});
+  const jobs=bks||[];
+  let txt=`⚔️ WINDOW WARRIORS\n📅 ${fmtDL(ds)}\n\n`;
+  jobs.forEach((j,i)=>{txt+=`${i+1}. M${j.machine_num||1} · ${j.time_start}–${j.time_end} — ${j.client_name||'TBD'}\n   ${j.address||''} ${j.phone||''}\n\n`});
+  if(navigator.share){try{await navigator.share({title:'Warriors Schedule',text:txt});return}catch{}}
+  copySchedule();
+}
+
+// ════════════════════════════
+//  SLOT MANAGER
+// ════════════════════════════
+function buildSlotMgr(){
+  G('slot-rows').innerHTML=slots.map((s,i)=>slotRowHTML(s,i)).join('');
+}
+
+function slotRowHTML(s,i){
+  return`<div class="smgr-row" id="sr-${i}">
+    <input type="text" value="${s.label||''}" placeholder="Label e.g. Morning"
+      style="flex:2" onchange="slotChange(${i},'label',this.value)"/>
+    <input type="time" value="${to24(s.time_start)}"
+      style="flex:1" onchange="slotChange(${i},'time_start',from24(this.value))"/>
+    <span style="font-size:.75rem;color:var(--slate);flex-shrink:0">–</span>
+    <input type="time" value="${to24(s.time_end)}"
+      style="flex:1" onchange="slotChange(${i},'time_end',from24(this.value))"/>
+    <button onclick="G('sr-${i}').remove()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.1rem;flex-shrink:0;padding:0 3px">✕</button>
+  </div>`;
+}
+
+const pendingSlotChanges={};
+function slotChange(i,field,val){if(!pendingSlotChanges[i])pendingSlotChanges[i]={...slots[i]};pendingSlotChanges[i][field]=val}
+
+function addSlotRow(){
+  const newS={label:'',time_start:'9:00 AM',time_end:'11:00 AM',sort_order:999};
+  const i='new'+Date.now();
+  const div=document.createElement('div');
+  div.innerHTML=`<div class="smgr-row" id="sr-${i}">
+    <input type="text" placeholder="Label" style="flex:2" onchange="pendingSlotChanges['${i}']={...(pendingSlotChanges['${i}']||${JSON.stringify(newS)})};pendingSlotChanges['${i}'].label=this.value"/>
+    <input type="time" value="09:00" style="flex:1" onchange="pendingSlotChanges['${i}']={...(pendingSlotChanges['${i}']||${JSON.stringify(newS)})};pendingSlotChanges['${i}'].time_start=from24(this.value)"/>
+    <span style="font-size:.75rem;color:var(--slate);flex-shrink:0">–</span>
+    <input type="time" value="11:00" style="flex:1" onchange="pendingSlotChanges['${i}']={...(pendingSlotChanges['${i}']||${JSON.stringify(newS)})};pendingSlotChanges['${i}'].time_end=from24(this.value)"/>
+    <button onclick="this.closest('.smgr-row').remove()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.1rem;flex-shrink:0;padding:0 3px">✕</button>
+  </div>`;
+  G('slot-rows').appendChild(div.firstElementChild);
+  pendingSlotChanges[i]=newS;
+}
+
+async function saveSlots(){
+  // Collect all visible rows
+  const rows=document.querySelectorAll('.smgr-row');
+  const toSave=[];
+  let order=0;
+  rows.forEach(row=>{
+    const inputs=row.querySelectorAll('input[type="text"],input[type="time"]');
+    if(inputs.length<3) return;
+    const label=inputs[0].value.trim();
+    const start=from24(inputs[1].value);
+    const end=from24(inputs[2].value);
+    if(start&&end) toSave.push({label,time_start:start,time_end:end,sort_order:order++});
+  });
+  // Clear and re-insert
+  const {error:delErr}=await sb.from('slots').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  if(delErr){toast('❌ '+delErr.message);console.error(delErr);return}
+  if(toSave.length){
+    const {error:insErr}=await sb.from('slots').insert(toSave);
+    if(insErr){toast('❌ '+insErr.message);console.error(insErr);return}
+  }
+  toast('✅ Slots saved!');
+  await loadSlots();
+  buildSlotMgr();
+}
+
+function to24(t){
+  if(!t) return '09:00';
+  const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if(!m) return t.length===5?t:'09:00';
+  let h=parseInt(m[1]),mn=m[2],p=m[3].toUpperCase();
+  if(p==='PM'&&h!==12) h+=12;
+  if(p==='AM'&&h===12) h=0;
+  return `${String(h).padStart(2,'0')}:${mn}`;
+}
+function from24(t){
+  if(!t) return '9:00 AM';
+  const [hs,mn]=t.split(':');
+  let h=parseInt(hs);
+  const p=h>=12?'PM':'AM';
+  if(h>12) h-=12; if(h===0) h=12;
+  return `${h}:${mn} ${p}`;
+}
+
+// ════════════════════════════
+//  SESSION
+// ════════════════════════════
+window.addEventListener('load',async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(session) await boot(session.user);
+});
+sb.auth.onAuthStateChange(async(ev,session)=>{
+  if(ev==='SIGNED_IN'&&session&&!ME) await boot(session.user);
+  if(ev==='SIGNED_OUT'){G('app').style.display='none';G('auth').style.display='flex'}
+});
+</script>
+</body>
+</html>
