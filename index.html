@@ -634,67 +634,54 @@ function weekAgo(){const d=new Date();d.setDate(d.getDate()-7);d.setHours(0,0,0,
 function monthAgo(){const d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d.toISOString()}
 
 // ════════════════════════════
-//  AUTH
+//  AUTH — no Supabase email auth
+//  Uses profiles table directly
+//  Password stored as plain text (internal tool)
 // ════════════════════════════
 function showP(p){G('p-login').style.display=p==='login'?'block':'none';G('p-register').style.display=p==='register'?'block':'none';G('err').style.display='none'}
 function toggleMgr(){G('mgr-f').style.display=G('r-role').value==='manager'?'block':'none'}
 function showErr(m){const e=G('err');e.textContent=m;e.style.display='block'}
 
+// Save session in localStorage
+function saveSession(prof){localStorage.setItem('wh_session',JSON.stringify(prof))}
+function clearSession(){localStorage.removeItem('wh_session')}
+function getSession(){try{const s=localStorage.getItem('wh_session');return s?JSON.parse(s):null}catch{return null}}
+
 async function doLogin(){
   const btn=G('login-btn'); btn.disabled=true; btn.textContent='Signing in...';
-  const email=G('l-em').value.trim(), pass=G('l-pw').value;
-  if(!email||!pass){showErr('Enter email and password');btn.disabled=false;btn.textContent='Sign In →';return}
-  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
-  if(error){
-    if(error.message.includes('Email not confirmed')){
-      showErr('Please check your email and click the confirmation link, or ask your manager to confirm you in Supabase.');
-    } else if(error.message.includes('Invalid login')){
-      showErr('Wrong email or password. Try again.');
-    } else {
-      showErr(error.message);
-    }
-    btn.disabled=false; btn.textContent='Sign In →';
-    return;
-  }
-  await boot(data.user);
+  const email=G('l-em').value.trim().toLowerCase();
+  const pass=G('l-pw').value;
+  if(!email||!pass){showErr('Enter your email and password');btn.disabled=false;btn.textContent='Sign In →';return}
+  // Look up in profiles table
+  const {data,error}=await sb.from('profiles').select('*').eq('email',email).eq('password',pass).single();
+  if(error||!data){showErr('Wrong email or password');btn.disabled=false;btn.textContent='Sign In →';return}
+  saveSession(data);
+  await boot(data);
 }
 
 async function doRegister(){
   const btn=G('reg-btn'); btn.disabled=true; btn.textContent='Creating...';
-  const name=G('r-nm').value.trim(), email=G('r-em').value.trim();
-  const pass=G('r-pw').value, role=G('r-role').value, code=G('r-code').value;
+  const name=G('r-nm').value.trim();
+  const email=G('r-em').value.trim().toLowerCase();
+  const pass=G('r-pw').value;
+  const role=G('r-role').value;
+  const code=G('r-code').value;
   if(!name||!email||!pass){showErr('Fill in all fields');btn.disabled=false;btn.textContent='Create Account →';return}
-  if(pass.length<6){showErr('Password must be 6+ characters');btn.disabled=false;btn.textContent='Create Account →';return}
+  if(pass.length<4){showErr('Password must be at least 4 characters');btn.disabled=false;btn.textContent='Create Account →';return}
   if(role==='manager'&&code!==MGR_CODE){showErr('Wrong manager code');btn.disabled=false;btn.textContent='Create Account →';return}
-
-  // Sign up
-  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role}}});
-  if(error){showErr(error.message);btn.disabled=false;btn.textContent='Create Account →';return}
-
-  // Save profile
-  await sb.from('profiles').upsert({id:data.user.id,full_name:name,email,role});
-
-  // If email confirmation is ON, Supabase won't give a session immediately
-  // So we immediately sign in after registering
-  if(!data.session){
-    const {data:signInData, error:signInErr}=await sb.auth.signInWithPassword({email,password:pass});
-    if(signInErr){
-      // Account created but can't auto-login — tell them to sign in manually
-      showErr('Account created! Please sign in now.');
-      showP('login');
-      G('l-em').value=email;
-      btn.disabled=false; btn.textContent='Create Account →';
-      return;
-    }
-    await sb.from('profiles').upsert({id:signInData.user.id,full_name:name,email,role});
-    await boot(signInData.user);
-  } else {
-    await boot(data.user);
-  }
+  // Check email not already used
+  const {data:existing}=await sb.from('profiles').select('id').eq('email',email).single();
+  if(existing){showErr('An account with this email already exists');btn.disabled=false;btn.textContent='Create Account →';return}
+  // Create profile
+  const id=crypto.randomUUID();
+  const {data,error}=await sb.from('profiles').insert({id,full_name:name,email,password:pass,role}).select().single();
+  if(error){showErr('Error: '+error.message);console.error(error);btn.disabled=false;btn.textContent='Create Account →';return}
+  saveSession(data);
+  await boot(data);
 }
 
 async function doSignOut(){
-  await sb.auth.signOut();
+  clearSession();
   ME=null; PROF=null; kmap=null;
   G('app').style.display='none'; G('auth').style.display='flex'; showP('login');
 }
@@ -702,11 +689,9 @@ async function doSignOut(){
 // ════════════════════════════
 //  BOOT
 // ════════════════════════════
-async function boot(user){
-  ME=user;
-  let {data:p}=await sb.from('profiles').select('*').eq('id',user.id).single();
-  if(!p){p={id:user.id,full_name:user.email.split('@')[0],email:user.email,role:'rep'};await sb.from('profiles').upsert(p)}
-  PROF=p;
+async function boot(profile){
+  ME=profile;
+  PROF=profile;
   G('auth').style.display='none'; G('app').style.display='flex';
   G('tb-user').textContent=PROF.full_name;
   const rp=G('tb-role'); rp.textContent=PROF.role==='manager'?'Manager':'Rep';
@@ -1245,15 +1230,17 @@ function from24(t){
 }
 
 // ════════════════════════════
-//  SESSION
+//  SESSION — restore from localStorage
 // ════════════════════════════
 window.addEventListener('load',async()=>{
-  const {data:{session}}=await sb.auth.getSession();
-  if(session) await boot(session.user);
-});
-sb.auth.onAuthStateChange(async(ev,session)=>{
-  if(ev==='SIGNED_IN'&&session&&!ME) await boot(session.user);
-  if(ev==='SIGNED_OUT'){G('app').style.display='none';G('auth').style.display='flex'}
+  const saved=getSession();
+  if(saved){
+    // Re-verify profile still exists
+    const {data}=await sb.from('profiles').select('*').eq('id',saved.id).single();
+    if(data){ await boot(data); return; }
+    clearSession();
+  }
+  G('auth').style.display='flex';
 });
 </script>
 </body>
