@@ -851,12 +851,16 @@ async function renderSlots(ds) {
     return;
   }
   const { data: bks, error } = await db.from('bookings')
-    .select('slot_id, rep_id, machine_num').eq('date', ds);
+    .select('slot_id, rep_id, machine_num, time_start').eq('date', ds);
   if (error) { el.innerHTML=`<div style="color:var(--red);padding:8px;font-size:.82rem">Error loading: ${error.message}</div>`; return; }
   const booked = bks || [];
   let html = '';
   slots.forEach((sl, i) => {
-    const thisMachineBookings = booked.filter(b => b.slot_id===sl.id && b.machine_num===selMachine);
+    // Match by slot_id OR by time_start (in case slot_id was null on old bookings)
+    const thisMachineBookings = booked.filter(b =>
+      b.machine_num===selMachine &&
+      (b.slot_id===sl.id || b.time_start===sl.time_start)
+    );
     const isMine   = thisMachineBookings.some(b => b.rep_id===ME.id);
     const isTaken  = thisMachineBookings.length > 0;
     let cls = 'slotrow', badge = '', onclick = '';
@@ -934,9 +938,10 @@ async function confirmBooking() {
     });
     if (bErr) { toast('❌ Booking failed: '+bErr.message); console.error(bErr); return; }
 
-    // INSERT SALE
+    // INSERT SALE (include slot_id so we can link back to booking later)
     const { error: sErr } = await db.from('sales').insert({
       rep_id: ME.id, date: selDate,
+      slot_id: selSlot.id,
       time_start: selSlot.start, time_end: selSlot.end,
       machine_num: selMachine,
       client_name: name, phone, price, address: addr, service: svc, notes,
@@ -944,11 +949,13 @@ async function confirmBooking() {
     });
     if (sErr) { toast('❌ Sale record: '+sErr.message); console.error(sErr); return; }
 
-    // Clear form
+    // Clear form — capture values BEFORE nulling selSlot
+    const doneTime = selSlot.start;
+    const doneMachine = selMachine;
     ['b-nm','b-ph','b-pr','b-ad','b-nt'].forEach(id => G(id).value='');
     selSlot = null;
     G('form-sec').style.display = 'none';
-    toast(`✅ Booked! Machine ${selMachine} · ${selSlot?.start||''}`);
+    toast(`✅ Booked! Machine ${doneMachine} · ${doneTime}`);
     await renderSlots(selDate);
     refreshMachineCounts();
     await loadDash();
@@ -1070,8 +1077,10 @@ function renderSales(arr, showRep) {
       <line x1="12" y1="1" x2="12" y2="23"/>
       <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
     </svg><p>Nothing here yet</p></div>`;
-  return arr.map(s => `
-    <div class="sitem si${s.machine_num||1}">
+  return arr.map(s => {
+    const canEdit = ME.role==='manager' || s.rep_id===ME.id;
+    return `
+    <div class="sitem si${s.machine_num||1}" id="sitem-${s.id}">
       <div class="si-top">
         <div style="flex:1;min-width:0">
           <div class="si-name">${s.client_name||'TBD'}</div>
@@ -1086,16 +1095,188 @@ function renderSales(arr, showRep) {
         </div>
         <div style="text-align:right;flex-shrink:0;margin-left:10px">
           <div class="si-price">${fmtMoney(s.price)}</div>
-          ${ME.role==='manager' ? `<button class="btn btn-xs btn-red" style="margin-top:7px" onclick="delSale('${s.id}')">Delete</button>` : ''}
+          ${canEdit ? `<div style="display:flex;flex-direction:column;gap:5px;margin-top:7px">
+            <button class="btn btn-xs btn-ink" onclick="openEditModal('${s.id}')">✏️ Edit</button>
+            <button class="btn btn-xs btn-red" onclick="delSale('${s.id}')">🗑️ Delete</button>
+          </div>` : ''}
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function delSale(id) {
-  if (!confirm('Delete this sale?')) return;
-  await db.from('sales').delete().eq('id', id);
-  toast('🗑️ Deleted'); loadSales(); loadDash();
+  if (!confirm('Delete this booking and sale?')) return;
+  // Step 1: fetch sale details BEFORE deleting anything
+  const { data: s } = await db.from('sales')
+    .select('rep_id, date, slot_id, machine_num').eq('id', id).maybeSingle();
+  if (!s) { toast('❌ Could not find sale'); return; }
+  // Step 2: delete the sale
+  const { error: sErr } = await db.from('sales').delete().eq('id', id);
+  if (sErr) { toast('❌ ' + sErr.message); return; }
+  // Step 3: delete the matching booking using slot_id + rep_id + date + machine
+  let bq = db.from('bookings').delete()
+    .eq('rep_id', s.rep_id)
+    .eq('date', s.date)
+    .eq('machine_num', s.machine_num);
+  if (s.slot_id) bq = bq.eq('slot_id', s.slot_id);
+  await bq;
+  toast('🗑️ Booking deleted');
+  await loadSales();
+  await loadDash();
+}
+
+// ══════════════════════════════════════
+//  EDIT / RESCHEDULE MODAL
+// ══════════════════════════════════════
+let editingId = null;
+let editSlots = [];
+
+async function openEditModal(saleId) {
+  editingId = saleId;
+  // Load sale data
+  const { data: s } = await db.from('sales').select('*,profiles(full_name)').eq('id', saleId).single();
+  if (!s) { toast('Could not load booking'); return; }
+
+  // Load all slots for slot picker
+  const { data: slotData } = await db.from('slots').select('*').order('sort_order');
+  editSlots = slotData || [];
+
+  const slotsOptions = editSlots.map(sl =>
+    `<option value="${sl.id}" data-start="${sl.time_start}" data-end="${sl.time_end}"
+      ${sl.id===s.slot_id?'selected':''}>${sl.time_start} – ${sl.time_end}${sl.label?' ('+sl.label+')':''}</option>`
+  ).join('');
+
+  const modal = document.getElementById('edit-modal');
+  modal.innerHTML = `
+    <div class="modal-backdrop" onclick="closeEditModal()"></div>
+    <div class="modal-box">
+      <div class="modal-hd">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem">Edit Booking</div>
+          <div style="font-size:.75rem;color:var(--slate);margin-top:2px">${s.client_name||'TBD'}</div>
+        </div>
+        <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;
+          font-size:1.4rem;color:var(--slate);padding:0;line-height:1">×</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="field"><label>Client Name</label>
+          <input class="finp" id="e-nm" type="text" value="${s.client_name||''}" placeholder="Full name"/>
+        </div>
+        <div class="f2">
+          <div class="field"><label>Phone</label>
+            <input class="finp" id="e-ph" type="tel" value="${s.phone||''}" placeholder="(647) 000-0000"/>
+          </div>
+          <div class="field"><label>Price ($)</label>
+            <input class="finp" id="e-pr" type="number" value="${s.price||0}" min="0"/>
+          </div>
+        </div>
+        <div class="field"><label>Address</label>
+          <input class="finp" id="e-ad" type="text" value="${s.address||''}" placeholder="123 Main St"/>
+        </div>
+        <div class="field"><label>Service</label>
+          <select class="finp" id="e-sv">
+            ${['Exterior Window Cleaning','Interior Window Cleaning','Eavestrough / Gutter Cleaning',
+               'Sliding Door Cleaning','Glass Staircase Cleaning','Full Package']
+              .map(o=>`<option${o===s.service?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Notes</label>
+          <textarea class="finp" id="e-nt" placeholder="Notes...">${s.notes||''}</textarea>
+        </div>
+
+        <div style="background:var(--off);border-radius:10px;padding:13px;border:1px solid var(--border);margin-bottom:12px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;margin-bottom:10px">
+            📅 Reschedule
+          </div>
+          <div class="field"><label>Date</label>
+            <input class="finp" id="e-dt" type="date" value="${s.date||''}"/>
+          </div>
+          <div class="f2">
+            <div class="field"><label>Machine</label>
+              <select class="finp" id="e-mc">
+                <option value="1"${(s.machine_num||1)===1?' selected':''}>Machine 1</option>
+                <option value="2"${(s.machine_num||1)===2?' selected':''}>Machine 2</option>
+              </select>
+            </div>
+            <div class="field"><label>Time Slot</label>
+              <select class="finp" id="e-sl">
+                <option value="">-- keep current --</option>
+                ${slotsOptions}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-off btn-sm" style="flex:1" onclick="closeEditModal()">Cancel</button>
+          <button class="btn btn-gold btn-sm" style="flex:1" id="save-edit-btn" onclick="saveEdit('${saleId}')">💾 Save Changes</button>
+        </div>
+      </div>
+    </div>`;
+  modal.style.display = 'flex';
+}
+
+function closeEditModal() {
+  const m = document.getElementById('edit-modal');
+  m.style.display = 'none';
+  m.innerHTML = '';
+  editingId = null;
+}
+
+async function saveEdit(saleId) {
+  const btn = document.getElementById('save-edit-btn');
+  if (!btn) return;
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    // Fetch the FULL current sale record first — we need old values as lookup keys
+    const { data: old, error: fetchErr } = await db.from('sales')
+      .select('*').eq('id', saleId).maybeSingle();
+    if (fetchErr || !old) { toast('❌ Could not load booking data'); return; }
+
+    // Read form values
+    const name    = document.getElementById('e-nm').value.trim() || 'TBD';
+    const phone   = document.getElementById('e-ph').value.trim() || '';
+    const price   = parseFloat(document.getElementById('e-pr').value) || 0;
+    const addr    = document.getElementById('e-ad').value.trim() || '';
+    const svc     = document.getElementById('e-sv').value;
+    const notes   = document.getElementById('e-nt').value.trim() || '';
+    const newDate = document.getElementById('e-dt').value || old.date;
+    const newMach = parseInt(document.getElementById('e-mc').value) || old.machine_num || 1;
+    const slotEl  = document.getElementById('e-sl');
+    const newSlotId = slotEl.value || old.slot_id || null;
+    const slotOpt = slotEl.value ? slotEl.selectedOptions[0] : null;
+    const newTStart = slotOpt ? slotOpt.dataset.start : old.time_start;
+    const newTEnd   = slotOpt ? slotOpt.dataset.end   : old.time_end;
+
+    // ── Update SALES row
+    const { error: sErr } = await db.from('sales').update({
+      client_name: name, phone, price, address: addr,
+      service: svc, notes, date: newDate,
+      machine_num: newMach, slot_id: newSlotId,
+      time_start: newTStart, time_end: newTEnd
+    }).eq('id', saleId);
+    if (sErr) { toast('❌ Save failed: ' + sErr.message); return; }
+
+    // ── Update BOOKINGS row — use OLD rep_id + OLD date + OLD slot_id + OLD machine as keys
+    let bq = db.from('bookings').update({
+      client_name: name, phone, price, address: addr,
+      service: svc, notes, date: newDate,
+      machine_num: newMach, slot_id: newSlotId,
+      time_start: newTStart, time_end: newTEnd
+    }).eq('rep_id', old.rep_id).eq('date', old.date).eq('machine_num', old.machine_num || 1);
+    if (old.slot_id) bq = bq.eq('slot_id', old.slot_id);
+    const { error: bErr } = await bq;
+    if (bErr) console.warn('Booking update warning:', bErr.message);
+
+    toast('✅ Booking updated!');
+    closeEditModal();
+    await loadSales();
+    await loadDash();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Save Changes'; }
+  }
 }
 
 // ══════════════════════════════════════
@@ -1373,5 +1554,20 @@ window.addEventListener('load', async () => {
   G('auth').style.display = 'flex';
 });
 </script>
+
+<!-- ═══════════════ EDIT MODAL ═══════════════ -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:500;
+  align-items:flex-end;justify-content:center"></div>
+
+<style>
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px)}
+.modal-box{position:relative;background:#fff;border-radius:20px 20px 0 0;
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;z-index:1;
+  box-shadow:0 -8px 40px rgba(0,0,0,.2);animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;
+  padding:18px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
+.modal-body{padding:16px 18px 32px}
+</style>
 </body>
 </html>
