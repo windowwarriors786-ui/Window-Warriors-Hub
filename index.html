@@ -877,21 +877,26 @@ async function renderSlots(ds) {
 
     let cls = 'slotrow', badge = '', onclick = '';
     if (isMine) {
-      cls    += ` sr-mine${selMachine}`;
-      badge   = `<span class="sbadge sb-mine">✓ Your Booking</span>`;
-      onclick = `onclick="selectSlot('${sl.id}','${sl.label}','${sl.time_start}','${sl.time_end}',${i})"`;
+      cls   += ` sr-mine${selMachine}`;
+      badge  = `<span class="sbadge sb-mine">✓ Your Booking</span>`;
+      // NO onclick — already booked, clicking does nothing
+      html += `<div class="${cls}" style="cursor:default" data-i="${i}">
+        <div>
+          <div class="sr-time">${sl.time_start} – ${sl.time_end}</div>
+          <div class="sr-sub">${sl.label||''}</div>
+        </div>
+        ${badge}
+      </div>`;
     } else {
-      badge   = `<span class="sbadge sb-open">Open</span>`;
-      onclick = `onclick="selectSlot('${sl.id}','${sl.label}','${sl.time_start}','${sl.time_end}',${i})"`;
+      badge  = `<span class="sbadge sb-open">Open</span>`;
+      html += `<div class="${cls}" onclick="selectSlot('${sl.id}','${sl.label}','${sl.time_start}','${sl.time_end}',${i})" data-i="${i}">
+        <div>
+          <div class="sr-time">${sl.time_start} – ${sl.time_end}</div>
+          <div class="sr-sub">${sl.label||''}</div>
+        </div>
+        ${badge}
+      </div>`;
     }
-
-    html += `<div class="${cls}" ${onclick} data-i="${i}">
-      <div>
-        <div class="sr-time">${sl.time_start} – ${sl.time_end}</div>
-        <div class="sr-sub">${sl.label||''}</div>
-      </div>
-      ${badge}
-    </div>`;
   });
 
   if (!html) {
@@ -942,7 +947,9 @@ async function confirmBooking() {
       return;
     }
     if (alreadyMine) {
-      toast('⚠️ You already booked this slot!');
+      toast('⚠️ You already have this slot booked!');
+      G('form-sec').style.display = 'none';
+      await renderSlots(selDate);
       return;
     }
 
