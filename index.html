@@ -850,31 +850,41 @@ async function renderSlots(ds) {
     el.innerHTML = `<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>No slots set up yet.<br>Manager can add slots in the Schedule tab.</p></div>`;
     return;
   }
+  // Fetch ALL bookings for this date — no filter on machine yet
   const { data: bks, error } = await db.from('bookings')
-    .select('slot_id, rep_id, machine_num, time_start').eq('date', ds);
-  if (error) { el.innerHTML=`<div style="color:var(--red);padding:8px;font-size:.82rem">Error loading: ${error.message}</div>`; return; }
+    .select('id, slot_id, rep_id, machine_num, time_start').eq('date', ds);
+  if (error) {
+    el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:.82rem">Error: ${error.message}</div>`;
+    return;
+  }
   const booked = bks || [];
   let html = '';
+
   slots.forEach((sl, i) => {
-    // Match by slot_id OR by time_start (in case slot_id was null on old bookings)
-    const thisMachineBookings = booked.filter(b =>
-      b.machine_num===selMachine &&
-      (b.slot_id===sl.id || b.time_start===sl.time_start)
+    // A booking matches this slot if slot_id matches OR time_start matches (handles legacy nulls)
+    // AND machine_num matches (coerce both to int to avoid type mismatch)
+    const match = booked.filter(b =>
+      parseInt(b.machine_num) === parseInt(selMachine) &&
+      (b.slot_id === sl.id || b.time_start === sl.time_start)
     );
-    const isMine   = thisMachineBookings.some(b => b.rep_id===ME.id);
-    const isTaken  = thisMachineBookings.length > 0;
+
+    const isMine  = match.some(b => b.rep_id === ME.id);
+    const isTaken = match.length > 0;
+
+    // Taken slots do NOT appear at all — just skip rendering them
+    // Unless it's mine (so rep can see their own booking)
+    if (isTaken && !isMine) return; // skip — slot disappears
+
     let cls = 'slotrow', badge = '', onclick = '';
     if (isMine) {
-      cls   += ` sr-mine${selMachine}`;
-      badge  = `<span class="sbadge sb-mine">✓ Yours</span>`;
+      cls    += ` sr-mine${selMachine}`;
+      badge   = `<span class="sbadge sb-mine">✓ Your Booking</span>`;
       onclick = `onclick="selectSlot('${sl.id}','${sl.label}','${sl.time_start}','${sl.time_end}',${i})"`;
-    } else if (isTaken) {
-      cls   += ' sr-taken';
-      badge  = `<span class="sbadge sb-taken">🔒 Taken</span>`;
     } else {
-      badge  = `<span class="sbadge sb-open">Open</span>`;
+      badge   = `<span class="sbadge sb-open">Open</span>`;
       onclick = `onclick="selectSlot('${sl.id}','${sl.label}','${sl.time_start}','${sl.time_end}',${i})"`;
     }
+
     html += `<div class="${cls}" ${onclick} data-i="${i}">
       <div>
         <div class="sr-time">${sl.time_start} – ${sl.time_end}</div>
@@ -883,6 +893,11 @@ async function renderSlots(ds) {
       ${badge}
     </div>`;
   });
+
+  if (!html) {
+    html = `<div class="empty"><p>No slots available for this date on Machine ${selMachine}.<br>All slots are booked.</p></div>`;
+  }
+
   el.innerHTML = html;
 }
 
@@ -910,14 +925,24 @@ async function confirmBooking() {
   try {
     if (!selDate || !selSlot) { toast('⚠️ Pick a date and slot first'); return; }
 
-    // Re-check slot availability
+    // Hard server-side double-booking guard
+    // Match by slot_id OR time_start (handles legacy rows), coerce machine_num to int
     const { data: chk } = await db.from('bookings')
-      .select('id, rep_id').eq('date', selDate).eq('slot_id', selSlot.id).eq('machine_num', selMachine);
-    const existing = chk || [];
-    if (!existing.some(b=>b.rep_id===ME.id) && existing.length > 0) {
-      toast('⚠️ Slot was just taken. Pick another!');
+      .select('id, rep_id, slot_id, time_start, machine_num')
+      .eq('date', selDate)
+      .eq('machine_num', selMachine);
+    const existing = (chk || []).filter(b =>
+      b.slot_id === selSlot.id || b.time_start === selSlot.start
+    );
+    const alreadyMine = existing.some(b => b.rep_id === ME.id);
+    if (!alreadyMine && existing.length > 0) {
+      toast('⚠️ Slot already taken!');
       await renderSlots(selDate);
       G('form-sec').style.display = 'none';
+      return;
+    }
+    if (alreadyMine) {
+      toast('⚠️ You already booked this slot!');
       return;
     }
 
