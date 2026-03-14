@@ -582,6 +582,24 @@ textarea.finp{resize:none;min-height:64px}
       </div>
     </div>
 
+    <!-- PAYROLL PAGE -->
+    <div class="page" id="pg-pay">
+      <div class="pg-h">Payroll</div>
+      <div class="pg-s">Weekly revenue by rep — tap to expand</div>
+      <div class="card" style="padding:12px 14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <button onclick="payShift(-1)" style="background:var(--off);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.88rem;color:var(--slate)">&#8249; Prev</button>
+          <div style="text-align:center">
+            <div id="pay-week-lbl" style="font-weight:800;font-size:.95rem;color:var(--ink)">This Week</div>
+            <div id="pay-week-range" style="font-size:.7rem;color:var(--slate);margin-top:2px"></div>
+          </div>
+          <button onclick="payShift(1)" style="background:var(--off);border:1px solid var(--border);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.88rem;color:var(--slate)">Next &#8250;</button>
+        </div>
+      </div>
+      <div class="sg" id="pay-totals"></div>
+      <div id="pay-reps"></div>
+    </div>
+
   </div>
 
   <nav class="bnav">
@@ -608,6 +626,10 @@ textarea.finp{resize:none;min-height:64px}
     <button class="nb" onclick="goTo('sched',this)">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       <span>Schedule</span>
+    </button>
+    <button class="nb" id="nav-pay" style="display:none" onclick="goTo('pay',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/><line x1="14" y1="15" x2="18" y2="15"/></svg>
+      <span>Payroll</span>
     </button>
   </nav>
 </div>
@@ -745,7 +767,11 @@ async function boot(profile) {
   G('dv-mgr').style.display  = ME.role==='manager' ? 'block' : 'none';
   G('lb-mgr').style.display  = ME.role==='manager' ? 'block' : 'none';
   G('slot-mgr').style.display= ME.role==='manager' ? 'block' : 'none';
-  if (ME.role==='manager') G('sales-h').textContent = 'All Team Sales';
+  if (ME.role==='manager') {
+    G('sales-h').textContent = 'All Team Sales';
+    var np = document.getElementById('nav-pay');
+    if (np) np.style.display = 'flex';
+  }
 
   // Schedule labels
   G('sd-t-lbl').textContent  = fmtD(todayStr());
@@ -770,6 +796,7 @@ function goTo(pg, btn) {
   if (pg==='lb')    loadLb();
   if (pg==='dash')  loadDash();
   if (pg==='sales') loadSales();
+  if (pg==='pay')   { if(typeof loadPayroll==='function') loadPayroll(); }
 }
 
 // ══════════════════════════════════════
@@ -1117,11 +1144,12 @@ function renderSales(arr, showRep) {
         <div style="flex:1;min-width:0">
           <div class="si-name">${s.client_name||'TBD'}</div>
           <div class="si-meta">
-            ${showRep && s.profiles ? '👤 '+s.profiles.full_name+'<br>' : ''}
-            📅 ${s.date||'—'} · <span style="color:var(--m${s.machine_num||1})">Machine ${s.machine_num||1}</span><br>
-            ${s.time_start ? '🕐 '+s.time_start+' – '+s.time_end+'<br>' : ''}
+            ${showRep ? '<b>👤 '+(s.profiles ? s.profiles.full_name : ME.full_name)+'</b><br>' : ''}
+            📅 <b>${s.date||'—'}</b> · <span style="color:var(--m${s.machine_num||1})">Machine ${s.machine_num||1}</span><br>
+            ${s.time_start ? '🕐 <b>'+s.time_start+' – '+s.time_end+'</b><br>' : ''}
             ${s.phone   ? '📞 '+s.phone+'<br>'   : ''}
-            ${s.address ? '📍 '+s.address        : ''}
+            ${s.address ? '📍 '+s.address+'<br>' : ''}
+            ${s.created_at ? '<span style="font-size:.67rem;color:#aaa">🖊 Booked: '+new Date(s.created_at).toLocaleString('en-CA',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</span>' : ''}
           </div>
           <span class="si-tag">Confirmed</span>
         </div>
@@ -1185,7 +1213,7 @@ async function openEditModal(saleId) {
     <div class="modal-box">
       <div class="modal-hd">
         <div>
-          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem">Edit Booking</div>
+          <div style="font-family:Syne,sans-serif;font-weight:800;font-size:1.05rem">Edit Booking</div>
           <div style="font-size:.75rem;color:var(--slate);margin-top:2px">${s.client_name||'TBD'}</div>
         </div>
         <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;
@@ -1219,7 +1247,7 @@ async function openEditModal(saleId) {
         </div>
 
         <div style="background:var(--off);border-radius:10px;padding:13px;border:1px solid var(--border);margin-bottom:12px">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;margin-bottom:10px">
+          <div style="font-family:Syne,sans-serif;font-weight:700;font-size:.82rem;margin-bottom:10px">
             📅 Reschedule
           </div>
           <div class="field"><label>Date</label>
@@ -1327,18 +1355,18 @@ async function loadLb() {
     cnt[s.rep_id].count++;
     cnt[s.rep_id].rev += parseFloat(s.price)||0;
   });
-  const sorted = Object.entries(cnt).sort((a,b)=>b[1].count-a[1].count);
-  const max = sorted[0]?.[1]?.count || 1;
+  const sorted = Object.entries(cnt).sort((a,b)=>b[1].rev-a[1].rev);
+  const maxRev = sorted[0]?.[1]?.rev || 1;
   G('lb-list').innerHTML = sorted.length ? sorted.map(([rid,d],i) => {
     const rc = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
     const rl = i===0?'👑':i===1?'🥈':i===2?'🥉':`${i+1}`;
     const isMe = rid===ME.id;
-    const pct  = Math.round((d.count/max)*100);
+    const pct  = Math.round((d.rev/maxRev)*100);
     return `<div class="lbrow${isMe?' lbme':''}">
       <div class="lbr ${rc}">${rl}</div>
       <div class="lb-info">
         <div class="lb-name">${d.name}${isMe?' <span style="font-size:.68rem;color:var(--slate)">(you)</span>':''}</div>
-        <div class="lb-sub">${d.count} sale${d.count!==1?'s':''}</div>
+        <div class="lb-sub">${d.count} sale${d.count!==1?'s':''} · ${fmtMoney(d.rev)}</div>
         <div class="lb-bar"><div class="lb-fill" style="width:${pct}%"></div></div>
       </div>
       <div class="lb-amt">${fmtMoney(d.rev)}</div>
@@ -1425,7 +1453,7 @@ async function loadSchedule() {
   const jobs = bks || [];
   const hdr  = `<div style="background:var(--ink);color:#fff;border-radius:12px;
     padding:16px;margin-bottom:12px">
-    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem">${fmtDL(ds)}</div>
+    <div style="font-family:Syne,sans-serif;font-weight:800;font-size:1rem">${fmtDL(ds)}</div>
     <div style="font-size:.74rem;color:#5A5A7A;margin-top:4px">
       Window Warriors · ${jobs.length} job${jobs.length!==1?'s':''}</div>
   </div>`;
@@ -1575,6 +1603,196 @@ function from24(t) {
 // ══════════════════════════════════════
 //  SESSION RESTORE
 // ══════════════════════════════════════
+// ══════════════════════════════════════
+//  PAYROLL
+// ══════════════════════════════════════
+var payOffset = 0;
+var payExpanded = null;
+var _payCache = [];
+var _payWeekStr = '';
+
+function payShift(dir) {
+  payOffset += dir;
+  payExpanded = null;
+  loadPayroll();
+}
+
+function payWeekBounds() {
+  var now = new Date();
+  var day = now.getDay();
+  var mon = new Date(now);
+  mon.setDate(now.getDate() - ((day + 6) % 7) + payOffset * 7);
+  mon.setHours(0, 0, 0, 0);
+  var sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23, 59, 59, 999);
+  return { mon: mon, sun: sun };
+}
+
+function togglePayRep(rid) {
+  payExpanded = (payExpanded === rid) ? null : rid;
+  renderPayReps(_payCache, _payWeekStr);
+}
+
+function renderPayReps(sorted, weekStr) {
+  _payCache = sorted;
+  _payWeekStr = weekStr;
+  var el = document.getElementById('pay-reps');
+  if (!el) return;
+  if (!sorted.length) {
+    el.innerHTML = '<div class="empty"><p>No sales this period yet</p></div>';
+    return;
+  }
+  var html = '';
+  for (var ri = 0; ri < sorted.length; ri++) {
+    var rid = sorted[ri][0];
+    var rep = sorted[ri][1];
+    var repRev = rep.sales.reduce(function(s,x){ return s + (parseFloat(x.price)||0); }, 0);
+    var isTop  = ri === 0;
+    var open   = payExpanded === rid;
+    var medal  = ri===0 ? '🏆' : ri===1 ? '🥈' : ri===2 ? '🥉' : '#'+(ri+1);
+    var hdrBg  = isTop ? 'background:#0F0F13;' : 'background:#fff;';
+    var nameColor = isTop ? '#fff' : 'var(--ink)';
+    var subColor  = isTop ? '#9ca3af' : 'var(--slate)';
+    var revColor  = isTop ? 'var(--gold)' : 'var(--ink)';
+    var arrowRot  = open ? '90' : '0';
+
+    // Day breakdown (only when expanded)
+    var detail = '';
+    if (open) {
+      var byDay = {};
+      for (var si = 0; si < rep.sales.length; si++) {
+        var s = rep.sales[si];
+        if (!byDay[s.date]) byDay[s.date] = [];
+        byDay[s.date].push(s);
+      }
+      var days = Object.keys(byDay).sort();
+      for (var di = 0; di < days.length; di++) {
+        var date = days[di];
+        var ds   = byDay[date];
+        var dayRev = ds.reduce(function(s,x){ return s+(parseFloat(x.price)||0); }, 0);
+        var dayLabel = new Date(date + 'T12:00').toLocaleDateString('en-CA', {weekday:'long', month:'short', day:'numeric'});
+        var rows = '';
+        for (var xi = 0; xi < ds.length; xi++) {
+          var x   = ds[xi];
+          var mn  = x.machine_num || 1;
+          var bookedOn = x.created_at
+            ? new Date(x.created_at).toLocaleString('en-CA', {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})
+            : '';
+          var mColor = mn === 1 ? 'var(--m1)' : 'var(--m2)';
+          rows += '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 13px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.05)">'
+            + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+            + '<div style="flex:1;min-width:0">'
+            + '<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">'
+            + '<span style="background:' + mColor + ';color:#fff;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:20px;letter-spacing:.04em">M' + mn + '</span>'
+            + '<span style="font-weight:700;font-size:.9rem;color:var(--ink)">' + (x.client_name||'TBD') + '</span>'
+            + '</div>'
+            + '<div style="font-size:.74rem;color:var(--slate);line-height:1.9">'
+            + '🕐 <b style="color:var(--ink)">' + (x.time_start||'—') + ' – ' + (x.time_end||'—') + '</b>'
+            + (x.address ? '<br>📍 ' + x.address : '')
+            + (x.phone   ? '<br>📞 ' + x.phone   : '')
+            + (x.service ? '<br>🧹 ' + x.service  : '')
+            + (x.notes   ? '<br>📝 <em style="color:#6b7280">' + x.notes + '</em>' : '')
+            + (bookedOn  ? '<br><span style="font-size:.65rem;color:#bbb">Booked: ' + bookedOn + '</span>' : '')
+            + '</div>'
+            + '</div>'
+            + '<div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">'
+            + '<div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:1.05rem;color:var(--ink)">' + fmtMoney(x.price) + '</div>'
+            + '<button onclick="delSale(\'' + x.id + '\')" style="padding:4px 10px;border:none;border-radius:7px;background:#fee2e2;color:#dc2626;font-size:.68rem;cursor:pointer;font-weight:700;letter-spacing:.02em">🗑 Delete</button>'
+            + '</div>'
+            + '</div>'
+            + '</div>';
+        }
+        detail += '<div style="margin-bottom:12px">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--ink);border-radius:10px;margin-bottom:8px">'
+          + '<span style="font-weight:700;font-size:.78rem;color:#fff">' + dayLabel + '</span>'
+          + '<span style="font-weight:800;font-size:.82rem;color:var(--gold)">' + fmtMoney(dayRev) + '</span>'
+          + '</div><div>' + rows + '</div></div>';
+      }
+    }
+
+    html += '<div style="background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden">'
+      + '<div onclick="togglePayRep(\'' + rid + '\')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;' + hdrBg + '">'
+      + '<div style="display:flex;align-items:center;gap:11px">'
+      + '<div style="font-size:1.2rem;width:32px;text-align:center">' + medal + '</div>'
+      + '<div>'
+      + '<div style="font-weight:800;font-size:.95rem;color:' + nameColor + '">' + rep.name + '</div>'
+      + '<div style="font-size:.71rem;color:' + subColor + ';margin-top:2px">' + rep.sales.length + ' sale' + (rep.sales.length!==1?'s':'') + ' &middot; ' + weekStr + '</div>'
+      + '</div></div>'
+      + '<div style="display:flex;align-items:center;gap:10px">'
+      + '<div style="text-align:right">'
+      + '<div style="font-weight:800;font-size:1.15rem;color:' + revColor + '">' + fmtMoney(repRev) + '</div>'
+      + '<div style="font-size:.64rem;font-weight:700;text-transform:uppercase;color:' + subColor + '">revenue</div>'
+      + '</div>'
+      + '<div style="color:' + subColor + ';transform:rotate(' + arrowRot + 'deg);transition:transform .2s">&#9654;</div>'
+      + '</div></div>'
+      + (open ? '<div style="padding:12px 14px 14px;border-top:1px solid var(--border);background:var(--off)">' + detail + '</div>' : '')
+      + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+async function loadPayroll() {
+  if (!ME || ME.role !== 'manager') return;
+  var wl = document.getElementById('pay-week-lbl');
+  var wr = document.getElementById('pay-week-range');
+  var pt = document.getElementById('pay-totals');
+  var pr = document.getElementById('pay-reps');
+  if (!wl) return;
+
+  var bounds  = payWeekBounds();
+  var monStr  = bounds.mon.toISOString().split('T')[0];
+  var sunStr  = bounds.sun.toISOString().split('T')[0];
+  var fmtOpts = { month: 'short', day: 'numeric' };
+  var weekStr = bounds.mon.toLocaleDateString('en-CA', fmtOpts) + ' – ' + bounds.sun.toLocaleDateString('en-CA', fmtOpts);
+
+  wl.textContent = payOffset===0 ? 'This Week' : payOffset===-1 ? 'Last Week'
+    : bounds.mon.toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' });
+  wr.textContent = weekStr;
+  pr.innerHTML   = '<div style="padding:16px;text-align:center;color:var(--slate);font-size:.82rem">Loading…</div>';
+
+  var result = await db.from('sales')
+    .select('*, profiles(full_name)')
+    .gte('date', monStr)
+    .lte('date', sunStr)
+    .order('date', { ascending: true });
+
+  if (result.error) {
+    pr.innerHTML = '<div class="empty"><p>Error: ' + result.error.message + '</p></div>';
+    return;
+  }
+
+  var arr      = result.data || [];
+  var totalRev = arr.reduce(function(s,x){ return s+(parseFloat(x.price)||0); }, 0);
+  var repsSet  = new Set(arr.map(function(s){ return s.rep_id; }));
+  var numReps  = repsSet.size || 1;
+
+  pt.innerHTML =
+    '<div class="sc dk"><div class="sn">' + arr.length + '</div><div class="sl">Total Sales</div></div>'
+    + '<div class="sc gd"><div class="sn">' + fmtMoney(totalRev) + '</div><div class="sl">Revenue</div></div>'
+    + '<div class="sc"><div class="sn" style="color:var(--ink)">' + repsSet.size + '</div><div class="sl" style="color:var(--slate)">Reps</div></div>'
+    + '<div class="sc"><div class="sn" style="color:var(--ink)">' + fmtMoney(totalRev/numReps) + '</div><div class="sl" style="color:var(--slate)">Avg/Rep</div></div>';
+
+  if (!arr.length) {
+    pr.innerHTML = '<div class="empty"><p>No sales this period yet</p></div>';
+    return;
+  }
+
+  var byRep = {};
+  arr.forEach(function(s) {
+    if (!byRep[s.rep_id]) byRep[s.rep_id] = { name: (s.profiles ? s.profiles.full_name : 'Unknown'), sales: [] };
+    byRep[s.rep_id].sales.push(s);
+  });
+
+  var sorted = Object.entries(byRep).sort(function(a, b) {
+    var ra = a[1].sales.reduce(function(s,x){ return s+(parseFloat(x.price)||0); }, 0);
+    var rb = b[1].sales.reduce(function(s,x){ return s+(parseFloat(x.price)||0); }, 0);
+    return rb - ra;
+  });
+
+  renderPayReps(sorted, weekStr);
+}
+
 window.addEventListener('load', async () => {
   const saved = loadSession();
   if (saved) {
