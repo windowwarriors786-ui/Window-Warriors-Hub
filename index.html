@@ -2,1255 +2,1604 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <title>Warriors Hub</title>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
-<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
-<link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" rel="stylesheet"/>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --gold:#D4AF37;--gold-l:#F5D060;--gold-d:#8B6914;
-  --pur:#6B3FA0;--pur-d:#3D1F6E;--pur-l:#9B6FD0;--pur-m:#4A2A7A;
-  --off:#F8F5FF;--light:#F0ECF8;--text:#1A1030;--muted:#6B7280;
-  --border:rgba(107,63,160,0.15);--green:#22C55E;--red:#EF4444;--yellow:#F59E0B;
-  --radius:12px;--shadow:0 4px 20px rgba(107,63,160,0.08);
+  --ink:#0F0F13;--ink2:#1A1A24;--ink3:#252535;--ink4:#32324A;
+  --gold:#F0B429;--gold2:#FADA7A;
+  --slate:#8B8BA7;--border:#E4E4F0;--off:#F7F7FC;
+  --green:#10B981;--red:#EF4444;
+  --m1:#7C3AED;--m1l:rgba(124,58,237,.1);
+  --m2:#0EA5E9;--m2l:rgba(14,165,233,.1);
+  --r:14px;--sh:0 2px 8px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
 }
-html,body{height:100%;font-family:'Inter',sans-serif;background:var(--off);color:var(--text);overflow-x:hidden}
-.hide{display:none!important}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--off);color:var(--ink);overflow:hidden}
 
-/* TOAST */
-#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:9999;
-  background:var(--pur-d);color:#fff;padding:10px 22px;border-radius:30px;
-  font-size:.83rem;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.25);
-  opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap;max-width:92vw;text-align:center}
-#toast.on{opacity:1}
+/* ── TOAST ── */
+#toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(12px);
+  background:var(--ink);color:#fff;padding:11px 22px;border-radius:40px;font-size:.82rem;
+  font-weight:500;z-index:9999;opacity:0;transition:all .25s;pointer-events:none;
+  white-space:nowrap;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* AUTH */
-#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(150deg,var(--pur-d) 0%,var(--pur) 55%,#5C2E8A 100%);padding:20px}
-.auth-box{background:#fff;border-radius:20px;padding:34px 28px;width:100%;max-width:400px;
-  box-shadow:0 32px 80px rgba(0,0,0,.3)}
-.auth-icon{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--pur-d),var(--pur));
-  margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;border:3px solid var(--gold)}
-.auth-box h1{font-family:'Rubik',sans-serif;font-size:1.5rem;font-weight:900;color:var(--pur-d);text-align:center}
-.auth-sub{font-size:.82rem;color:var(--muted);text-align:center;margin-top:4px;margin-bottom:22px}
-.alert{padding:10px 13px;border-radius:8px;font-size:.82rem;margin-bottom:12px}
-.alert-err{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA}
-.alert-ok{background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0}
+/* ── AUTH ── */
+#auth{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:20px;z-index:200;overflow-y:auto}
+.a-logo{text-align:center;margin-bottom:32px}
+.a-icon{width:72px;height:72px;background:var(--gold);border-radius:20px;
+  display:inline-flex;align-items:center;justify-content:center;font-size:2rem;
+  margin-bottom:14px;box-shadow:0 8px 24px rgba(240,180,41,.35)}
+.a-logo h1{font-family:'Syne',sans-serif;font-size:1.75rem;font-weight:800;color:#fff;letter-spacing:-.03em}
+.a-logo p{color:#5A5A7A;font-size:.85rem;margin-top:4px}
+.a-card{background:var(--ink2);border-radius:20px;padding:28px 24px;width:100%;
+  max-width:380px;border:1px solid var(--ink3)}
+.a-card h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:20px}
+.a-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);
+  color:#FCA5A5;padding:10px 13px;border-radius:10px;font-size:.8rem;margin-bottom:14px;display:none;line-height:1.5}
+.a-ok{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);
+  color:#6EE7B7;padding:10px 13px;border-radius:10px;font-size:.8rem;margin-bottom:14px;display:none}
 
-/* FORM */
+/* ── FORMS ── */
 .field{margin-bottom:13px}
-.field label{display:block;font-size:.73rem;font-weight:700;color:var(--pur-d);
-  letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
-.inp{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;
-  font-family:'Inter',sans-serif;font-size:.88rem;color:var(--text);
-  background:var(--off);outline:none;transition:border-color .2s}
-.inp:focus{border-color:var(--pur);box-shadow:0 0 0 3px rgba(107,63,160,.08)}
-select.inp{cursor:pointer}
-textarea.inp{resize:vertical;min-height:72px}
+.field label{display:block;font-size:.7rem;font-weight:600;color:#5A5A7A;
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.inp{width:100%;padding:11px 14px;background:var(--ink3);border:1.5px solid transparent;
+  border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;
+  outline:none;transition:border-color .15s}
+.inp:focus{border-color:var(--gold)}
+.inp::placeholder{color:#4A4A6A}
+select.inp option{background:var(--ink2)}
+textarea.inp{resize:none;min-height:68px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:12px 18px;border:none;border-radius:11px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;
+  transition:opacity .15s,transform .1s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-gold{background:var(--gold);color:var(--ink);width:100%;
+  font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;
+  box-shadow:0 4px 16px rgba(240,180,41,.3)}
+.btn-ink{background:var(--ink);color:#fff;border:1px solid var(--ink3)}
+.btn-off{background:var(--off);color:var(--ink);border:1px solid var(--border)}
+.btn-red{background:var(--red);color:#fff}
+.btn-sm{padding:8px 13px;font-size:.78rem;width:auto;border-radius:9px}
+.btn-xs{padding:5px 10px;font-size:.7rem;width:auto;border-radius:7px}
+.lnk{color:var(--gold);cursor:pointer;font-weight:600;font-size:.83rem}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:360px){.f2{grid-template-columns:1fr}}
 
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:11px 16px;border:none;border-radius:9px;cursor:pointer;
-  font-family:'Rubik',sans-serif;font-size:.83rem;font-weight:700;
-  transition:opacity .15s,transform .1s}
-.btn:hover{opacity:.88;transform:translateY(-1px)}
-.btn:active{transform:translateY(0)}
-.btn-primary{background:linear-gradient(135deg,var(--pur-d),var(--pur));color:#fff;
-  box-shadow:0 4px 16px rgba(107,63,160,.3);width:100%}
-.btn-gold{background:linear-gradient(135deg,var(--gold-d),var(--gold));color:var(--pur-d);
-  box-shadow:0 4px 16px rgba(212,175,55,.3);width:100%}
-.btn-danger{background:var(--red);color:#fff}
-.btn-success{background:var(--green);color:#fff}
-.btn-ghost{background:rgba(107,63,160,.08);color:var(--pur);border:none}
-.btn-sm{padding:7px 12px;font-size:.75rem;width:auto}
-.btn-xs{padding:5px 9px;font-size:.7rem;width:auto}
+/* ── APP SHELL ── */
+#app{position:fixed;inset:0;display:none;flex-direction:column;background:var(--off)}
 
-/* APP */
-#app{display:none;flex-direction:column;min-height:100vh}
+/* ── TOP BAR ── */
+.topbar{background:var(--ink);height:54px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 16px;flex-shrink:0;
+  box-shadow:0 1px 0 rgba(255,255,255,.05)}
+.tb-l{display:flex;align-items:center;gap:10px}
+.tb-mark{width:32px;height:32px;background:var(--gold);border-radius:9px;
+  display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+.tb-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;color:#fff}
+.tb-r{display:flex;align-items:center;gap:8px}
+.role-pill{padding:3px 10px;border-radius:20px;font-size:.65rem;font-weight:700;letter-spacing:.04em}
+.rp-mgr{background:var(--gold);color:var(--ink)}
+.rp-rep{background:var(--ink3);color:#8B8BA7}
+.tb-user{font-size:.72rem;color:#5A5A7A;max-width:86px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.so-btn{background:none;border:1px solid var(--ink3);color:#5A5A7A;padding:5px 10px;
+  border-radius:7px;cursor:pointer;font-size:.7rem;font-family:'DM Sans',sans-serif;transition:all .15s}
+.so-btn:hover{border-color:#5A5A7A;color:#fff}
 
-/* TOPBAR */
-.topbar{position:sticky;top:0;z-index:100;height:56px;background:var(--pur-d);
-  display:flex;align-items:center;justify-content:space-between;padding:0 14px;
-  box-shadow:0 2px 16px rgba(0,0,0,.2)}
-.tb-brand{display:flex;align-items:center;gap:9px;font-family:'Rubik',sans-serif;
-  font-weight:800;font-size:.93rem;color:var(--gold-l)}
-.tb-icon{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--pur-m),var(--pur));
-  display:flex;align-items:center;justify-content:center;font-size:.95rem;border:2px solid var(--gold)}
-.tb-right{display:flex;align-items:center;gap:7px}
-.chip{padding:3px 9px;border-radius:20px;font-size:.68rem;font-weight:700;letter-spacing:.04em}
-.chip-mgr{background:var(--gold);color:var(--pur-d)}
-.chip-rep{background:rgba(155,111,208,.25);color:var(--gold-l)}
-.chip-name{background:rgba(255,255,255,.12);color:#fff;font-size:.7rem}
-.btn-so{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);
-  padding:5px 11px;border-radius:7px;cursor:pointer;font-size:.7rem;font-weight:600}
-.btn-so:hover{background:rgba(255,255,255,.2)}
+/* ── SCROLL / PAGES ── */
+.scroll{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.page{display:none;padding:16px 16px 84px;max-width:600px;margin:0 auto;min-height:100%}
+.page.on{display:block}
+.pg-h{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;
+  color:var(--ink);letter-spacing:-.02em;margin-bottom:2px}
+.pg-s{font-size:.78rem;color:var(--slate);margin-bottom:18px}
 
-/* BOTTOM NAV */
-.bnav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:#fff;
-  border-top:1px solid var(--border);display:flex;box-shadow:0 -4px 20px rgba(0,0,0,.07)}
-.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:8px 2px;cursor:pointer;color:var(--muted);gap:2px;transition:color .2s;border:none;background:none}
-.bn-item.on{color:var(--pur)}
-.bn-item svg{width:20px;height:20px}
-.bn-lbl{font-size:.57rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+/* ── BOTTOM NAV ── */
+.bnav{flex-shrink:0;background:#fff;border-top:1px solid var(--border);display:flex;height:58px}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;background:none;border:none;cursor:pointer;color:#B0B0C8;
+  font-family:'DM Sans',sans-serif;transition:color .15s;padding:0}
+.nb.on{color:var(--ink)}
+.nb svg{width:20px;height:20px;stroke-width:1.8}
+.nb span{font-size:.56rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 
-/* SCROLL */
-.scroll{flex:1;overflow-y:auto;padding:14px 14px 82px;max-width:680px;margin:0 auto;width:100%}
+/* ── CARDS ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;margin-bottom:12px;box-shadow:var(--sh)}
+.ct{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;
+  color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:7px}
 
-/* PAGES */
-.page{display:none}.page.on{display:block}
-.pg-title{font-family:'Rubik',sans-serif;font-size:1.3rem;font-weight:900;color:var(--pur-d);margin-bottom:2px}
-.pg-sub{font-size:.8rem;color:var(--muted);margin-bottom:16px}
+/* ── STAT GRID ── */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sc{padding:14px;border-radius:var(--r);border:1px solid var(--border);background:#fff}
+.sc.dk{background:var(--ink);border-color:var(--ink)}
+.sc.gd{background:var(--gold);border-color:var(--gold)}
+.sc.v1{background:var(--m1);border-color:var(--m1)}
+.sc.v2{background:var(--m2);border-color:var(--m2)}
+.sn{font-family:'Syne',sans-serif;font-size:1.85rem;font-weight:800;line-height:1}
+.sl{font-size:.63rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-top:4px}
+.sc.dk .sn,.sc.gd .sn,.sc.v1 .sn,.sc.v2 .sn{color:#fff}
+.sc.dk .sl,.sc.v1 .sl,.sc.v2 .sl{color:rgba(255,255,255,.55)}
+.sc.gd .sl{color:rgba(15,15,15,.55)}
+.sc:not(.dk):not(.gd):not(.v1):not(.v2) .sn{color:var(--ink)}
+.sc:not(.dk):not(.gd):not(.v1):not(.v2) .sl{color:var(--slate)}
 
-/* CARDS */
-.card{background:#fff;border-radius:var(--radius);padding:16px;margin-bottom:12px;
-  border:1px solid var(--border);box-shadow:var(--shadow)}
-.card-title{font-family:'Rubik',sans-serif;font-size:.93rem;font-weight:800;
-  color:var(--pur-d);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+/* ── MACHINE TABS ── */
+.mtabs{display:flex;gap:9px;margin-bottom:16px}
+.mtab{flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);
+  text-align:center;cursor:pointer;background:#fff;transition:all .18s;box-shadow:var(--sh)}
+.mtab.on.t1{background:var(--m1);border-color:var(--m1)}
+.mtab.on.t2{background:var(--m2);border-color:var(--m2)}
+.mtab:not(.on){color:var(--slate)}
+.mt-ico{font-size:1.2rem;margin-bottom:4px}
+.mt-lbl{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700}
+.mt-lbl.on{color:#fff}
+.mt-cnt{font-size:.67rem;margin-top:2px;opacity:.75}
+.mtab.on .mt-cnt{color:rgba(255,255,255,.8)}
 
-/* STATS */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
-.sc{background:#fff;border-radius:var(--radius);padding:14px 12px;border:1px solid var(--border);
-  text-align:center;box-shadow:var(--shadow)}
-.sc.s-pur{background:linear-gradient(135deg,var(--pur-d),var(--pur));border:none;color:#fff}
-.sc.s-gold{background:linear-gradient(135deg,var(--gold-d),var(--gold));border:none;color:var(--pur-d)}
-.sn{font-family:'Rubik',sans-serif;font-size:1.8rem;font-weight:900;line-height:1}
-.sl{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.8;margin-top:3px}
+/* ── CALENDAR ── */
+.cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-hd h3{font-family:'Syne',sans-serif;font-size:.92rem;font-weight:700}
+.cal-nav{background:var(--off);border:1px solid var(--border);border-radius:8px;
+  padding:5px 11px;cursor:pointer;font-size:.88rem;color:var(--slate);transition:background .15s}
+.cal-nav:hover{background:var(--border)}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cdn{text-align:center;font-size:.6rem;font-weight:700;color:var(--slate);
+  text-transform:uppercase;padding:5px 0;letter-spacing:.05em}
+.cd{text-align:center;padding:8px 2px;border-radius:8px;cursor:pointer;
+  font-size:.79rem;font-weight:500;transition:all .12s;color:var(--ink)}
+.cd:hover:not(.cpast):not(.cem){background:var(--off)}
+.cd.ctoday{background:var(--ink);color:#fff;font-weight:700}
+.cd.csel.cm1{background:var(--m1);color:#fff;font-weight:700}
+.cd.csel.cm2{background:var(--m2);color:#fff;font-weight:700}
+.cd.cpast{color:#C8C8D8;cursor:default}
+.cd.cem{cursor:default}
 
-/* CALENDAR */
-.cal{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:12px}
-.cal-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
-.cal-hd h3{font-family:'Rubik',sans-serif;font-weight:700;font-size:.92rem;color:var(--pur-d)}
-.cal-nb{background:none;border:none;cursor:pointer;color:var(--pur);font-size:1.3rem;padding:3px 9px;border-radius:7px}
-.cal-nb:hover{background:var(--off)}
-.cal-g{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 6px 12px}
-.cal-dn{text-align:center;font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;padding:5px 0}
-.cal-d{text-align:center;padding:7px 2px;border-radius:8px;cursor:pointer;
-  font-size:.78rem;font-weight:500;transition:all .15s;margin:1px}
-.cal-d:hover:not(.cd-empty):not(.cd-past){background:var(--off)}
-.cal-d.cd-today{background:var(--pur);color:#fff;font-weight:700}
-.cal-d.cd-sel{background:var(--gold);color:var(--pur-d);font-weight:700}
-.cal-d.cd-past{color:#D1D5DB;cursor:default}
-.cal-d.cd-empty{cursor:default}
+/* ── SLOT ROWS ── */
+.slotrow{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-radius:12px;border:1.5px solid var(--border);
+  margin-bottom:8px;cursor:pointer;transition:all .15s;background:#fff;box-shadow:var(--sh)}
+.slotrow:hover:not(.sr-taken){border-color:var(--ink);transform:translateY(-1px)}
+.slotrow.sr-taken{opacity:.55;cursor:not-allowed;background:var(--off)}
+.slotrow.sr-mine1{border-color:var(--m1);background:var(--m1l)}
+.slotrow.sr-mine2{border-color:var(--m2);background:var(--m2l)}
+.slotrow.sr-sel{border-color:var(--ink);background:var(--ink);transform:translateY(-1px)}
+.slotrow.sr-sel .sr-time,.slotrow.sr-sel .sr-sub{color:#fff!important}
+.sr-time{font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;color:var(--ink)}
+.sr-sub{font-size:.7rem;color:var(--slate);margin-top:2px}
+.sbadge{padding:4px 11px;border-radius:20px;font-size:.67rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.03em;flex-shrink:0}
+.sb-open{background:#D1FAE5;color:#065F46}
+.sb-taken{background:#FEE2E2;color:#991B1B}
+.sb-mine{background:#FEF3C7;color:#92400E}
+.sb-part{background:#E0E7FF;color:#3730A3}
 
-/* SLOTS */
-.slots-g{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
-.slot{padding:9px 4px;border-radius:8px;text-align:center;cursor:pointer;
-  border:1.5px solid var(--border);font-size:.72rem;font-weight:600;
-  transition:all .15s;background:#fff;color:var(--text);line-height:1.3}
-.slot.s-open:hover{border-color:var(--pur);background:var(--off)}
-.slot.s-taken{background:var(--light);color:#C4B5D0;cursor:not-allowed;border-color:transparent}
-.slot.s-mine{background:var(--gold);color:var(--pur-d);border-color:var(--gold-d)}
-.slot.s-sel{background:var(--pur);color:#fff;border-color:var(--pur-d)}
+/* ── BOOKING BANNER ── */
+.bbanner{border-radius:12px;padding:14px 16px;margin-bottom:16px;
+  display:flex;align-items:center;gap:12px}
+.bbanner.b1{background:var(--m1)}
+.bbanner.b2{background:var(--m2)}
+.bb-ico{font-size:1.5rem}
+.bb-t{font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:#fff}
+.bb-s{font-size:.72rem;color:rgba(255,255,255,.7);margin-top:2px}
+.finp{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:.87rem;color:var(--ink);
+  background:#fff;outline:none;transition:border-color .15s}
+.finp:focus{border-color:var(--ink)}
+.finp::placeholder{color:#B0B0C8}
+select.finp{cursor:pointer}
+textarea.finp{resize:none;min-height:64px}
 
-/* SALE ROW */
-.sale-row{display:flex;align-items:flex-start;justify-content:space-between;
-  padding:12px;background:var(--off);border-radius:10px;margin-bottom:7px;border:1px solid var(--border)}
-.sale-row h4{font-family:'Rubik',sans-serif;font-size:.86rem;font-weight:700}
-.sale-row p{font-size:.73rem;color:var(--muted);margin-top:2px;line-height:1.55}
-.sale-price{font-family:'Rubik',sans-serif;font-size:.98rem;font-weight:900;color:var(--pur)}
-.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.63rem;font-weight:700;text-transform:uppercase}
-.b-green{background:#DCFCE7;color:#15803D}
+/* ── SALE ITEMS ── */
+.sitem{padding:14px;border-radius:12px;border:1px solid var(--border);
+  margin-bottom:8px;background:#fff;box-shadow:var(--sh);
+  border-left:4px solid var(--border)}
+.sitem.si1{border-left-color:var(--m1)}
+.sitem.si2{border-left-color:var(--m2)}
+.si-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.si-name{font-weight:700;font-size:.9rem;color:var(--ink)}
+.si-price{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--ink);flex-shrink:0}
+.si-meta{font-size:.72rem;color:var(--slate);margin-top:5px;line-height:1.7}
+.si-tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.62rem;
+  font-weight:700;text-transform:uppercase;background:#D1FAE5;color:#065F46;margin-top:6px}
 
-/* LEADERBOARD */
-.lb-row{display:flex;align-items:center;gap:11px;padding:12px;
-  border-radius:10px;margin-bottom:7px;background:var(--off);border:1px solid var(--border)}
-.lb-row.lb-me{border-color:var(--pur);background:rgba(107,63,160,.04)}
-.rb{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:.85rem;font-weight:900;flex-shrink:0}
-.r1{background:var(--gold);color:var(--pur-d)}.r2{background:#C0C0C0;color:#fff}
-.r3{background:#CD7F32;color:#fff}.ro{background:var(--light);color:var(--muted);font-size:.78rem}
+/* ── LEADERBOARD ── */
+.lbrow{display:flex;align-items:center;gap:12px;padding:13px;
+  border-radius:12px;border:1px solid var(--border);margin-bottom:7px;background:#fff;box-shadow:var(--sh)}
+.lbrow.lbme{border-color:var(--gold);background:rgba(240,180,41,.04)}
+.lbr{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:.82rem;flex-shrink:0}
+.r1{background:var(--gold);color:#fff}
+.r2{background:#E2E8F0;color:#475569}
+.r3{background:#FED7AA;color:#92400E}
+.rn{background:var(--off);color:var(--slate);font-size:.75rem}
 .lb-info{flex:1;min-width:0}
-.lb-name{font-family:'Rubik',sans-serif;font-weight:700;font-size:.86rem}
-.lb-det{font-size:.72rem;color:var(--muted);margin-top:1px}
-.prog{height:5px;background:var(--light);border-radius:3px;margin-top:5px;overflow:hidden}
-.prog-bar{height:100%;background:linear-gradient(90deg,var(--pur),var(--pur-l));border-radius:3px;transition:width .5s}
-.lb-rev{font-family:'Rubik',sans-serif;font-weight:900;font-size:.93rem;color:var(--pur);flex-shrink:0}
+.lb-name{font-weight:700;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-sub{font-size:.7rem;color:var(--slate);margin-top:1px}
+.lb-bar{height:4px;background:var(--off);border-radius:2px;margin-top:6px;overflow:hidden;border:1px solid var(--border)}
+.lb-fill{height:100%;background:var(--ink);border-radius:2px;transition:width .6s ease}
+.lb-amt{font-family:'Syne',sans-serif;font-weight:800;font-size:.92rem;flex-shrink:0}
 
-/* TABS */
-.tabs{display:flex;background:var(--light);border-radius:10px;padding:3px;margin-bottom:14px}
+/* ── WINNER ── */
+.winner{background:var(--ink);border-radius:var(--r);padding:20px;
+  text-align:center;margin-bottom:12px;position:relative;overflow:hidden}
+.winner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top,rgba(240,180,41,.15),transparent 60%)}
+.w-trophy{font-size:2.5rem;margin-bottom:8px;position:relative}
+.w-name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:#fff;position:relative}
+.w-stat{font-size:.76rem;color:#5A5A7A;margin-top:4px;position:relative}
+.w-crown{display:inline-block;background:var(--gold);color:var(--ink);
+  padding:4px 14px;border-radius:20px;font-size:.68rem;font-weight:800;
+  letter-spacing:.07em;margin-top:10px;position:relative}
+
+/* ── TABS ── */
+.tabs{display:flex;background:var(--off);border-radius:10px;padding:3px;
+  margin-bottom:16px;border:1px solid var(--border)}
 .tab{flex:1;text-align:center;padding:8px 4px;border-radius:8px;font-size:.74rem;
-  font-weight:700;cursor:pointer;transition:all .2s;color:var(--muted);font-family:'Rubik',sans-serif}
-.tab.on{background:#fff;color:var(--pur);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  font-weight:600;cursor:pointer;color:var(--slate);background:none;border:none;
+  font-family:'DM Sans',sans-serif;transition:all .15s}
+.tab.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 
-/* MAP */
-#map-el{height:380px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
-#zone-map-el{height:420px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
-.mapboxgl-canvas{border-radius:10px}
-.map-tb{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;align-items:center}
-.mk-btn{padding:7px 11px;border-radius:8px;border:2px solid;cursor:pointer;
-  font-size:.72rem;font-weight:700;transition:all .2s;background:transparent;font-family:'Rubik',sans-serif}
-.mk-knocked{border-color:var(--pur);color:var(--pur)}
-.mk-interested{border-color:var(--green);color:#15803D}
-.mk-noanswer{border-color:var(--yellow);color:#92400E}
-.mk-notint{border-color:var(--red);color:#991B1B}
-.mk-btn.mk-active{font-weight:900;transform:scale(1.05)}
-.mk-knocked.mk-active{background:rgba(107,63,160,.15)}
-.mk-interested.mk-active{background:rgba(34,197,94,.15)}
-.mk-noanswer.mk-active{background:rgba(245,158,11,.15)}
-.mk-notint.mk-active{background:rgba(239,68,68,.15)}
-.legend{display:flex;flex-wrap:wrap;gap:9px;margin-top:9px}
-.leg{display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600}
-.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+/* ── MAP ── */
+#knock-map{height:350px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.mbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+.mk{padding:7px 12px;border-radius:8px;border:2px solid;cursor:pointer;
+  font-size:.72rem;font-weight:700;background:transparent;
+  font-family:'DM Sans',sans-serif;transition:all .15s}
+.mk.on{transform:scale(1.04)}
+.mk-kn{border-color:#7C3AED;color:#7C3AED}.mk-kn.on{background:rgba(124,58,237,.1)}
+.mk-in{border-color:#10B981;color:#059669}.mk-in.on{background:rgba(16,185,129,.1)}
+.mk-na{border-color:#F59E0B;color:#D97706}.mk-na.on{background:rgba(245,158,11,.1)}
+.mk-ni{border-color:#EF4444;color:#DC2626}.mk-ni.on{background:rgba(239,68,68,.1)}
+.mleg{display:flex;flex-wrap:wrap;gap:9px;margin-top:9px}
+.ml{display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:var(--slate)}
+.mld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 
-/* WINNER */
-.winner-banner{background:linear-gradient(135deg,var(--pur-d),var(--pur));
-  border-radius:var(--radius);padding:18px;text-align:center;color:#fff;margin-bottom:12px}
-.winner-trophy{font-size:2.6rem;margin-bottom:6px}
-.winner-name{font-family:'Rubik',sans-serif;font-weight:900;font-size:1.15rem}
-.winner-stats{font-size:.78rem;opacity:.8;margin-top:3px}
-.winner-crown{display:inline-block;background:rgba(212,175,55,.2);color:var(--gold-l);
-  padding:4px 13px;border-radius:20px;font-size:.7rem;font-weight:800;margin-top:8px;letter-spacing:.06em}
+/* ── SCHEDULE ── */
+.sched-tabs{display:flex;gap:8px;margin-bottom:14px}
+.stab{flex:1;padding:10px 8px;border-radius:12px;border:1.5px solid var(--border);
+  text-align:center;cursor:pointer;background:#fff;transition:all .15s;box-shadow:var(--sh)}
+.stab.on{background:var(--ink);border-color:var(--ink)}
+.stab.on .st-n,.stab.on .st-d{color:#fff}
+.stab.on .st-d{color:#5A5A7A}
+.st-n{font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;color:var(--ink)}
+.st-d{font-size:.68rem;color:var(--slate);margin-top:2px}
+.sjob{display:flex;align-items:flex-start;gap:12px;padding:13px;
+  border-radius:12px;border:1px solid var(--border);margin-bottom:7px;
+  background:#fff;box-shadow:var(--sh)}
+.sj-t{min-width:70px;flex-shrink:0}
+.sj-main{font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;color:var(--ink)}
+.sj-end{font-size:.66rem;color:var(--slate);margin-top:2px}
+.sj-m{display:inline-block;padding:2px 7px;border-radius:5px;
+  font-size:.63rem;font-weight:700;margin-top:5px}
+.sj-m.m1{background:var(--m1l);color:var(--m1)}
+.sj-m.m2{background:var(--m2l);color:var(--m2)}
+.sj-info h4{font-weight:700;font-size:.88rem;color:var(--ink)}
+.sj-info p{font-size:.72rem;color:var(--slate);margin-top:3px;line-height:1.65}
+.sj-rep{display:inline-block;background:var(--off);color:var(--slate);
+  padding:2px 8px;border-radius:5px;font-size:.63rem;font-weight:600;margin-top:5px;border:1px solid var(--border)}
 
-/* EMPTY */
-.empty{text-align:center;padding:32px 16px;color:var(--muted)}
-.empty svg{width:40px;height:40px;margin:0 auto 10px;opacity:.3}
-.empty p{font-size:.83rem}
+/* ── SLOT MANAGER ── */
+.smrow{display:flex;align-items:center;gap:7px;padding:11px 12px;
+  border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:#fff}
+.smrow input{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--ink);outline:none}
+.smrow input:focus{border-color:var(--ink)}
 
-/* FORM GRID */
-.f2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-@media(max-width:380px){.f2{grid-template-columns:1fr}}
+/* ── EMPTY ── */
+.empty{text-align:center;padding:36px 16px;color:var(--slate)}
+.empty svg{width:36px;height:36px;margin:0 auto 10px;opacity:.2;stroke:var(--slate)}
+.empty p{font-size:.82rem;line-height:1.6}
 
-/* ZONE ASSIGNMENT */
-.zone-row{display:flex;align-items:center;gap:10px;padding:12px;
-  background:var(--off);border-radius:10px;margin-bottom:7px;border:1px solid var(--border)}
-.zone-color{width:18px;height:18px;border-radius:50%;flex-shrink:0;border:2px solid rgba(0,0,0,.1)}
-.zone-info{flex:1}
-.zone-name{font-family:'Rubik',sans-serif;font-weight:700;font-size:.86rem}
-.zone-rep{font-size:.73rem;color:var(--muted);margin-top:2px}
-.zone-actions{display:flex;gap:6px}
-
-/* REP AREA BADGE */
-.rep-area-badge{background:linear-gradient(135deg,var(--pur-d),var(--pur));
-  color:#fff;border-radius:10px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px}
-.rep-area-color{width:32px;height:32px;border-radius:50%;border:3px solid rgba(255,255,255,.4);flex-shrink:0}
-.rep-area-info{}
-.rep-area-label{font-size:.72rem;opacity:.7;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
-.rep-area-name{font-family:'Rubik',sans-serif;font-weight:800;font-size:1rem;margin-top:2px}
-
-/* SLOT MANAGER */
-.slot-mgr-g{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
-.slot-toggle{padding:9px 4px;border-radius:8px;text-align:center;cursor:pointer;
-  border:1.5px solid var(--border);font-size:.7rem;font-weight:600;
-  transition:all .15s;background:var(--off);color:var(--muted);line-height:1.4}
-.slot-toggle.st-on{background:var(--pur);color:#fff;border-color:var(--pur-d)}
-.slot-toggle.st-2{background:var(--gold);color:var(--pur-d);border-color:var(--gold-d)}
-
-/* SCHED */
-.sched-hd{background:linear-gradient(135deg,var(--pur-d),var(--pur));
-  color:#fff;border-radius:10px;padding:14px 16px;margin-bottom:10px}
-.sched-hd-title{font-family:'Rubik',sans-serif;font-weight:900;font-size:1rem}
-.sched-hd-sub{font-size:.75rem;opacity:.8;margin-top:2px}
-.sched-row{display:flex;align-items:flex-start;gap:12px;padding:12px;
-  background:#fff;border-radius:10px;margin-bottom:7px;border:1px solid var(--border)}
-.sched-time{font-family:'Rubik',sans-serif;font-weight:800;font-size:.82rem;
-  color:var(--pur);min-width:64px;flex-shrink:0;padding-top:1px}
-.sched-info h4{font-family:'Rubik',sans-serif;font-size:.86rem;font-weight:700}
-.sched-info p{font-size:.73rem;color:var(--muted);margin-top:2px;line-height:1.55}
-.sched-rep{display:inline-block;background:rgba(107,63,160,.1);color:var(--pur);
-  padding:2px 9px;border-radius:20px;font-size:.67rem;font-weight:700;margin-top:5px}
-.share-btns{display:flex;gap:9px;margin-bottom:14px}
-
-/* REP COLORS */
-.rep-colors{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.color-opt{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s}
-.color-opt.selected{border-color:var(--text);transform:scale(1.15)}
-
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--pur-l);border-radius:2px}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 </style>
 </head>
 <body>
 <div id="toast"></div>
 
-<!-- ══════════ AUTH ══════════ -->
+<!-- ═══════════════ AUTH ═══════════════ -->
 <div id="auth">
-  <div class="auth-box">
-    <div class="auth-icon">⚔️</div>
+  <div class="a-logo">
+    <div class="a-icon">⚔️</div>
     <h1>Warriors Hub</h1>
-    <p class="auth-sub">Window Warriors Team App</p>
-    <div id="auth-err" class="alert alert-err hide"></div>
-    <div id="auth-ok" class="alert alert-ok hide"></div>
-    <div id="frm-login">
-      <div class="field"><label>Email</label><input class="inp" type="email" id="l-email" placeholder="you@email.com"/></div>
-      <div class="field"><label>Password</label><input class="inp" type="password" id="l-pass" placeholder="••••••••"/></div>
-      <button class="btn btn-primary" onclick="doLogin()">Sign In →</button>
-      <p style="text-align:center;font-size:.82rem;color:var(--muted);margin-top:12px">No account? <a style="color:var(--pur);cursor:pointer;font-weight:700" onclick="toReg()">Register</a></p>
+    <p>Window Warriors Team App</p>
+  </div>
+  <div class="a-card">
+    <div id="a-err" class="a-err"></div>
+    <div id="a-ok"  class="a-ok"></div>
+
+    <!-- LOGIN -->
+    <div id="p-login">
+      <h2>Sign In</h2>
+      <div class="field"><label>Email</label>
+        <input class="inp" id="l-em" type="email" placeholder="you@email.com" autocomplete="email"
+          onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="field"><label>Password</label>
+        <input class="inp" id="l-pw" type="password" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn btn-gold" id="login-btn" onclick="doLogin()">Sign In →</button>
+      <p style="text-align:center;margin-top:14px;color:#5A5A7A;font-size:.83rem">
+        No account? <span class="lnk" onclick="showP('reg')">Create one</span>
+      </p>
     </div>
-    <div id="frm-reg" class="hide">
-      <div class="field"><label>Full Name</label><input class="inp" type="text" id="r-name" placeholder="Your full name"/></div>
-      <div class="field"><label>Email</label><input class="inp" type="email" id="r-email" placeholder="you@email.com"/></div>
-      <div class="field"><label>Password</label><input class="inp" type="password" id="r-pass" placeholder="Min 6 characters"/></div>
-      <div class="field">
-        <label>Role</label>
-        <select class="inp" id="r-role" onchange="toggleMgrCode()">
-          <option value="rep">Sales Representative</option>
+
+    <!-- REGISTER -->
+    <div id="p-reg" style="display:none">
+      <h2>Create Account</h2>
+      <div class="field"><label>Full Name</label>
+        <input class="inp" id="r-nm" type="text" placeholder="Your full name"/>
+      </div>
+      <div class="field"><label>Email</label>
+        <input class="inp" id="r-em" type="email" placeholder="you@email.com"/>
+      </div>
+      <div class="field"><label>Password</label>
+        <input class="inp" id="r-pw" type="password" placeholder="Choose a password (min 4 chars)"/>
+      </div>
+      <div class="field"><label>Role</label>
+        <select class="inp" id="r-role" onchange="toggleMgr()">
+          <option value="rep">Sales Rep</option>
           <option value="manager">Manager</option>
         </select>
       </div>
-      <div class="field hide" id="mgr-field">
-        <label>Manager Code</label>
-        <input class="inp" type="password" id="r-code" placeholder="Enter manager access code"/>
+      <div class="field" id="mgr-f" style="display:none"><label>Manager Code</label>
+        <input class="inp" id="r-code" type="password" placeholder="Enter manager access code"/>
       </div>
-      <button class="btn btn-primary" onclick="doRegister()">Create Account →</button>
-      <p style="text-align:center;font-size:.82rem;color:var(--muted);margin-top:12px">Have account? <a style="color:var(--pur);cursor:pointer;font-weight:700" onclick="toLogin()">Sign in</a></p>
+      <button class="btn btn-gold" id="reg-btn" onclick="doRegister()">Create Account →</button>
+      <p style="text-align:center;margin-top:14px;color:#5A5A7A;font-size:.83rem">
+        Already have one? <span class="lnk" onclick="showP('login')">Sign in</span>
+      </p>
     </div>
   </div>
 </div>
 
-<!-- ══════════ APP ══════════ -->
+<!-- ═══════════════ APP ═══════════════ -->
 <div id="app">
+
   <header class="topbar">
-    <div class="tb-brand"><div class="tb-icon">⚔️</div>Warriors Hub</div>
-    <div class="tb-right">
-      <span class="chip chip-name" id="tb-name"></span>
-      <span class="chip" id="tb-role"></span>
-      <button class="btn-so" onclick="doLogout()">Sign Out</button>
+    <div class="tb-l">
+      <div class="tb-mark">⚔️</div>
+      <span class="tb-name">Warriors Hub</span>
+    </div>
+    <div class="tb-r">
+      <span class="tb-user" id="tb-user"></span>
+      <span class="role-pill" id="tb-role"></span>
+      <button class="so-btn" onclick="doSignOut()">Sign Out</button>
     </div>
   </header>
 
   <div class="scroll">
 
-    <!-- DASHBOARD -->
+    <!-- ░░ DASHBOARD ░░ -->
     <div class="page on" id="pg-dash">
-      <div class="pg-title" id="dash-hi">Hey! 👋</div>
-      <div class="pg-sub" id="dash-date"></div>
-      <div id="v-rep" class="hide">
-        <div id="rep-area-wrap"></div>
-        <div class="stat-grid">
-          <div class="sc s-pur"><div class="sn" id="d-my-sales">0</div><div class="sl">My Sales</div></div>
-          <div class="sc s-gold"><div class="sn" id="d-my-rev">$0</div><div class="sl">My Revenue</div></div>
-          <div class="sc"><div class="sn" id="d-my-rank" style="color:var(--pur)">#-</div><div class="sl">My Rank</div></div>
-          <div class="sc"><div class="sn" id="d-my-jobs" style="color:var(--pur)">0</div><div class="sl">Upcoming Jobs</div></div>
+      <div class="pg-h" id="dash-hi">Hey! 👋</div>
+      <div class="pg-s" id="dash-date"></div>
+
+      <div id="dv-rep" style="display:none">
+        <div class="sg">
+          <div class="sc dk"><div class="sn" id="r-sales">0</div><div class="sl">My Sales</div></div>
+          <div class="sc gd"><div class="sn" id="r-rev">$0</div><div class="sl">My Revenue</div></div>
+          <div class="sc"><div class="sn" id="r-rank" style="color:var(--ink)">—</div><div class="sl" style="color:var(--slate)">My Rank</div></div>
+          <div class="sc"><div class="sn" id="r-up" style="color:var(--ink)">0</div><div class="sl" style="color:var(--slate)">Upcoming</div></div>
         </div>
-        <div class="card"><div class="card-title">🏆 This Week's Leader</div><div id="d-week-leader"></div></div>
-        <div class="card"><div class="card-title">📋 My Recent Sales</div><div id="d-rep-recent"></div></div>
+        <div class="card"><div class="ct">🏆 This Week's Leader</div><div id="r-leader"></div></div>
+        <div class="card"><div class="ct">📋 My Recent Bookings</div><div id="r-recent"></div></div>
       </div>
-      <div id="v-mgr" class="hide">
-        <div class="stat-grid">
-          <div class="sc s-pur"><div class="sn" id="d-tot-sales">0</div><div class="sl">Total Sales</div></div>
-          <div class="sc s-gold"><div class="sn" id="d-tot-rev">$0</div><div class="sl">Total Revenue</div></div>
-          <div class="sc"><div class="sn" id="d-tot-reps" style="color:var(--pur)">0</div><div class="sl">Active Reps</div></div>
-          <div class="sc"><div class="sn" id="d-tot-jobs" style="color:var(--pur)">0</div><div class="sl">Jobs Booked</div></div>
+
+      <div id="dv-mgr" style="display:none">
+        <div class="sg">
+          <div class="sc dk"><div class="sn" id="m-sales">0</div><div class="sl">Total Sales</div></div>
+          <div class="sc gd"><div class="sn" id="m-rev">$0</div><div class="sl">Total Revenue</div></div>
+          <div class="sc v1"><div class="sn" id="m-m1">0</div><div class="sl">Machine 1</div></div>
+          <div class="sc v2"><div class="sn" id="m-m2">0</div><div class="sl">Machine 2</div></div>
         </div>
-        <div id="d-winner-wrap"></div>
-        <div class="card"><div class="card-title">📊 Recent Sales</div><div id="d-mgr-recent"></div></div>
+        <div id="m-winner"></div>
+        <div class="card"><div class="ct">📊 Recent Sales</div><div id="m-recent"></div></div>
       </div>
     </div>
 
-    <!-- BOOK -->
+    <!-- ░░ BOOK ░░ -->
     <div class="page" id="pg-book">
-      <div class="pg-title">Book a Job</div>
-      <div class="pg-sub">Pick a date, select a slot, then enter client details</div>
-      <div class="cal">
+      <div class="pg-h">Book a Job</div>
+      <div class="pg-s">Pick your machine → choose a date → pick a slot → fill in details</div>
+
+      <div class="mtabs">
+        <div class="mtab on t1" id="mt1" onclick="setMachine(1)">
+          <div class="mt-ico">🟣</div>
+          <div class="mt-lbl on" id="mt1-lbl">Machine 1</div>
+          <div class="mt-cnt" id="mt1-cnt">0 booked today</div>
+        </div>
+        <div class="mtab t2" id="mt2" onclick="setMachine(2)">
+          <div class="mt-ico">🔵</div>
+          <div class="mt-lbl" id="mt2-lbl">Machine 2</div>
+          <div class="mt-cnt" id="mt2-cnt">0 booked today</div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="cal-hd">
-          <button class="cal-nb" onclick="calNav(-1)">‹</button>
+          <button class="cal-nav" onclick="calPrev()">‹</button>
           <h3 id="cal-title"></h3>
-          <button class="cal-nb" onclick="calNav(1)">›</button>
+          <button class="cal-nav" onclick="calNext()">›</button>
         </div>
-        <div class="cal-g" id="cal-g"></div>
+        <div class="cgrid" id="cal-grid"></div>
       </div>
-      <div class="card hide" id="slots-wrap">
-        <div class="card-title">🕐 Time Slots — <span id="slots-lbl" style="color:var(--pur)"></span></div>
-        <p style="font-size:.72rem;color:var(--muted);margin-bottom:8px">🟡 Your booking &nbsp;🔒 Taken &nbsp;Tap open slot to select</p>
-        <div class="slots-g" id="slots-g"></div>
+
+      <div id="slots-sec" style="display:none">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;
+          margin-bottom:10px;color:var(--ink)" id="slots-hd"></div>
+        <div id="slots-list"></div>
       </div>
-      <div class="card hide" id="bform-wrap">
-        <div class="card-title">📝 Client Details</div>
-        <div class="field"><label>Client Name *</label><input class="inp" type="text" id="b-cname" placeholder="Full name"/></div>
-        <div class="f2">
-          <div class="field"><label>Phone *</label><input class="inp" type="tel" id="b-phone" placeholder="(647) 000-0000"/></div>
-          <div class="field"><label>Price ($) *</label><input class="inp" type="number" id="b-price" placeholder="150" min="0"/></div>
+
+      <div id="form-sec" style="display:none">
+        <div class="bbanner" id="bbanner">
+          <div class="bb-ico" id="bb-ico">🟣</div>
+          <div>
+            <div class="bb-t" id="bb-t">Machine 1</div>
+            <div class="bb-s" id="bb-s">—</div>
+          </div>
         </div>
-        <div class="field"><label>Address *</label><input class="inp" type="text" id="b-addr" placeholder="123 Main St, Toronto, ON"/></div>
-        <div class="field">
-          <label>Service</label>
-          <select class="inp" id="b-svc">
-            <option>Exterior Window Cleaning</option>
-            <option>Interior Window Cleaning</option>
-            <option>Eavestrough / Gutter Cleaning</option>
-            <option>Sliding Door Cleaning</option>
-            <option>Glass Staircase Cleaning</option>
-            <option>Full Package</option>
-          </select>
+        <div class="card">
+          <div class="ct">📝 Client Details
+            <span style="font-size:.7rem;font-weight:400;color:var(--slate)">(all optional)</span>
+          </div>
+          <div class="field"><label>Client Name</label>
+            <input class="finp" id="b-nm" type="text" placeholder="Full name"/>
+          </div>
+          <div class="f2">
+            <div class="field"><label>Phone</label>
+              <input class="finp" id="b-ph" type="tel" placeholder="(647) 000-0000"/>
+            </div>
+            <div class="field"><label>Price ($)</label>
+              <input class="finp" id="b-pr" type="number" placeholder="0" min="0"/>
+            </div>
+          </div>
+          <div class="field"><label>Address</label>
+            <input class="finp" id="b-ad" type="text" placeholder="123 Main St, Mississauga"/>
+          </div>
+          <div class="field"><label>Service</label>
+            <select class="finp" id="b-sv">
+              <option>Exterior Window Cleaning</option>
+              <option>Interior Window Cleaning</option>
+              <option>Eavestrough / Gutter Cleaning</option>
+              <option>Sliding Door Cleaning</option>
+              <option>Glass Staircase Cleaning</option>
+              <option>Full Package</option>
+            </select>
+          </div>
+          <div class="field"><label>Notes</label>
+            <textarea class="finp" id="b-nt" placeholder="Any special instructions..."></textarea>
+          </div>
+          <button class="btn btn-gold" id="confirm-btn" onclick="confirmBooking()">✓ Confirm Booking</button>
         </div>
-        <div class="field"><label>Notes</label><textarea class="inp" id="b-notes" placeholder="Any special instructions..."></textarea></div>
-        <button class="btn btn-gold" onclick="submitBooking()">✓ Confirm Booking</button>
       </div>
     </div>
 
-    <!-- SALES -->
+    <!-- ░░ SALES ░░ -->
     <div class="page" id="pg-sales">
-      <div class="pg-title" id="sales-pg-title">My Sales</div>
-      <div class="pg-sub" id="sales-pg-sub">Your recorded sales & booked jobs</div>
+      <div class="pg-h" id="sales-h">My Sales</div>
+      <div class="pg-s">Your recorded bookings and sales</div>
       <div class="tabs">
-        <div class="tab on" onclick="salesTab('upcoming',this)">Upcoming</div>
-        <div class="tab" onclick="salesTab('completed',this)">Completed</div>
-        <div class="tab" onclick="salesTab('all',this)">All</div>
+        <button class="tab on" onclick="setSalesTab('upcoming',this)">Upcoming</button>
+        <button class="tab" onclick="setSalesTab('past',this)">Completed</button>
+        <button class="tab" onclick="setSalesTab('all',this)">All</button>
       </div>
       <div id="sales-list"></div>
     </div>
 
-    <!-- LEADERBOARD -->
+    <!-- ░░ LEADERBOARD ░░ -->
     <div class="page" id="pg-lb">
-      <div class="pg-title">Leaderboard</div>
-      <div class="pg-sub">Who's crushing it 🔥</div>
+      <div class="pg-h">Leaderboard</div>
+      <div class="pg-s">Who's crushing it this week 🔥</div>
       <div class="tabs">
-        <div class="tab on" onclick="lbTab('week',this)">This Week</div>
-        <div class="tab" onclick="lbTab('month',this)">This Month</div>
-        <div class="tab" onclick="lbTab('all',this)">All Time</div>
+        <button class="tab on" onclick="setLbTab('week',this)">This Week</button>
+        <button class="tab" onclick="setLbTab('month',this)">This Month</button>
+        <button class="tab" onclick="setLbTab('all',this)">All Time</button>
       </div>
       <div id="lb-list"></div>
-      <div id="mgr-sales-wrap" class="hide">
-        <div class="card" style="margin-top:14px">
-          <div class="card-title">📋 All Team Sales</div>
-          <div id="mgr-all-sales"></div>
-        </div>
+      <div id="lb-mgr" style="display:none;margin-top:18px">
+        <div class="ct" style="margin-bottom:10px">📋 All Team Sales</div>
+        <div id="lb-all"></div>
       </div>
     </div>
 
-    <!-- MAP PAGE -->
+    <!-- ░░ MAP ░░ -->
     <div class="page" id="pg-map">
-      <div class="pg-title">Door Knock Map</div>
-      <div class="pg-sub">Tap the map to mark a home you've knocked</div>
+      <div class="pg-h">Door Knock Map</div>
+      <div class="pg-s">Tap the map to mark every door you knock</div>
       <div class="card" style="padding:13px">
-        <div class="map-tb">
-          <span style="font-size:.72rem;font-weight:700;color:var(--pur-d);width:100%;margin-bottom:4px">Mark door as:</span>
-          <button class="mk-btn mk-knocked mk-active" id="mb-knocked" onclick="setMark('knocked',this)">🚪 Knocked</button>
-          <button class="mk-btn mk-interested" id="mb-int" onclick="setMark('interested',this)">⭐ Interested</button>
-          <button class="mk-btn mk-noanswer" id="mb-na" onclick="setMark('noanswer',this)">🔇 No Answer</button>
-          <button class="mk-btn mk-notint" id="mb-ni" onclick="setMark('notint',this)">❌ Not Interested</button>
+        <div class="mbar">
+          <span style="font-size:.7rem;font-weight:700;color:var(--slate);
+            width:100%;margin-bottom:3px">Tap map to mark door as:</span>
+          <button class="mk mk-kn on" onclick="setMark('knocked',this)">🚪 Knocked</button>
+          <button class="mk mk-in" onclick="setMark('interested',this)">⭐ Interested</button>
+          <button class="mk mk-na" onclick="setMark('noanswer',this)">🔇 No Answer</button>
+          <button class="mk mk-ni" onclick="setMark('notint',this)">❌ Not Interested</button>
         </div>
-        <p style="font-size:.72rem;color:var(--muted);margin-bottom:8px">📍 Tap anywhere on the map to drop a pin on a door</p>
-        <div id="map-el"></div>
-        <div class="legend">
-          <div class="leg"><div class="leg-dot" style="background:#6B3FA0"></div>Knocked</div>
-          <div class="leg"><div class="leg-dot" style="background:#22C55E"></div>Interested</div>
-          <div class="leg"><div class="leg-dot" style="background:#F59E0B"></div>No Answer</div>
-          <div class="leg"><div class="leg-dot" style="background:#EF4444"></div>Not Interested</div>
-        </div>
-      </div>
-      <div class="stat-grid">
-        <div class="sc"><div class="sn" id="map-tot" style="color:var(--pur)">0</div><div class="sl">Total Knocked</div></div>
-        <div class="sc s-gold"><div class="sn" id="map-int">0</div><div class="sl">Interested</div></div>
-      </div>
-    </div>
-
-    <!-- ZONES PAGE -->
-    <div class="page" id="pg-zones">
-      <div class="pg-title">Territory Zones</div>
-      <div class="pg-sub" id="zones-sub">Draw zones and assign them to reps</div>
-
-      <!-- MANAGER VIEW -->
-      <div id="zones-mgr-view" class="hide">
-        <div class="card" style="padding:13px">
-          <div class="card-title">🗺️ Draw Territories</div>
-          <p style="font-size:.75rem;color:var(--muted);margin-bottom:10px">Use the draw tools on the map to paint a zone, then assign it to a rep below.</p>
-          <div id="zone-map-el"></div>
-        </div>
-
-        <div class="card" id="zone-assign-card" style="display:none">
-          <div class="card-title">✏️ Assign This Zone</div>
-          <div class="field">
-            <label>Zone Name</label>
-            <input class="inp" type="text" id="zone-name-inp" placeholder="e.g. North Mississauga"/>
-          </div>
-          <div class="field">
-            <label>Assign to Rep</label>
-            <select class="inp" id="zone-rep-sel"><option value="">Select a rep...</option></select>
-          </div>
-          <div class="field">
-            <label>Zone Color</label>
-            <div class="rep-colors" id="zone-color-picker"></div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:4px">
-            <button class="btn btn-gold btn-sm" style="flex:1" onclick="saveZone()">💾 Save Zone</button>
-            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="cancelZoneDraw()">Cancel</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">📋 Assigned Zones</div>
-          <div id="zones-list"></div>
+        <div id="knock-map"></div>
+        <div class="mleg">
+          <div class="ml"><div class="mld" style="background:#7C3AED"></div>Knocked</div>
+          <div class="ml"><div class="mld" style="background:#10B981"></div>Interested</div>
+          <div class="ml"><div class="mld" style="background:#F59E0B"></div>No Answer</div>
+          <div class="ml"><div class="mld" style="background:#EF4444"></div>Not Interested</div>
         </div>
       </div>
-
-      <!-- REP VIEW -->
-      <div id="zones-rep-view" class="hide">
-        <div id="rep-zone-info"></div>
-        <div class="card" style="padding:13px">
-          <div class="card-title">🗺️ Your Territory</div>
-          <div id="zone-map-el-rep" style="height:380px;border-radius:10px;overflow:hidden;border:1px solid var(--border)"></div>
-        </div>
+      <div class="sg">
+        <div class="sc dk"><div class="sn" id="map-tot">0</div><div class="sl">Total Knocked</div></div>
+        <div class="sc gd"><div class="sn" id="map-int">0</div><div class="sl">Interested</div></div>
       </div>
     </div>
 
-    <!-- SCHEDULE PAGE -->
+    <!-- ░░ SCHEDULE ░░ -->
     <div class="page" id="pg-sched">
-      <div class="pg-title">Tomorrow's Schedule</div>
-      <div class="pg-sub" id="sched-sub"></div>
-      <div class="share-btns">
-        <button class="btn btn-gold btn-sm" style="flex:1" onclick="copySchedule()">📋 Copy</button>
-        <button class="btn btn-primary btn-sm" style="flex:1" onclick="shareSchedule()">📤 Share</button>
+      <div class="pg-h">Schedule</div>
+      <div class="pg-s">Today & tomorrow's jobs for the whole team</div>
+
+      <div class="sched-tabs">
+        <div class="stab on" id="sd-t" onclick="setSchedDay('today')">
+          <div class="st-n">Today</div>
+          <div class="st-d" id="sd-t-lbl"></div>
+        </div>
+        <div class="stab" id="sd-tm" onclick="setSchedDay('tomorrow')">
+          <div class="st-n">Tomorrow</div>
+          <div class="st-d" id="sd-tm-lbl"></div>
+        </div>
       </div>
-      <div id="sched-content"></div>
-      <div id="slot-mgr-wrap" class="hide">
-        <div class="card">
-          <div class="card-title">⚙️ Manage Time Slots</div>
-          <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px"><strong style="color:var(--gold-d)">Gold = 2 machines</strong> · <strong style="color:var(--pur)">Purple = 1 machine</strong> · Grey = off. Tap to cycle.</p>
-          <div class="slot-mgr-g" id="slot-mgr-g"></div>
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn btn-primary btn-sm" style="flex:1" onclick="saveSlots()">💾 Save Slots</button>
-            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="resetSlots()">Reset</button>
+
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-ink btn-sm" style="flex:1" onclick="copySchedule()">📋 Copy</button>
+        <button class="btn btn-gold btn-sm" style="flex:1" onclick="shareSchedule()">📤 Share</button>
+      </div>
+
+      <div id="sched-jobs"></div>
+
+      <!-- MANAGER ONLY -->
+      <div id="slot-mgr" style="display:none;margin-top:22px">
+        <div style="background:var(--ink);border-radius:var(--r);padding:16px;margin-bottom:14px">
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#fff;margin-bottom:4px">
+            ⚙️ Time Slot Manager
           </div>
+          <div style="font-size:.75rem;color:#5A5A7A;line-height:1.6">
+            Set the time windows your reps can book. Each slot fits <strong style="color:#fff">1 booking per machine</strong>
+            (so 2 total — one for Machine 1, one for Machine 2).
+          </div>
+        </div>
+        <div id="slot-rows"></div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn btn-off btn-sm" style="flex:1" onclick="addSlotRow()">+ Add Slot</button>
+          <button class="btn btn-gold btn-sm" style="flex:1" onclick="saveSlots()">💾 Save</button>
         </div>
       </div>
     </div>
 
   </div>
 
-  <!-- BOTTOM NAV -->
   <nav class="bnav">
-    <button class="bn-item on" onclick="goPage('dash',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      <span class="bn-lbl">Dashboard</span>
+    <button class="nb on" onclick="goTo('dash',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span>Home</span>
     </button>
-    <button class="bn-item" onclick="goPage('book',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r=".5" fill="currentColor"/><circle cx="12" cy="15" r=".5" fill="currentColor"/><circle cx="16" cy="15" r=".5" fill="currentColor"/></svg>
-      <span class="bn-lbl">Book</span>
+    <button class="nb" onclick="goTo('book',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="15" r="1" fill="currentColor"/><circle cx="16" cy="15" r="1" fill="currentColor"/></svg>
+      <span>Book</span>
     </button>
-    <button class="bn-item" onclick="goPage('sales',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-      <span class="bn-lbl">Sales</span>
+    <button class="nb" onclick="goTo('sales',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <span>Sales</span>
     </button>
-    <button class="bn-item" onclick="goPage('lb',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span class="bn-lbl">Rankings</span>
+    <button class="nb" onclick="goTo('lb',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Rankings</span>
     </button>
-    <button class="bn-item" onclick="goPage('map',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-      <span class="bn-lbl">Map</span>
+    <button class="nb" onclick="goTo('map',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      <span>Map</span>
     </button>
-    <button class="bn-item" onclick="goPage('zones',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
-      <span class="bn-lbl">Zones</span>
-    </button>
-    <button class="bn-item" onclick="goPage('sched',this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      <span class="bn-lbl">Schedule</span>
+    <button class="nb" onclick="goTo('sched',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Schedule</span>
     </button>
   </nav>
 </div>
 
 <script>
-// ══════════════════════════════
+// ══════════════════════════════════════
 //  CONFIG
-// ══════════════════════════════
+// ══════════════════════════════════════
 const SB_URL  = 'https://dhmlhiqhpijgsxkligqi.supabase.co';
 const SB_KEY  = 'sb_publishable_R0KN0QZ17Vx9wNK2je_jYw_ORcxnBtR';
-const MB_TOKEN = 'pk.eyJ1IjoiYWF5dXNoYW5lZWwiLCJhIjoiY21tZWc4OTBtMGVuOTJ2cHZ1c3pmYzEydiJ9.5KgaQSY-Gw4BPZz_3wnWMA';
+const MB_TOK  = 'pk.eyJ1IjoiYWF5dXNoYW5lZWwiLCJhIjoiY21tZWc4OTBtMGVuOTJ2cHZ1c3pmYzEydiJ9.5KgaQSY-Gw4BPZz_3wnWMA';
 const MGR_CODE = 'warriors2024';
 
-mapboxgl.accessToken = MB_TOKEN;
-const {createClient} = supabase;
+mapboxgl.accessToken = MB_TOK;
+const { createClient } = supabase;
 const db = createClient(SB_URL, SB_KEY);
 
-// ══════════════════════════════
-//  CONSTANTS
-// ══════════════════════════════
-const ALL_SLOTS = ['8:00 AM','9:00 AM','10:00 AM','11:00 AM','12:00 PM',
-                   '1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM'];
-const MARK_COLORS = {knocked:'#6B3FA0',interested:'#22C55E',noanswer:'#F59E0B',notint:'#EF4444'};
-const MARK_LABELS = {knocked:'Knocked',interested:'Interested',noanswer:'No Answer',notint:'Not Interested'};
-const ZONE_COLORS = ['#E74C3C','#3498DB','#2ECC71','#F39C12','#9B59B6','#1ABC9C','#E67E22','#E91E63','#00BCD4','#FF5722'];
-
-// ══════════════════════════════
+// ══════════════════════════════════════
 //  STATE
-// ══════════════════════════════
-let user=null, profile=null;
-let calY=new Date().getFullYear(), calM=new Date().getMonth();
-let selDate=null, selSlot=null, selSlotIdx=null;
-let mapKnock=null, mapZone=null, mapZoneRep=null, drawControl=null;
-let markStatus='knocked';
-let curLbTab='week', curSalesTab='upcoming';
-let slotConfig = ALL_SLOTS.map(t=>({time:t,machines:1}));
-let pendingZoneFeature=null, selZoneColor=ZONE_COLORS[0];
-let allReps=[], allZones=[];
+// ══════════════════════════════════════
+let ME = null;                          // current profile object
+let calY = new Date().getFullYear();
+let calM = new Date().getMonth();
+let selDate = null, selSlot = null, selMachine = 1;
+let slots = [];
+let lbPer = 'week', salesPer = 'upcoming', schedDay = 'today';
+let kmap = null, markMode = 'knocked';
 
-// ══════════════════════════════
-//  TOAST
-// ══════════════════════════════
-let tt;
-function toast(msg,ms=2800){
-  const el=G('toast');el.textContent=msg;el.classList.add('on');
-  clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),ms);
+const MC = { knocked:'#7C3AED', interested:'#10B981', noanswer:'#F59E0B', notint:'#EF4444' };
+const ML = { knocked:'Knocked', interested:'Interested', noanswer:'No Answer', notint:'Not Interested' };
+
+// ══════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════
+const G = id => document.getElementById(id);
+let _tt;
+function toast(msg, ms=2800) {
+  const e = G('toast'); e.textContent = msg; e.classList.add('on');
+  clearTimeout(_tt); _tt = setTimeout(() => e.classList.remove('on'), ms);
+}
+function todayStr()    { return new Date().toISOString().split('T')[0]; }
+function tomorrowStr() { const d=new Date(); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; }
+function fmtD(ds)  { return new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'}); }
+function fmtDL(ds) { return new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
+function fmtMoney(n) { n=parseFloat(n)||0; return n>=1000?'$'+(n/1000).toFixed(1)+'k':'$'+Math.round(n); }
+function weekAgo()  { const d=new Date(); d.setDate(d.getDate()-7); d.setHours(0,0,0,0); return d.toISOString(); }
+function monthAgo() { const d=new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.toISOString(); }
+
+// ══════════════════════════════════════
+//  AUTH — no Supabase email auth
+//  All accounts stored in profiles table
+// ══════════════════════════════════════
+function showP(p) {
+  G('p-login').style.display = p==='login' ? 'block' : 'none';
+  G('p-reg').style.display   = p==='reg'   ? 'block' : 'none';
+  G('a-err').style.display   = 'none';
+  G('a-ok').style.display    = 'none';
+}
+function toggleMgr() {
+  G('mgr-f').style.display = G('r-role').value==='manager' ? 'block' : 'none';
+}
+function showErr(m) { const e=G('a-err'); e.textContent=m; e.style.display='block'; }
+function showOk(m)  { const e=G('a-ok');  e.textContent=m; e.style.display='block'; }
+
+// Session via localStorage — no cookies, no email
+function saveSession(p)  { try { localStorage.setItem('wh_v2', JSON.stringify(p)); } catch{} }
+function clearSession()  { try { localStorage.removeItem('wh_v2'); } catch{} }
+function loadSession()   { try { const s=localStorage.getItem('wh_v2'); return s?JSON.parse(s):null; } catch{ return null; } }
+
+async function doLogin() {
+  const btn = G('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  const email = G('l-em').value.trim().toLowerCase();
+  const pass  = G('l-pw').value.trim();
+  if (!email || !pass) { showErr('Please enter your email and password.'); btn.disabled=false; btn.textContent='Sign In →'; return; }
+  const { data, error } = await db.from('profiles').select('*').eq('email', email).eq('password', pass).maybeSingle();
+  if (error) { showErr('Database error: '+error.message); btn.disabled=false; btn.textContent='Sign In →'; return; }
+  if (!data)  { showErr('Wrong email or password. Try again.'); btn.disabled=false; btn.textContent='Sign In →'; return; }
+  saveSession(data);
+  boot(data);
 }
 
-// ══════════════════════════════
-//  AUTH
-// ══════════════════════════════
-function G(id){return document.getElementById(id)}
-function toReg(){G('frm-login').classList.add('hide');G('frm-reg').classList.remove('hide');clrAuth()}
-function toLogin(){G('frm-reg').classList.add('hide');G('frm-login').classList.remove('hide');clrAuth()}
-function clrAuth(){['auth-err','auth-ok'].forEach(id=>{const e=G(id);e.classList.add('hide');e.textContent=''})}
-function authErr(m){const e=G('auth-err');e.textContent=m;e.classList.remove('hide')}
-function authOk(m){const e=G('auth-ok');e.textContent=m;e.classList.remove('hide')}
-function toggleMgrCode(){G('mgr-field').classList.toggle('hide',G('r-role').value!=='manager')}
-
-async function doLogin(){
-  const email=G('l-email').value.trim(),pass=G('l-pass').value;
-  clrAuth();
-  if(!email||!pass){authErr('Please fill in both fields');return}
-  const {data,error}=await db.auth.signInWithPassword({email,password:pass});
-  if(error){authErr(error.message);return}
-  bootApp(data.user);
+async function doRegister() {
+  const btn = G('reg-btn');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  const name  = G('r-nm').value.trim();
+  const email = G('r-em').value.trim().toLowerCase();
+  const pass  = G('r-pw').value.trim();
+  const role  = G('r-role').value;
+  const code  = G('r-code').value.trim();
+  if (!name||!email||!pass) { showErr('Please fill in all fields.'); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  if (pass.length < 4)      { showErr('Password must be at least 4 characters.'); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  if (role==='manager' && code!==MGR_CODE) { showErr('Wrong manager code.'); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  // Check duplicate email
+  const { data: existing } = await db.from('profiles').select('id').eq('email', email).maybeSingle();
+  if (existing) { showErr('An account with that email already exists. Please sign in.'); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  // Create profile
+  const newProfile = { id: crypto.randomUUID(), full_name: name, email, password: pass, role };
+  const { data, error } = await db.from('profiles').insert(newProfile).select().single();
+  if (error) { showErr('Could not create account: '+error.message); console.error(error); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  saveSession(data);
+  boot(data);
 }
 
-async function doRegister(){
-  const name=G('r-name').value.trim(),email=G('r-email').value.trim();
-  const pass=G('r-pass').value,role=G('r-role').value,code=G('r-code').value;
-  clrAuth();
-  if(!name||!email||!pass){authErr('Please fill in all fields');return}
-  if(pass.length<6){authErr('Password must be at least 6 characters');return}
-  if(role==='manager'&&code!==MGR_CODE){authErr('Incorrect manager access code');return}
-  const {data,error}=await db.auth.signUp({email,password:pass,options:{data:{full_name:name,role}}});
-  if(error){authErr(error.message);return}
-  await db.from('profiles').upsert({id:data.user.id,full_name:name,email,role});
-  authOk('Account created! Signing you in...');
-  setTimeout(()=>bootApp(data.user),1200);
+function doSignOut() {
+  clearSession();
+  ME = null; kmap = null;
+  G('app').style.display  = 'none';
+  G('auth').style.display = 'flex';
+  showP('login');
+  G('l-em').value = ''; G('l-pw').value = '';
 }
 
-async function doLogout(){
-  await db.auth.signOut();
-  user=null;profile=null;mapKnock=null;mapZone=null;mapZoneRep=null;
-  G('app').style.display='none';G('auth').style.display='flex';
-}
+// ══════════════════════════════════════
+//  BOOT APP
+// ══════════════════════════════════════
+async function boot(profile) {
+  ME = profile;
+  G('auth').style.display = 'none';
+  G('app').style.display  = 'flex';
 
-// ══════════════════════════════
-//  BOOT
-// ══════════════════════════════
-async function bootApp(u){
-  user=u;
-  let {data:p}=await db.from('profiles').select('*').eq('id',u.id).single();
-  if(!p){p={id:u.id,full_name:u.user_metadata?.full_name||'User',email:u.email,role:u.user_metadata?.role||'rep'};await db.from('profiles').upsert(p)}
-  profile=p;
-  G('auth').style.display='none';
-  G('app').style.display='flex';
-  G('tb-name').textContent=profile.full_name;
-  const rb=G('tb-role');
-  rb.textContent=profile.role==='manager'?'Manager':'Sales Rep';
-  rb.className='chip '+(profile.role==='manager'?'chip-mgr':'chip-rep');
-  const now=new Date(),hr=now.getHours();
-  const g=hr<12?'Good morning':hr<17?'Good afternoon':'Good evening';
-  G('dash-hi').textContent=g+', '+profile.full_name.split(' ')[0]+'! 👋';
-  G('dash-date').textContent=now.toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  G('v-rep').classList.toggle('hide',profile.role!=='rep');
-  G('v-mgr').classList.toggle('hide',profile.role!=='manager');
-  G('mgr-sales-wrap').classList.toggle('hide',profile.role!=='manager');
-  G('slot-mgr-wrap').classList.toggle('hide',profile.role!=='manager');
-  G('zones-mgr-view').classList.toggle('hide',profile.role!=='manager');
-  G('zones-rep-view').classList.toggle('hide',profile.role!=='rep');
-  G('zones-sub').textContent=profile.role==='manager'?'Draw zones on the map and assign them to reps':'Your assigned knocking territory';
-  if(profile.role==='manager'){
-    G('sales-pg-title').textContent='All Team Sales';
-    G('sales-pg-sub').textContent='View and manage all team sales';
-  }
-  await loadSlotConfig();
-  await loadReps();
+  // Top bar
+  G('tb-user').textContent = ME.full_name;
+  const rp = G('tb-role');
+  rp.textContent = ME.role==='manager' ? 'Manager' : 'Rep';
+  rp.className   = 'role-pill '+(ME.role==='manager' ? 'rp-mgr' : 'rp-rep');
+
+  // Greeting
+  const h = new Date().getHours();
+  G('dash-hi').textContent   = (h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', '+ME.full_name.split(' ')[0]+'! 👋';
+  G('dash-date').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  // Show/hide role-specific UI
+  G('dv-rep').style.display  = ME.role==='rep'     ? 'block' : 'none';
+  G('dv-mgr').style.display  = ME.role==='manager' ? 'block' : 'none';
+  G('lb-mgr').style.display  = ME.role==='manager' ? 'block' : 'none';
+  G('slot-mgr').style.display= ME.role==='manager' ? 'block' : 'none';
+  if (ME.role==='manager') G('sales-h').textContent = 'All Team Sales';
+
+  // Schedule labels
+  G('sd-t-lbl').textContent  = fmtD(todayStr());
+  G('sd-tm-lbl').textContent = fmtD(tomorrowStr());
+
+  await loadSlots();
   buildCal();
-  loadDash();
-  loadSales();
-  loadLb();
+  await Promise.all([loadDash(), loadSales(), loadLb()]);
 }
 
-// ══════════════════════════════
+// ══════════════════════════════════════
 //  NAVIGATION
-// ══════════════════════════════
-function goPage(id,el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('on'));
-  G('pg-'+id).classList.add('on');
-  if(el)el.classList.add('on');
-  if(id==='map')setTimeout(()=>initKnockMap(),120);
-  if(id==='zones')setTimeout(()=>initZoneMap(),120);
-  if(id==='lb')loadLb();
-  if(id==='dash')loadDash();
-  if(id==='sales')loadSales();
-  if(id==='sched'){loadSchedule();if(profile.role==='manager')buildSlotMgr()}
+// ══════════════════════════════════════
+function goTo(pg, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+  G('pg-'+pg).classList.add('on');
+  if (btn) btn.classList.add('on');
+  document.querySelector('.scroll').scrollTop = 0;
+  if (pg==='map')   setTimeout(initMap, 150);
+  if (pg==='sched') { loadSchedule(); if(ME.role==='manager') buildSlotMgr(); }
+  if (pg==='lb')    loadLb();
+  if (pg==='dash')  loadDash();
+  if (pg==='sales') loadSales();
 }
 
-// ══════════════════════════════
-//  SLOT CONFIG
-// ══════════════════════════════
-async function loadSlotConfig(){
-  const {data}=await db.from('slot_config').select('*').eq('id','global').single();
-  if(data?.config){try{slotConfig=JSON.parse(data.config)}catch(e){}}
-}
-async function saveSlots(){
-  const newConfig=ALL_SLOTS.map(t=>{
-    const btn=document.querySelector(`.slot-toggle[data-slot="${t}"]`);
-    if(!btn)return{time:t,machines:0};
-    if(btn.classList.contains('st-2'))return{time:t,machines:2};
-    if(btn.classList.contains('st-on'))return{time:t,machines:1};
-    return{time:t,machines:0};
-  });
-  slotConfig=newConfig;
-  await db.from('slot_config').upsert({id:'global',config:JSON.stringify(slotConfig)});
-  toast('✅ Slots saved!');
-}
-function resetSlots(){slotConfig=ALL_SLOTS.map(t=>({time:t,machines:1}));buildSlotMgr();toast('↩️ Reset to default')}
-function buildSlotMgr(){
-  G('slot-mgr-g').innerHTML=slotConfig.map(sc=>{
-    const m=sc.machines||0;
-    let cls='slot-toggle',lbl=sc.time;
-    if(m===2){cls+=' st-2';lbl+=`<br><small>×2</small>`}
-    else if(m===1){cls+=' st-on';lbl+=`<br><small>×1</small>`}
-    else lbl+=`<br><small>off</small>`;
-    return`<div class="${cls}" data-slot="${sc.time}" onclick="cycleSlot(this)">${lbl}</div>`;
-  }).join('');
-}
-function cycleSlot(el){
-  const s=el.dataset.slot;
-  if(el.classList.contains('st-2')){el.classList.remove('st-2','st-on');el.innerHTML=s+`<br><small>off</small>`}
-  else if(el.classList.contains('st-on')){el.classList.remove('st-on');el.classList.add('st-2');el.innerHTML=s+`<br><small>×2</small>`}
-  else{el.classList.add('st-on');el.innerHTML=s+`<br><small>×1</small>`}
-}
-function getAvailableSlots(){return slotConfig.filter(s=>s.machines>0).map(s=>({time:s.time,capacity:s.machines}))}
-
-// ══════════════════════════════
-//  REPS
-// ══════════════════════════════
-async function loadReps(){
-  const {data}=await db.from('profiles').select('*').eq('role','rep');
-  allReps=data||[];
+// ══════════════════════════════════════
+//  SLOTS
+// ══════════════════════════════════════
+async function loadSlots() {
+  const { data } = await db.from('slots').select('*').order('sort_order', { ascending: true });
+  slots = data || [];
 }
 
-// ══════════════════════════════
-//  DASHBOARD
-// ══════════════════════════════
-async function loadDash(){
-  if(profile.role==='rep')await loadRepDash();else await loadMgrDash();
+// ══════════════════════════════════════
+//  MACHINE SELECTOR
+// ══════════════════════════════════════
+function setMachine(m) {
+  selMachine = m; selDate = null; selSlot = null;
+  G('mt1').className = 'mtab '+(m===1?'on t1':'');
+  G('mt2').className = 'mtab '+(m===2?'on t2':'');
+  G('mt1-lbl').className = 'mt-lbl'+(m===1?' on':'');
+  G('mt2-lbl').className = 'mt-lbl'+(m===2?' on':'');
+  G('slots-sec').style.display = 'none';
+  G('form-sec').style.display  = 'none';
+  buildCal();
+  refreshMachineCounts();
 }
-async function loadRepDash(){
-  const {data:sales}=await db.from('sales').select('*').eq('rep_id',user.id);
-  const {data:upcoming}=await db.from('bookings').select('*').eq('rep_id',user.id).gte('date',today());
-  const arr=sales||[];
-  const rev=arr.reduce((s,x)=>s+parseFloat(x.price||0),0);
-  G('d-my-sales').textContent=arr.length;
-  G('d-my-rev').textContent='$'+fmt(rev);
-  G('d-my-jobs').textContent=(upcoming||[]).length;
-  const {data:all}=await db.from('sales').select('rep_id');
-  if(all){
-    const cnt={};all.forEach(s=>cnt[s.rep_id]=(cnt[s.rep_id]||0)+1);
-    const sorted=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-    const rank=sorted.findIndex(x=>x[0]===user.id)+1;
-    G('d-my-rank').textContent=rank>0?'#'+rank:'#1';
+
+async function refreshMachineCounts() {
+  const { data } = await db.from('bookings').select('machine_num').eq('date', todayStr());
+  const bks = data || [];
+  G('mt1-cnt').textContent = bks.filter(b=>b.machine_num===1).length+' booked today';
+  G('mt2-cnt').textContent = bks.filter(b=>b.machine_num===2).length+' booked today';
+}
+
+// ══════════════════════════════════════
+//  CALENDAR
+// ══════════════════════════════════════
+function buildCal() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DAYS   = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  G('cal-title').textContent = MONTHS[calM]+' '+calY;
+  const tod = todayStr();
+  let h = DAYS.map(d => `<div class="cdn">${d}</div>`).join('');
+  const first = new Date(calY, calM, 1).getDay();
+  const total = new Date(calY, calM+1, 0).getDate();
+  for (let i=0; i<first; i++) h += `<div class="cd cem"></div>`;
+  for (let d=1; d<=total; d++) {
+    const ds = `${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const past  = ds < tod;
+    const isT   = ds === tod;
+    const isSel = ds === selDate;
+    let cls = 'cd';
+    if (past)       cls += ' cpast';
+    else if (isSel) cls += ` csel cm${selMachine}`;
+    else if (isT)   cls += ' ctoday';
+    const click = past ? '' : ` onclick="pickDay('${ds}')"`;
+    h += `<div class="${cls}"${click}>${d}</div>`;
   }
-  // Show assigned area
-  const {data:zones}=await db.from('zones').select('*');
-  const myZone=(zones||[]).find(z=>z.rep_id===user.id);
-  const wrap=G('rep-area-wrap');
-  if(myZone){
-    wrap.innerHTML=`<div class="rep-area-badge">
-      <div class="rep-area-color" style="background:${myZone.color}"></div>
-      <div class="rep-area-info">
-        <div class="rep-area-label">Your Assigned Territory</div>
-        <div class="rep-area-name">${myZone.name}</div>
-      </div>
-    </div>`;
-  } else wrap.innerHTML='';
-  const wl=await getWeekRanks();
-  const el=G('d-week-leader');
-  if(!wl.length){el.innerHTML='<div class="empty"><p>No sales this week — be first! 💪</p></div>'}
-  else{const top=wl[0];el.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:12px;background:linear-gradient(135deg,rgba(212,175,55,.08),rgba(107,63,160,.08));border-radius:10px;border:1px solid rgba(212,175,55,.25)"><div style="font-size:1.8rem">🏆</div><div><div style="font-family:'Rubik',sans-serif;font-weight:800">${top.name}</div><div style="font-size:.78rem;color:var(--muted)">${top.count} sale${top.count!==1?'s':''} · $${fmt(top.rev)} this week</div></div></div>`}
-  const {data:rec}=await db.from('sales').select('*').eq('rep_id',user.id).order('created_at',{ascending:false}).limit(4);
-  G('d-rep-recent').innerHTML=renderSaleRows(rec||[],false);
+  G('cal-grid').innerHTML = h;
 }
-async function loadMgrDash(){
-  const {data:sales}=await db.from('sales').select('*');
-  const {data:profs}=await db.from('profiles').select('*').eq('role','rep');
-  const {data:bks}=await db.from('bookings').select('*');
-  const arr=sales||[];
-  const rev=arr.reduce((s,x)=>s+parseFloat(x.price||0),0);
-  G('d-tot-sales').textContent=arr.length;G('d-tot-rev').textContent='$'+fmt(rev);
-  G('d-tot-reps').textContent=(profs||[]).length;G('d-tot-jobs').textContent=(bks||[]).length;
-  const wl=await getWeekRanks();
-  const wrap=G('d-winner-wrap');
-  if(wl.length){const w=wl[0];wrap.innerHTML=`<div class="winner-banner"><div class="winner-trophy">🏆</div><div class="winner-name">${w.name}</div><div class="winner-stats">${w.count} sale${w.count!==1?'s':''} · $${fmt(w.rev)} this week</div><div class="winner-crown">👑 THIS WEEK'S CHAMPION</div></div>`}
-  else wrap.innerHTML='<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
-  const {data:rec}=await db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false}).limit(6);
-  G('d-mgr-recent').innerHTML=renderSaleRows(rec||[],true);
+function calPrev() { calM--; if(calM<0){calM=11;calY--;} buildCal(); }
+function calNext() { calM++; if(calM>11){calM=0;calY++;} buildCal(); }
+
+async function pickDay(ds) {
+  selDate = ds; selSlot = null;
+  buildCal();
+  G('slots-hd').textContent  = `🕐 Slots for Machine ${selMachine} — ${fmtDL(ds)}`;
+  G('slots-sec').style.display = 'block';
+  G('form-sec').style.display  = 'none';
+  await renderSlots(ds);
 }
-async function getWeekRanks(){
-  const {data:sales}=await db.from('sales').select('rep_id,price,profiles(full_name)').gte('created_at',weekStart());
-  if(!sales?.length)return[];
-  const cnt={};
-  sales.forEach(s=>{
-    if(!cnt[s.rep_id])cnt[s.rep_id]={name:s.profiles?.full_name||'Unknown',count:0,rev:0};
-    cnt[s.rep_id].count++;cnt[s.rep_id].rev+=parseFloat(s.price||0);
+
+// ══════════════════════════════════════
+//  RENDER SLOTS
+// ══════════════════════════════════════
+async function renderSlots(ds) {
+  const el = G('slots-list');
+  el.innerHTML = '<div style="color:var(--slate);padding:8px;font-size:.82rem">Loading slots...</div>';
+  if (!slots.length) {
+    el.innerHTML = `<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>No slots set up yet.<br>Manager can add slots in the Schedule tab.</p></div>`;
+    return;
+  }
+  // Fetch ALL bookings for this date — no filter on machine yet
+  const { data: bks, error } = await db.from('bookings')
+    .select('id, slot_id, rep_id, machine_num, time_start').eq('date', ds);
+  if (error) {
+    el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:.82rem">Error: ${error.message}</div>`;
+    return;
+  }
+  const booked = bks || [];
+  let html = '';
+
+  slots.forEach((sl, i) => {
+    // A booking matches this slot if slot_id matches OR time_start matches (handles legacy nulls)
+    // AND machine_num matches (coerce both to int to avoid type mismatch)
+    const match = booked.filter(b =>
+      parseInt(b.machine_num) === parseInt(selMachine) &&
+      (b.slot_id === sl.id || b.time_start === sl.time_start)
+    );
+
+    const isMine  = match.some(b => b.rep_id === ME.id);
+    const isTaken = match.length > 0;
+
+    // Taken slots do NOT appear at all — just skip rendering them
+    // Unless it's mine (so rep can see their own booking)
+    if (isTaken && !isMine) return; // skip — slot disappears
+
+    let cls = 'slotrow', badge = '', onclick = '';
+    if (isMine) {
+      cls   += ` sr-mine${selMachine}`;
+      badge  = `<span class="sbadge sb-mine">✓ Your Booking</span>`;
+      // NO onclick — already booked, clicking does nothing
+      html += `<div class="${cls}" style="cursor:default" data-i="${i}">
+        <div>
+          <div class="sr-time">${sl.time_start} – ${sl.time_end}</div>
+          <div class="sr-sub">${sl.label||''}</div>
+        </div>
+        ${badge}
+      </div>`;
+    } else {
+      badge  = `<span class="sbadge sb-open">Open</span>`;
+      html += `<div class="${cls}" onclick="selectSlot('${sl.id}','${sl.label}','${sl.time_start}','${sl.time_end}',${i})" data-i="${i}">
+        <div>
+          <div class="sr-time">${sl.time_start} – ${sl.time_end}</div>
+          <div class="sr-sub">${sl.label||''}</div>
+        </div>
+        ${badge}
+      </div>`;
+    }
+  });
+
+  if (!html) {
+    html = `<div class="empty"><p>No slots available for this date on Machine ${selMachine}.<br>All slots are booked.</p></div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function selectSlot(id, label, start, end, i) {
+  selSlot = { id, label, start, end };
+  document.querySelectorAll('.slotrow').forEach(r => r.classList.remove('sr-sel'));
+  const rows = document.querySelectorAll('.slotrow');
+  if (rows[i]) rows[i].classList.add('sr-sel');
+  // Banner
+  const bm = G('bbanner');
+  bm.className = `bbanner b${selMachine}`;
+  G('bb-ico').textContent = selMachine===1 ? '🟣' : '🔵';
+  G('bb-t').textContent   = `Machine ${selMachine} — ${start} – ${end}`;
+  G('bb-s').textContent   = fmtDL(selDate);
+  G('form-sec').style.display = 'block';
+  setTimeout(() => G('form-sec').scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+}
+
+// ══════════════════════════════════════
+//  CONFIRM BOOKING
+// ══════════════════════════════════════
+async function confirmBooking() {
+  const btn = G('confirm-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    if (!selDate || !selSlot) { toast('⚠️ Pick a date and slot first'); return; }
+
+    // Hard server-side double-booking guard
+    // Match by slot_id OR time_start (handles legacy rows), coerce machine_num to int
+    const { data: chk } = await db.from('bookings')
+      .select('id, rep_id, slot_id, time_start, machine_num')
+      .eq('date', selDate)
+      .eq('machine_num', selMachine);
+    const existing = (chk || []).filter(b =>
+      b.slot_id === selSlot.id || b.time_start === selSlot.start
+    );
+    const alreadyMine = existing.some(b => b.rep_id === ME.id);
+    if (!alreadyMine && existing.length > 0) {
+      toast('⚠️ Slot already taken!');
+      await renderSlots(selDate);
+      G('form-sec').style.display = 'none';
+      return;
+    }
+    if (alreadyMine) {
+      toast('⚠️ You already have this slot booked!');
+      G('form-sec').style.display = 'none';
+      await renderSlots(selDate);
+      return;
+    }
+
+    const name  = G('b-nm').value.trim() || 'TBD';
+    const phone = G('b-ph').value.trim() || '';
+    const price = parseFloat(G('b-pr').value) || 0;
+    const addr  = G('b-ad').value.trim() || '';
+    const svc   = G('b-sv').value;
+    const notes = G('b-nt').value.trim() || '';
+
+    // INSERT BOOKING
+    const { error: bErr } = await db.from('bookings').insert({
+      rep_id: ME.id, date: selDate, slot_id: selSlot.id,
+      time_start: selSlot.start, time_end: selSlot.end,
+      machine_num: selMachine,
+      client_name: name, phone, price, address: addr, service: svc, notes,
+      status: 'confirmed'
+    });
+    if (bErr) { toast('❌ Booking failed: '+bErr.message); console.error(bErr); return; }
+
+    // INSERT SALE (include slot_id so we can link back to booking later)
+    const { error: sErr } = await db.from('sales').insert({
+      rep_id: ME.id, date: selDate,
+      slot_id: selSlot.id,
+      time_start: selSlot.start, time_end: selSlot.end,
+      machine_num: selMachine,
+      client_name: name, phone, price, address: addr, service: svc, notes,
+      status: 'confirmed'
+    });
+    if (sErr) { toast('❌ Sale record: '+sErr.message); console.error(sErr); return; }
+
+    // Clear form — capture values BEFORE nulling selSlot
+    const doneTime = selSlot.start;
+    const doneMachine = selMachine;
+    ['b-nm','b-ph','b-pr','b-ad','b-nt'].forEach(id => G(id).value='');
+    selSlot = null;
+    G('form-sec').style.display = 'none';
+    toast(`✅ Booked! Machine ${doneMachine} · ${doneTime}`);
+    await renderSlots(selDate);
+    refreshMachineCounts();
+    await loadDash();
+    await loadSales();
+
+  } finally {
+    btn.disabled = false; btn.textContent = '✓ Confirm Booking';
+  }
+}
+
+// ══════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════
+async function loadDash() {
+  if (ME.role==='rep') await loadRepDash(); else await loadMgrDash();
+}
+
+async function loadRepDash() {
+  const { data: mySales }  = await db.from('sales').select('*').eq('rep_id', ME.id);
+  const { data: myUpcoming }= await db.from('bookings').select('id').eq('rep_id', ME.id).gte('date', todayStr());
+  const arr = mySales || [];
+  const rev = arr.reduce((s,x) => s+(parseFloat(x.price)||0), 0);
+  G('r-sales').textContent = arr.length;
+  G('r-rev').textContent   = fmtMoney(rev);
+  G('r-up').textContent    = (myUpcoming||[]).length;
+  // Rank
+  const { data: allS } = await db.from('sales').select('rep_id');
+  if (allS) {
+    const cnt = {};
+    allS.forEach(s => cnt[s.rep_id]=(cnt[s.rep_id]||0)+1);
+    const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+    const rank = sorted.findIndex(([id])=>id===ME.id)+1;
+    G('r-rank').textContent = rank>0 ? '#'+rank : '#1';
+  }
+  // Week leader
+  const ranks = await getWeekRanks();
+  if (!ranks.length) {
+    G('r-leader').innerHTML = '<div class="empty"><p>No sales this week yet — be first! 💪</p></div>';
+  } else {
+    const t = ranks[0];
+    G('r-leader').innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;
+        background:var(--off);border-radius:10px;border:1px solid var(--border)">
+        <div style="font-size:1.8rem">🏆</div>
+        <div>
+          <div style="font-weight:700">${t.name}</div>
+          <div style="font-size:.74rem;color:var(--slate)">${t.count} sale${t.count!==1?'s':''} · ${fmtMoney(t.rev)} this week</div>
+        </div>
+      </div>`;
+  }
+  const { data: rec } = await db.from('sales').select('*').eq('rep_id', ME.id)
+    .order('created_at',{ascending:false}).limit(4);
+  G('r-recent').innerHTML = renderSales(rec||[], false);
+}
+
+async function loadMgrDash() {
+  const { data: all }   = await db.from('sales').select('*');
+  const arr = all || [];
+  const rev = arr.reduce((s,x) => s+(parseFloat(x.price)||0), 0);
+  G('m-sales').textContent = arr.length;
+  G('m-rev').textContent   = fmtMoney(rev);
+  G('m-m1').textContent    = arr.filter(s=>s.machine_num===1).length;
+  G('m-m2').textContent    = arr.filter(s=>s.machine_num===2).length;
+  const ranks = await getWeekRanks();
+  if (ranks.length) {
+    const w = ranks[0];
+    G('m-winner').innerHTML = `
+      <div class="winner">
+        <div class="w-trophy">🏆</div>
+        <div class="w-name">${w.name}</div>
+        <div class="w-stat">${w.count} sale${w.count!==1?'s':''} · ${fmtMoney(w.rev)} this week</div>
+        <div class="w-crown">👑 WEEKLY CHAMPION</div>
+      </div>`;
+  } else {
+    G('m-winner').innerHTML = '<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
+  }
+  const { data: rec } = await db.from('sales').select('*,profiles(full_name)')
+    .order('created_at',{ascending:false}).limit(6);
+  G('m-recent').innerHTML = renderSales(rec||[], true);
+}
+
+async function getWeekRanks() {
+  const { data } = await db.from('sales')
+    .select('rep_id,price,profiles(full_name)').gte('created_at', weekAgo());
+  if (!data?.length) return [];
+  const cnt = {};
+  data.forEach(s => {
+    if (!cnt[s.rep_id]) cnt[s.rep_id]={ name: s.profiles?.full_name||'Unknown', count:0, rev:0 };
+    cnt[s.rep_id].count++;
+    cnt[s.rep_id].rev += parseFloat(s.price)||0;
   });
   return Object.values(cnt).sort((a,b)=>b.count-a.count);
 }
 
-// ══════════════════════════════
-//  CALENDAR
-// ══════════════════════════════
-function buildCal(){
-  const MOS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  G('cal-title').textContent=MOS[calM]+' '+calY;
-  const DNS=['Su','Mo','Tu','We','Th','Fr','Sa'];
-  const tod=today();
-  let h=DNS.map(d=>`<div class="cal-dn">${d}</div>`).join('');
-  const first=new Date(calY,calM,1).getDay(),days=new Date(calY,calM+1,0).getDate();
-  for(let i=0;i<first;i++)h+=`<div class="cal-d cd-empty"></div>`;
-  for(let d=1;d<=days;d++){
-    const ds=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const past=ds<tod,isTod=ds===tod,isSel=ds===selDate;
-    let cls='cal-d';
-    if(past)cls+=' cd-past';else if(isSel)cls+=' cd-sel';else if(isTod)cls+=' cd-today';
-    h+=`<div class="${cls}" ${past?'':`onclick="pickDate('${ds}')"`}>${d}</div>`;
-  }
-  G('cal-g').innerHTML=h;
+// ══════════════════════════════════════
+//  SALES
+// ══════════════════════════════════════
+async function loadSales() {
+  let q = db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
+  if (ME.role==='rep') q = q.eq('rep_id', ME.id);
+  const { data } = await q;
+  const arr = data||[], tod = todayStr();
+  let f = arr;
+  if      (salesPer==='upcoming') f = arr.filter(s=>s.date>=tod);
+  else if (salesPer==='past')     f = arr.filter(s=>s.date<tod);
+  G('sales-list').innerHTML = renderSales(f, ME.role==='manager');
 }
-function calNav(d){calM+=d;if(calM<0){calM=11;calY--}if(calM>11){calM=0;calY++}buildCal()}
 
-async function pickDate(ds){
-  selDate=ds;selSlot=null;selSlotIdx=null;buildCal();
-  G('slots-lbl').textContent=new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});
-  G('slots-wrap').classList.remove('hide');G('bform-wrap').classList.add('hide');
-  await buildSlots(ds);
+function setSalesTab(p, btn) {
+  salesPer = p;
+  document.querySelectorAll('#pg-sales .tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  loadSales();
 }
-async function buildSlots(ds){
-  const avail=getAvailableSlots();
-  if(!avail.length){G('slots-g').innerHTML='<p style="grid-column:1/-1;font-size:.8rem;color:var(--muted);padding:8px">No slots set up yet. Manager must configure slots first.</p>';return}
-  const {data:bks}=await db.from('bookings').select('time_slot,rep_id').eq('date',ds);
-  const bkCnt={};
-  (bks||[]).forEach(b=>{if(!bkCnt[b.time_slot])bkCnt[b.time_slot]={count:0,mine:false};bkCnt[b.time_slot].count++;if(b.rep_id===user.id)bkCnt[b.time_slot].mine=true});
-  G('slots-g').innerHTML=avail.map((sl,i)=>{
-    const bk=bkCnt[sl.time]||{count:0,mine:false};
-    const full=bk.count>=sl.capacity,mine=bk.mine;
-    let cls='slot',lbl=sl.time;
-    if(mine){cls+=' s-mine';lbl+=sl.capacity>1?`<br><small>✓ (${bk.count}/${sl.capacity})</small>`:'<br><small>✓ Yours</small>'}
-    else if(full){cls+=' s-taken';lbl+='<br><small>🔒 Full</small>'}
-    else{cls+=' s-open';if(sl.capacity>1&&bk.count>0)lbl+=`<br><small>${sl.capacity-bk.count} left</small>`}
-    return`<div class="${cls}" data-idx="${i}" ${(!full||mine)?`onclick="pickSlot('${sl.time}',${i})"`:''} >${lbl}</div>`;
+
+function renderSales(arr, showRep) {
+  if (!arr.length) return `<div class="empty">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <line x1="12" y1="1" x2="12" y2="23"/>
+      <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+    </svg><p>Nothing here yet</p></div>`;
+  return arr.map(s => {
+    const canEdit = ME.role==='manager' || s.rep_id===ME.id;
+    return `
+    <div class="sitem si${s.machine_num||1}" id="sitem-${s.id}">
+      <div class="si-top">
+        <div style="flex:1;min-width:0">
+          <div class="si-name">${s.client_name||'TBD'}</div>
+          <div class="si-meta">
+            ${showRep && s.profiles ? '👤 '+s.profiles.full_name+'<br>' : ''}
+            📅 ${s.date||'—'} · <span style="color:var(--m${s.machine_num||1})">Machine ${s.machine_num||1}</span><br>
+            ${s.time_start ? '🕐 '+s.time_start+' – '+s.time_end+'<br>' : ''}
+            ${s.phone   ? '📞 '+s.phone+'<br>'   : ''}
+            ${s.address ? '📍 '+s.address        : ''}
+          </div>
+          <span class="si-tag">Confirmed</span>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:10px">
+          <div class="si-price">${fmtMoney(s.price)}</div>
+          ${canEdit ? `<div style="display:flex;flex-direction:column;gap:5px;margin-top:7px">
+            <button class="btn btn-xs btn-ink" onclick="openEditModal('${s.id}')">✏️ Edit</button>
+            <button class="btn btn-xs btn-red" onclick="delSale('${s.id}')">🗑️ Delete</button>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`;
   }).join('');
 }
-function pickSlot(s,idx){
-  selSlot=s;selSlotIdx=idx;
-  document.querySelectorAll('.slot').forEach(el=>{if(!el.classList.contains('s-taken'))el.classList.remove('s-sel')});
-  document.querySelector(`.slot[data-idx="${idx}"]`)?.classList.add('s-sel');
-  G('bform-wrap').classList.remove('hide');
-  G('bform-wrap').scrollIntoView({behavior:'smooth',block:'start'});
-}
-async function submitBooking(){
-  const cn=G('b-cname').value.trim(),ph=G('b-phone').value.trim();
-  const pr=G('b-price').value,ad=G('b-addr').value.trim(),sv=G('b-svc').value,nt=G('b-notes').value;
-  if(!cn||!ph||!pr||!ad){toast('⚠️ Fill in all required fields');return}
-  if(!selDate||!selSlot){toast('⚠️ Select a date and slot first');return}
-  const {error:e1}=await db.from('bookings').insert({rep_id:user.id,date:selDate,time_slot:selSlot,client_name:cn,client_phone:ph,client_address:ad,service_type:sv,notes:nt,status:'confirmed'});
-  if(e1){toast('❌ '+e1.message);return}
-  const {error:e2}=await db.from('sales').insert({rep_id:user.id,client_name:cn,client_phone:ph,client_address:ad,service_type:sv,price:parseFloat(pr),notes:nt,status:'confirmed',date:selDate});
-  if(e2){toast('❌ '+e2.message);return}
-  toast('✅ Job booked & sale recorded!');
-  ['b-cname','b-phone','b-price','b-addr','b-notes'].forEach(id=>G(id).value='');
-  selSlot=null;selSlotIdx=null;G('bform-wrap').classList.add('hide');
-  await buildSlots(selDate);loadDash();loadSales();
+
+async function delSale(id) {
+  if (!confirm('Delete this booking and sale?')) return;
+  // Step 1: fetch sale details BEFORE deleting anything
+  const { data: s } = await db.from('sales')
+    .select('rep_id, date, slot_id, machine_num').eq('id', id).maybeSingle();
+  if (!s) { toast('❌ Could not find sale'); return; }
+  // Step 2: delete the sale
+  const { error: sErr } = await db.from('sales').delete().eq('id', id);
+  if (sErr) { toast('❌ ' + sErr.message); return; }
+  // Step 3: delete the matching booking using slot_id + rep_id + date + machine
+  let bq = db.from('bookings').delete()
+    .eq('rep_id', s.rep_id)
+    .eq('date', s.date)
+    .eq('machine_num', s.machine_num);
+  if (s.slot_id) bq = bq.eq('slot_id', s.slot_id);
+  await bq;
+  toast('🗑️ Booking deleted');
+  await loadSales();
+  await loadDash();
 }
 
-// ══════════════════════════════
-//  SALES
-// ══════════════════════════════
-async function loadSales(){
-  let q=db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
-  if(profile.role==='rep')q=q.eq('rep_id',user.id);
-  const {data:all}=await q;
-  const arr=all||[],tod=today();
-  let f=arr;
-  if(curSalesTab==='upcoming')f=arr.filter(s=>s.date>=tod);
-  else if(curSalesTab==='completed')f=arr.filter(s=>s.date<tod);
-  G('sales-list').innerHTML=renderSaleRows(f,profile.role==='manager');
-}
-function salesTab(t,el){curSalesTab=t;document.querySelectorAll('#pg-sales .tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');loadSales()}
-function renderSaleRows(arr,showRep){
-  if(!arr.length)return`<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><p>No sales here yet</p></div>`;
-  return arr.map(s=>`<div class="sale-row"><div style="flex:1;min-width:0">
-    <h4>${s.client_name}</h4>
-    <p>${showRep&&s.profiles?'👤 '+s.profiles.full_name+'<br>':''}${s.service_type||''}<br>📅 ${s.date||'—'} &nbsp;📞 ${s.client_phone||'—'}<br>📍 ${s.client_address||'—'}</p>
-    <span class="badge b-green" style="margin-top:6px;display:inline-block">Confirmed</span></div>
-    <div style="text-align:right;flex-shrink:0;margin-left:10px">
-      <div class="sale-price">$${fmt(parseFloat(s.price||0))}</div>
-      ${profile.role==='manager'?`<button class="btn btn-danger btn-xs" style="margin-top:7px" onclick="delSale('${s.id}')">Delete</button>`:''}
-    </div></div>`).join('');
-}
-async function delSale(id){
-  if(!confirm('Delete this sale?'))return;
-  await db.from('sales').delete().eq('id',id);
-  toast('🗑️ Sale deleted');loadSales();loadDash();
+// ══════════════════════════════════════
+//  EDIT / RESCHEDULE MODAL
+// ══════════════════════════════════════
+let editingId = null;
+let editSlots = [];
+
+async function openEditModal(saleId) {
+  editingId = saleId;
+  // Load sale data
+  const { data: s } = await db.from('sales').select('*,profiles(full_name)').eq('id', saleId).single();
+  if (!s) { toast('Could not load booking'); return; }
+
+  // Load all slots for slot picker
+  const { data: slotData } = await db.from('slots').select('*').order('sort_order');
+  editSlots = slotData || [];
+
+  const slotsOptions = editSlots.map(sl =>
+    `<option value="${sl.id}" data-start="${sl.time_start}" data-end="${sl.time_end}"
+      ${sl.id===s.slot_id?'selected':''}>${sl.time_start} – ${sl.time_end}${sl.label?' ('+sl.label+')':''}</option>`
+  ).join('');
+
+  const modal = document.getElementById('edit-modal');
+  modal.innerHTML = `
+    <div class="modal-backdrop" onclick="closeEditModal()"></div>
+    <div class="modal-box">
+      <div class="modal-hd">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem">Edit Booking</div>
+          <div style="font-size:.75rem;color:var(--slate);margin-top:2px">${s.client_name||'TBD'}</div>
+        </div>
+        <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;
+          font-size:1.4rem;color:var(--slate);padding:0;line-height:1">×</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="field"><label>Client Name</label>
+          <input class="finp" id="e-nm" type="text" value="${s.client_name||''}" placeholder="Full name"/>
+        </div>
+        <div class="f2">
+          <div class="field"><label>Phone</label>
+            <input class="finp" id="e-ph" type="tel" value="${s.phone||''}" placeholder="(647) 000-0000"/>
+          </div>
+          <div class="field"><label>Price ($)</label>
+            <input class="finp" id="e-pr" type="number" value="${s.price||0}" min="0"/>
+          </div>
+        </div>
+        <div class="field"><label>Address</label>
+          <input class="finp" id="e-ad" type="text" value="${s.address||''}" placeholder="123 Main St"/>
+        </div>
+        <div class="field"><label>Service</label>
+          <select class="finp" id="e-sv">
+            ${['Exterior Window Cleaning','Interior Window Cleaning','Eavestrough / Gutter Cleaning',
+               'Sliding Door Cleaning','Glass Staircase Cleaning','Full Package']
+              .map(o=>`<option${o===s.service?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Notes</label>
+          <textarea class="finp" id="e-nt" placeholder="Notes...">${s.notes||''}</textarea>
+        </div>
+
+        <div style="background:var(--off);border-radius:10px;padding:13px;border:1px solid var(--border);margin-bottom:12px">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;margin-bottom:10px">
+            📅 Reschedule
+          </div>
+          <div class="field"><label>Date</label>
+            <input class="finp" id="e-dt" type="date" value="${s.date||''}"/>
+          </div>
+          <div class="f2">
+            <div class="field"><label>Machine</label>
+              <select class="finp" id="e-mc">
+                <option value="1"${(s.machine_num||1)===1?' selected':''}>Machine 1</option>
+                <option value="2"${(s.machine_num||1)===2?' selected':''}>Machine 2</option>
+              </select>
+            </div>
+            <div class="field"><label>Time Slot</label>
+              <select class="finp" id="e-sl">
+                <option value="">-- keep current --</option>
+                ${slotsOptions}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-off btn-sm" style="flex:1" onclick="closeEditModal()">Cancel</button>
+          <button class="btn btn-gold btn-sm" style="flex:1" id="save-edit-btn" onclick="saveEdit('${saleId}')">💾 Save Changes</button>
+        </div>
+      </div>
+    </div>`;
+  modal.style.display = 'flex';
 }
 
-// ══════════════════════════════
-//  LEADERBOARD
-// ══════════════════════════════
-async function loadLb(){
-  let since=null;
-  if(curLbTab==='week')since=weekStart();else if(curLbTab==='month')since=monthStart();
-  let q=db.from('sales').select('rep_id,price,profiles(full_name)');
-  if(since)q=q.gte('created_at',since);
-  const {data:sales}=await q;
-  const cnt={};
-  (sales||[]).forEach(s=>{
-    if(!cnt[s.rep_id])cnt[s.rep_id]={name:s.profiles?.full_name||'Unknown',count:0,rev:0};
-    cnt[s.rep_id].count++;cnt[s.rep_id].rev+=parseFloat(s.price||0);
-  });
-  const sorted=Object.entries(cnt).sort((a,b)=>b[1].count-a[1].count);
-  const max=sorted[0]?.[1]?.count||1;
-  G('lb-list').innerHTML=sorted.length?sorted.map(([rid,d],i)=>{
-    const rC=i===0?'r1':i===1?'r2':i===2?'r3':'ro';
-    const rL=i===0?'👑':i===1?'🥈':i===2?'🥉':`#${i+1}`;
-    const isMe=rid===user.id,pct=Math.round((d.count/max)*100);
-    return`<div class="lb-row${isMe?' lb-me':''}">
-      <div class="rb ${rC}">${rL}</div>
-      <div class="lb-info"><div class="lb-name">${d.name}${isMe?' (You)':''}</div>
-      <div class="lb-det">${d.count} sale${d.count!==1?'s':''}</div>
-      <div class="prog"><div class="prog-bar" style="width:${pct}%"></div></div></div>
-      <div class="lb-rev">$${fmt(d.rev)}</div></div>`;
-  }).join(''):'<div class="empty"><p>No sales yet. Get out there! 💪</p></div>';
-  if(profile.role==='manager'){
-    let q2=db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
-    if(since)q2=q2.gte('created_at',since);
-    const {data:all}=await q2;
-    G('mgr-all-sales').innerHTML=renderSaleRows(all||[],true);
+function closeEditModal() {
+  const m = document.getElementById('edit-modal');
+  m.style.display = 'none';
+  m.innerHTML = '';
+  editingId = null;
+}
+
+async function saveEdit(saleId) {
+  const btn = document.getElementById('save-edit-btn');
+  if (!btn) return;
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    // Fetch the FULL current sale record first — we need old values as lookup keys
+    const { data: old, error: fetchErr } = await db.from('sales')
+      .select('*').eq('id', saleId).maybeSingle();
+    if (fetchErr || !old) { toast('❌ Could not load booking data'); return; }
+
+    // Read form values
+    const name    = document.getElementById('e-nm').value.trim() || 'TBD';
+    const phone   = document.getElementById('e-ph').value.trim() || '';
+    const price   = parseFloat(document.getElementById('e-pr').value) || 0;
+    const addr    = document.getElementById('e-ad').value.trim() || '';
+    const svc     = document.getElementById('e-sv').value;
+    const notes   = document.getElementById('e-nt').value.trim() || '';
+    const newDate = document.getElementById('e-dt').value || old.date;
+    const newMach = parseInt(document.getElementById('e-mc').value) || old.machine_num || 1;
+    const slotEl  = document.getElementById('e-sl');
+    const newSlotId = slotEl.value || old.slot_id || null;
+    const slotOpt = slotEl.value ? slotEl.selectedOptions[0] : null;
+    const newTStart = slotOpt ? slotOpt.dataset.start : old.time_start;
+    const newTEnd   = slotOpt ? slotOpt.dataset.end   : old.time_end;
+
+    // ── Update SALES row
+    const { error: sErr } = await db.from('sales').update({
+      client_name: name, phone, price, address: addr,
+      service: svc, notes, date: newDate,
+      machine_num: newMach, slot_id: newSlotId,
+      time_start: newTStart, time_end: newTEnd
+    }).eq('id', saleId);
+    if (sErr) { toast('❌ Save failed: ' + sErr.message); return; }
+
+    // ── Update BOOKINGS row — use OLD rep_id + OLD date + OLD slot_id + OLD machine as keys
+    let bq = db.from('bookings').update({
+      client_name: name, phone, price, address: addr,
+      service: svc, notes, date: newDate,
+      machine_num: newMach, slot_id: newSlotId,
+      time_start: newTStart, time_end: newTEnd
+    }).eq('rep_id', old.rep_id).eq('date', old.date).eq('machine_num', old.machine_num || 1);
+    if (old.slot_id) bq = bq.eq('slot_id', old.slot_id);
+    const { error: bErr } = await bq;
+    if (bErr) console.warn('Booking update warning:', bErr.message);
+
+    toast('✅ Booking updated!');
+    closeEditModal();
+    await loadSales();
+    await loadDash();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Save Changes'; }
   }
 }
-function lbTab(t,el){curLbTab=t;document.querySelectorAll('#pg-lb .tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');loadLb()}
 
-// ══════════════════════════════
-//  KNOCK MAP (Mapbox)
-// ══════════════════════════════
-async function initKnockMap(){
-  if(mapKnock){mapKnock.resize();return}
-  mapKnock=new mapboxgl.Map({
-    container:'map-el',
-    style:'mapbox://styles/mapbox/streets-v12',
-    center:[-79.6441,43.5890],zoom:12
+// ══════════════════════════════════════
+//  LEADERBOARD
+// ══════════════════════════════════════
+async function loadLb() {
+  let since = null;
+  if (lbPer==='week')  since = weekAgo();
+  if (lbPer==='month') since = monthAgo();
+  let q = db.from('sales').select('rep_id,price,profiles(full_name)');
+  if (since) q = q.gte('created_at', since);
+  const { data } = await q;
+  const cnt = {};
+  (data||[]).forEach(s => {
+    if (!cnt[s.rep_id]) cnt[s.rep_id]={ name:s.profiles?.full_name||'Unknown', count:0, rev:0 };
+    cnt[s.rep_id].count++;
+    cnt[s.rep_id].rev += parseFloat(s.price)||0;
   });
-  mapKnock.addControl(new mapboxgl.NavigationControl(),'top-right');
-  mapKnock.addControl(new mapboxgl.GeolocateControl({positionOptions:{enableHighAccuracy:true},trackUserLocation:false}),'top-right');
-
-  mapKnock.on('load',async()=>{
-    // Load zones as background
-    const {data:zones}=await db.from('zones').select('*');
-    (zones||[]).forEach(z=>{
-      try{
-        const geo=JSON.parse(z.geojson);
-        const srcId='zone-'+z.id;
-        mapKnock.addSource(srcId,{type:'geojson',data:geo});
-        mapKnock.addLayer({id:srcId+'-fill',type:'fill',source:srcId,paint:{'fill-color':z.color,'fill-opacity':0.15}});
-        mapKnock.addLayer({id:srcId+'-line',type:'line',source:srcId,paint:{'line-color':z.color,'line-width':2}});
-      }catch(e){}
-    });
-    // Load pins
-    await loadKnockPins();
-  });
-
-  mapKnock.on('click',async e=>{
-    const {lng,lat}=e.lngLat;
-    const {data,error}=await db.from('door_knocks').insert({rep_id:user.id,lat,lng,status:markStatus}).select();
-    if(error){toast('❌ '+error.message);return}
-    addKnockPin({lat,lng,status:markStatus,id:data?.[0]?.id});
-    loadMapStats();
-    toast('📍 '+MARK_LABELS[markStatus]);
-  });
-}
-
-async function loadKnockPins(){
-  const {data,error}=await db.from('door_knocks').select('*');
-  if(error){console.error(error);return}
-  (data||[]).forEach(k=>addKnockPin(k));
-  loadMapStats();
-}
-
-function addKnockPin(k){
-  if(!mapKnock)return;
-  const el=document.createElement('div');
-  el.style.cssText=`width:16px;height:16px;border-radius:50%;background:${MARK_COLORS[k.status]||'#6B3FA0'};border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer`;
-  const popup=new mapboxgl.Popup({offset:10,closeButton:false}).setHTML(`<strong style="color:${MARK_COLORS[k.status]}">${MARK_LABELS[k.status]||k.status}</strong>`);
-  new mapboxgl.Marker({element:el}).setLngLat([k.lng,k.lat]).setPopup(popup).addTo(mapKnock);
-}
-
-async function loadMapStats(){
-  const {data}=await db.from('door_knocks').select('status');
-  const all=data||[];
-  G('map-tot').textContent=all.length;
-  G('map-int').textContent=all.filter(x=>x.status==='interested').length;
-}
-
-function setMark(s,btn){
-  markStatus=s;
-  document.querySelectorAll('.mk-btn').forEach(b=>b.classList.remove('mk-active'));
-  btn.classList.add('mk-active');
-  toast('📍 Marking: '+MARK_LABELS[s]);
-}
-
-// ══════════════════════════════
-//  ZONE MAP (Manager)
-// ══════════════════════════════
-async function initZoneMap(){
-  if(profile.role==='manager') await initMgrZoneMap();
-  else await initRepZoneMap();
-}
-
-async function initMgrZoneMap(){
-  // Build rep selector
-  const sel=G('zone-rep-sel');
-  sel.innerHTML='<option value="">Select a rep...</option>'+allReps.map(r=>`<option value="${r.id}">${r.full_name}</option>`).join('');
-  // Build color picker
-  G('zone-color-picker').innerHTML=ZONE_COLORS.map((c,i)=>`<div class="color-opt${i===0?' selected':''}" style="background:${c}" onclick="pickColor('${c}',this)"></div>`).join('');
-
-  if(mapZone){mapZone.resize();await loadZonesList();return}
-
-  mapZone=new mapboxgl.Map({
-    container:'zone-map-el',
-    style:'mapbox://styles/mapbox/streets-v12',
-    center:[-79.6441,43.5890],zoom:11
-  });
-  mapZone.addControl(new mapboxgl.NavigationControl(),'top-right');
-
-  drawControl=new MapboxDraw({
-    displayControlsDefault:false,
-    controls:{polygon:true,trash:true},
-    defaultMode:'draw_polygon'
-  });
-  mapZone.addControl(drawControl);
-
-  mapZone.on('load',async()=>{
-    await renderZonesOnMgrMap();
-  });
-
-  mapZone.on('draw.create',e=>{
-    pendingZoneFeature=e.features[0];
-    G('zone-assign-card').style.display='block';
-    G('zone-assign-card').scrollIntoView({behavior:'smooth',block:'start'});
-    toast('✏️ Zone drawn! Now name and assign it below');
-  });
-  mapZone.on('draw.delete',()=>{
-    pendingZoneFeature=null;
-    G('zone-assign-card').style.display='none';
-  });
-
-  await loadZonesList();
-}
-
-async function renderZonesOnMgrMap(){
-  const {data:zones}=await db.from('zones').select('*');
-  allZones=zones||[];
-  allZones.forEach(z=>{
-    try{
-      const geo=JSON.parse(z.geojson);
-      const sid='mgr-zone-'+z.id;
-      if(mapZone.getSource(sid)){mapZone.getSource(sid).setData(geo);return}
-      mapZone.addSource(sid,{type:'geojson',data:geo});
-      mapZone.addLayer({id:sid+'-fill',type:'fill',source:sid,paint:{'fill-color':z.color,'fill-opacity':0.2}});
-      mapZone.addLayer({id:sid+'-line',type:'line',source:sid,paint:{'line-color':z.color,'line-width':2.5}});
-      // Zone label
-      const coords=geo.features?.[0]?.geometry?.coordinates?.[0]||geo.geometry?.coordinates?.[0]||[];
-      if(coords.length){
-        const cx=coords.reduce((s,c)=>s+c[0],0)/coords.length;
-        const cy=coords.reduce((s,c)=>s+c[1],0)/coords.length;
-        const lsid=sid+'-label';
-        if(!mapZone.getSource(lsid)){
-          mapZone.addSource(lsid,{type:'geojson',data:{type:'Feature',geometry:{type:'Point',coordinates:[cx,cy]},properties:{label:z.name}}});
-          mapZone.addLayer({id:lsid,type:'symbol',source:lsid,layout:{'text-field':['get','label'],'text-size':13,'text-font':['DIN Offc Pro Bold','Arial Unicode MS Bold']},paint:{'text-color':z.color,'text-halo-color':'#fff','text-halo-width':2}});
-        }
-      }
-    }catch(e){console.error('Zone render error',e)}
-  });
-}
-
-function pickColor(c,el){
-  selZoneColor=c;
-  document.querySelectorAll('.color-opt').forEach(x=>x.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-async function saveZone(){
-  if(!pendingZoneFeature){toast('⚠️ Draw a zone on the map first');return}
-  const name=G('zone-name-inp').value.trim();
-  const repId=G('zone-rep-sel').value;
-  if(!name){toast('⚠️ Enter a zone name');return}
-  if(!repId){toast('⚠️ Select a rep to assign');return}
-
-  const geojson=JSON.stringify({type:'FeatureCollection',features:[pendingZoneFeature]});
-  // Delete existing zone for this rep
-  await db.from('zones').delete().eq('rep_id',repId);
-  const {error}=await db.from('zones').insert({name,rep_id:repId,color:selZoneColor,geojson});
-  if(error){toast('❌ '+error.message);return}
-
-  toast('✅ Zone saved and assigned!');
-  drawControl.deleteAll();
-  pendingZoneFeature=null;
-  G('zone-assign-card').style.display='none';
-  G('zone-name-inp').value='';
-  // Reload zones on map
-  if(mapZone?.isStyleLoaded())await renderZonesOnMgrMap();
-  await loadZonesList();
-}
-
-function cancelZoneDraw(){
-  drawControl?.deleteAll();
-  pendingZoneFeature=null;
-  G('zone-assign-card').style.display='none';
-}
-
-async function loadZonesList(){
-  const {data:zones}=await db.from('zones').select('*,profiles(full_name)');
-  allZones=zones||[];
-  const container=G('zones-list');
-  if(!allZones.length){container.innerHTML='<div class="empty"><p>No zones assigned yet. Draw a zone on the map above!</p></div>';return}
-  container.innerHTML=allZones.map(z=>`
-    <div class="zone-row">
-      <div class="zone-color" style="background:${z.color}"></div>
-      <div class="zone-info">
-        <div class="zone-name">${z.name}</div>
-        <div class="zone-rep">👤 ${z.profiles?.full_name||'Unassigned'}</div>
+  const sorted = Object.entries(cnt).sort((a,b)=>b[1].count-a[1].count);
+  const max = sorted[0]?.[1]?.count || 1;
+  G('lb-list').innerHTML = sorted.length ? sorted.map(([rid,d],i) => {
+    const rc = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
+    const rl = i===0?'👑':i===1?'🥈':i===2?'🥉':`${i+1}`;
+    const isMe = rid===ME.id;
+    const pct  = Math.round((d.count/max)*100);
+    return `<div class="lbrow${isMe?' lbme':''}">
+      <div class="lbr ${rc}">${rl}</div>
+      <div class="lb-info">
+        <div class="lb-name">${d.name}${isMe?' <span style="font-size:.68rem;color:var(--slate)">(you)</span>':''}</div>
+        <div class="lb-sub">${d.count} sale${d.count!==1?'s':''}</div>
+        <div class="lb-bar"><div class="lb-fill" style="width:${pct}%"></div></div>
       </div>
-      <div class="zone-actions">
-        <button class="btn btn-danger btn-xs" onclick="deleteZone('${z.id}')">Delete</button>
+      <div class="lb-amt">${fmtMoney(d.rev)}</div>
+    </div>`;
+  }).join('') : '<div class="empty"><p>No sales in this period yet 💪</p></div>';
+
+  if (ME.role==='manager') {
+    let q2 = db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
+    if (since) q2 = q2.gte('created_at', since);
+    const { data: a } = await q2;
+    G('lb-all').innerHTML = renderSales(a||[], true);
+  }
+}
+
+function setLbTab(p, btn) {
+  lbPer = p;
+  document.querySelectorAll('#pg-lb .tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); loadLb();
+}
+
+// ══════════════════════════════════════
+//  DOOR KNOCK MAP
+// ══════════════════════════════════════
+function initMap() {
+  if (kmap) { kmap.resize(); return; }
+  const el = G('knock-map');
+  if (!el || el.offsetHeight===0) { setTimeout(initMap, 200); return; }
+  kmap = new mapboxgl.Map({
+    container: 'knock-map',
+    style: 'mapbox://styles/mapbox/streets-v12',
+    center: [-79.6441, 43.5890], zoom: 13
+  });
+  kmap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  kmap.addControl(new mapboxgl.GeolocateControl({
+    positionOptions: { enableHighAccuracy: true }, trackUserLocation: false
+  }), 'top-right');
+  kmap.on('load', async () => {
+    const { data } = await db.from('door_knocks').select('*');
+    (data||[]).forEach(addPin);
+    updateMapStats();
+  });
+  kmap.on('click', async e => {
+    const { lng, lat } = e.lngLat;
+    const { data, error } = await db.from('door_knocks')
+      .insert({ rep_id: ME.id, lat, lng, status: markMode }).select().single();
+    if (error) { toast('❌ '+error.message); return; }
+    addPin(data); updateMapStats();
+    toast('📍 '+ML[markMode]);
+  });
+}
+
+function addPin(k) {
+  if (!kmap) return;
+  const el = document.createElement('div');
+  const c  = MC[k.status]||'#7C3AED';
+  el.style.cssText = `width:13px;height:13px;border-radius:50%;background:${c};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer`;
+  new mapboxgl.Marker({ element: el })
+    .setLngLat([k.lng, k.lat])
+    .setPopup(new mapboxgl.Popup({ offset:10, closeButton:false })
+      .setHTML(`<b style="color:${c}">${ML[k.status]||k.status}</b>`))
+    .addTo(kmap);
+}
+
+async function updateMapStats() {
+  const { data } = await db.from('door_knocks').select('status');
+  G('map-tot').textContent = (data||[]).length;
+  G('map-int').textContent = (data||[]).filter(x=>x.status==='interested').length;
+}
+
+function setMark(s, btn) {
+  markMode = s;
+  document.querySelectorAll('.mk').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  toast('📍 Marking: '+ML[s]);
+}
+
+// ══════════════════════════════════════
+//  SCHEDULE
+// ══════════════════════════════════════
+async function loadSchedule() {
+  const ds  = schedDay==='today' ? todayStr() : tomorrowStr();
+  const { data: bks, error } = await db.from('bookings')
+    .select('*,profiles(full_name)').eq('date', ds).order('machine_num').order('time_start');
+  const jobs = bks || [];
+  const hdr  = `<div style="background:var(--ink);color:#fff;border-radius:12px;
+    padding:16px;margin-bottom:12px">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem">${fmtDL(ds)}</div>
+    <div style="font-size:.74rem;color:#5A5A7A;margin-top:4px">
+      Window Warriors · ${jobs.length} job${jobs.length!==1?'s':''}</div>
+  </div>`;
+  if (!jobs.length) {
+    G('sched-jobs').innerHTML = hdr + `<div class="empty">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg><p>No jobs booked yet for this day</p></div>`;
+    return;
+  }
+  G('sched-jobs').innerHTML = hdr + jobs.map(j => `
+    <div class="sjob">
+      <div class="sj-t">
+        <div class="sj-main">${j.time_start||'—'}</div>
+        <div class="sj-end">to ${j.time_end||''}</div>
+        <span class="sj-m m${j.machine_num||1}">M${j.machine_num||1}</span>
+      </div>
+      <div class="sj-info">
+        <h4>${j.client_name||'TBD'}</h4>
+        <p>${j.address?'📍 '+j.address+'<br>':''}${j.phone?'📞 '+j.phone+'<br>':''}🧹 ${j.service||'Window Cleaning'}</p>
+        <span class="sj-rep">👤 ${j.profiles?.full_name||'Unknown'}</span>
       </div>
     </div>`).join('');
 }
 
-async function deleteZone(id){
-  if(!confirm('Delete this zone?'))return;
-  await db.from('zones').delete().eq('id',id);
-  // Remove from map
-  const sid='mgr-zone-'+id;
-  ['-fill','-line','-label'].forEach(s=>{
-    if(mapZone?.getLayer(sid+s))mapZone.removeLayer(sid+s);
-    if(mapZone?.getSource(sid+s))mapZone.removeSource(sid+s);
-  });
-  if(mapZone?.getLayer(sid+'-fill'))mapZone.removeLayer(sid+'-fill');
-  if(mapZone?.getSource(sid))mapZone.removeSource(sid);
-  toast('🗑️ Zone deleted');
-  await loadZonesList();
+function setSchedDay(d) {
+  schedDay = d;
+  G('sd-t').classList.toggle('on',  d==='today');
+  G('sd-tm').classList.toggle('on', d==='tomorrow');
+  loadSchedule();
 }
 
-// Rep zone view
-async function initRepZoneMap(){
-  const {data:zones}=await db.from('zones').select('*').eq('rep_id',user.id);
-  const myZone=zones?.[0];
-  const infoEl=G('rep-zone-info');
-  if(!myZone){
-    infoEl.innerHTML='<div class="empty"><p>No territory assigned yet. Ask your manager to assign you a zone.</p></div>';
-    return;
-  }
-  infoEl.innerHTML=`<div class="rep-area-badge" style="margin-bottom:12px">
-    <div class="rep-area-color" style="background:${myZone.color}"></div>
-    <div><div class="rep-area-label">Your Assigned Zone</div><div class="rep-area-name">${myZone.name}</div></div>
+async function copySchedule() {
+  const ds = schedDay==='today' ? todayStr() : tomorrowStr();
+  const { data: bks } = await db.from('bookings')
+    .select('*,profiles(full_name)').eq('date', ds).order('machine_num').order('time_start');
+  const jobs = bks||[];
+  if (!jobs.length) { toast('No jobs to copy'); return; }
+  let txt = `⚔️ WINDOW WARRIORS SCHEDULE\n📅 ${fmtDL(ds)}\n${'─'.repeat(32)}\n\n`;
+  jobs.forEach((j,i) => {
+    txt += `${i+1}. [Machine ${j.machine_num||1}] ${j.time_start} – ${j.time_end}\n`;
+    txt += `   Client:  ${j.client_name||'TBD'}\n`;
+    if (j.address) txt += `   Address: ${j.address}\n`;
+    if (j.phone)   txt += `   Phone:   ${j.phone}\n`;
+    txt += `   Service: ${j.service||'Window Cleaning'}\n`;
+    txt += `   Rep:     ${j.profiles?.full_name||'Unknown'}\n\n`;
+  });
+  txt += `${'─'.repeat(32)}\n${jobs.length} job${jobs.length!==1?'s':''} · windowwarriors.ca`;
+  try { await navigator.clipboard.writeText(txt); toast('📋 Copied to clipboard!'); }
+  catch { shareSchedule(); }
+}
+
+async function shareSchedule() {
+  const ds = schedDay==='today' ? todayStr() : tomorrowStr();
+  const { data: bks } = await db.from('bookings')
+    .select('*,profiles(full_name)').eq('date', ds).order('machine_num').order('time_start');
+  const jobs = bks||[];
+  let txt = `⚔️ WARRIORS\n📅 ${fmtDL(ds)}\n\n`;
+  jobs.forEach((j,i) => { txt+=`${i+1}. M${j.machine_num||1} · ${j.time_start}–${j.time_end} — ${j.client_name||'TBD'}\n${j.address||''} ${j.phone||''}\n\n`; });
+  if (navigator.share) { try { await navigator.share({ title:'Warriors Schedule', text:txt }); return; } catch{} }
+  toast('📋 Use Copy button');
+}
+
+// ══════════════════════════════════════
+//  SLOT MANAGER (Manager only)
+// ══════════════════════════════════════
+function buildSlotMgr() {
+  G('slot-rows').innerHTML = slots.map((s,i) => slotHTML(s,i)).join('');
+}
+
+function slotHTML(s, i) {
+  return `<div class="smrow" id="smr-${i}">
+    <input type="text" value="${s.label||''}" placeholder="Label e.g. Morning" style="flex:2"
+      onchange="updateSlot(${i},'label',this.value)"/>
+    <input type="time" value="${to24(s.time_start)}" style="flex:1"
+      onchange="updateSlot(${i},'time_start',from24(this.value))"/>
+    <span style="color:var(--slate);font-size:.8rem;flex-shrink:0">–</span>
+    <input type="time" value="${to24(s.time_end)}" style="flex:1"
+      onchange="updateSlot(${i},'time_end',from24(this.value))"/>
+    <button onclick="G('smr-${i}').remove()"
+      style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.1rem;padding:0 4px;flex-shrink:0">✕</button>
   </div>`;
-  if(mapZoneRep){mapZoneRep.resize();return}
-  mapZoneRep=new mapboxgl.Map({
-    container:'zone-map-el-rep',
-    style:'mapbox://styles/mapbox/streets-v12',
-    center:[-79.6441,43.5890],zoom:12
-  });
-  mapZoneRep.addControl(new mapboxgl.NavigationControl(),'top-right');
-  mapZoneRep.addControl(new mapboxgl.GeolocateControl({positionOptions:{enableHighAccuracy:true},trackUserLocation:true}),'top-right');
-  mapZoneRep.on('load',()=>{
-    try{
-      const geo=JSON.parse(myZone.geojson);
-      mapZoneRep.addSource('my-zone',{type:'geojson',data:geo});
-      mapZoneRep.addLayer({id:'my-zone-fill',type:'fill',source:'my-zone',paint:{'fill-color':myZone.color,'fill-opacity':0.2}});
-      mapZoneRep.addLayer({id:'my-zone-line',type:'line',source:'my-zone',paint:{'line-color':myZone.color,'line-width':3}});
-      // Fit to zone bounds
-      const coords=geo.features?.[0]?.geometry?.coordinates?.[0]||geo.geometry?.coordinates?.[0]||[];
-      if(coords.length){
-        const bounds=coords.reduce((b,c)=>b.extend(c),new mapboxgl.LngLatBounds(coords[0],coords[0]));
-        mapZoneRep.fitBounds(bounds,{padding:40});
-      }
-    }catch(e){console.error(e)}
-  });
 }
 
-// ══════════════════════════════
-//  SCHEDULE
-// ══════════════════════════════
-async function loadSchedule(){
-  const tom=tomorrow();
-  const lbl=new Date(tom+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  G('sched-sub').textContent='Jobs scheduled for '+lbl;
-  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',tom);
-  const jobs=bks||[];
-  if(!jobs.length){
-    G('sched-content').innerHTML=`<div class="sched-hd"><div class="sched-hd-title">📅 ${lbl}</div><div class="sched-hd-sub">Window Warriors Cleaning Schedule</div></div><div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><p>No jobs booked for tomorrow yet</p></div>`;
-    return;
+function updateSlot(i, field, val) {
+  if (slots[i]) slots[i][field] = val;
+}
+
+function addSlotRow() {
+  const newSlot = { label:'', time_start:'9:00 AM', time_end:'11:00 AM', sort_order:999 };
+  const i = 'n'+Date.now();
+  const d = document.createElement('div');
+  d.innerHTML = `<div class="smrow" id="smr-${i}">
+    <input type="text" placeholder="Label" style="flex:2"/>
+    <input type="time" value="09:00" style="flex:1"/>
+    <span style="color:var(--slate);font-size:.8rem;flex-shrink:0">–</span>
+    <input type="time" value="11:00" style="flex:1"/>
+    <button onclick="this.closest('.smrow').remove()"
+      style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.1rem;padding:0 4px;flex-shrink:0">✕</button>
+  </div>`;
+  G('slot-rows').appendChild(d.firstElementChild);
+}
+
+async function saveSlots() {
+  const rows = document.querySelectorAll('.smrow');
+  const toSave = [];
+  let order = 0;
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input[type="text"],input[type="time"]');
+    if (inputs.length < 3) return;
+    const label = inputs[0].value.trim();
+    const start = from24(inputs[1].value);
+    const end   = from24(inputs[2].value);
+    if (start && end) toSave.push({ label, time_start:start, time_end:end, sort_order:order++ });
+  });
+  // Delete all then re-insert
+  await db.from('slots').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  if (toSave.length) {
+    const { error } = await db.from('slots').insert(toSave);
+    if (error) { toast('❌ '+error.message); console.error(error); return; }
   }
-  const slotOrd=ALL_SLOTS.reduce((a,t,i)=>{a[t]=i;return a},{});
-  jobs.sort((a,b)=>(slotOrd[a.time_slot]||0)-(slotOrd[b.time_slot]||0));
-  G('sched-content').innerHTML=`
-    <div class="sched-hd"><div class="sched-hd-title">📅 ${lbl}</div><div class="sched-hd-sub">Window Warriors — ${jobs.length} job${jobs.length!==1?'s':''} scheduled</div></div>
-    ${jobs.map(j=>`<div class="sched-row">
-      <div class="sched-time">${j.time_slot}</div>
-      <div class="sched-info"><h4>${j.client_name}</h4>
-        <p>📍 ${j.client_address||'—'}<br>📞 ${j.client_phone||'—'}<br>🧹 ${j.service_type||'Window Cleaning'}</p>
-        <span class="sched-rep">Booked by ${j.profiles?.full_name||'Unknown'}</span>
-      </div></div>`).join('')}`;
+  toast('✅ Slots saved!');
+  await loadSlots();
+  buildSlotMgr();
 }
 
-async function copySchedule(){
-  const tom=tomorrow();
-  const lbl=new Date(tom+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',tom);
-  const jobs=bks||[];
-  if(!jobs.length){toast('No jobs for tomorrow');return}
-  const slotOrd=ALL_SLOTS.reduce((a,t,i)=>{a[t]=i;return a},{});
-  jobs.sort((a,b)=>(slotOrd[a.time_slot]||0)-(slotOrd[b.time_slot]||0));
-  let txt=`⚔️ WINDOW WARRIORS — SCHEDULE\n📅 ${lbl}\n${'─'.repeat(34)}\n\n`;
-  jobs.forEach((j,i)=>{txt+=`${i+1}. ${j.time_slot}\n   👤 ${j.client_name}\n   📍 ${j.client_address||'—'}\n   📞 ${j.client_phone||'—'}\n   🧹 ${j.service_type||'Window Cleaning'}\n\n`});
-  txt+=`${'─'.repeat(34)}\n${jobs.length} job${jobs.length!==1?'s':''} | windowwarriors.ca`;
-  try{await navigator.clipboard.writeText(txt);toast('📋 Copied to clipboard!')}catch(e){toast('Use Share button instead')}
+function to24(t) {
+  if (!t) return '09:00';
+  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return t.length===5 ? t : '09:00';
+  let h=parseInt(m[1]), mn=m[2], p=m[3].toUpperCase();
+  if(p==='PM'&&h!==12) h+=12;
+  if(p==='AM'&&h===12) h=0;
+  return `${String(h).padStart(2,'0')}:${mn}`;
+}
+function from24(t) {
+  if (!t) return '9:00 AM';
+  const [hs,mn] = t.split(':');
+  let h = parseInt(hs);
+  const p = h>=12?'PM':'AM';
+  if(h>12) h-=12; if(h===0) h=12;
+  return `${h}:${mn} ${p}`;
 }
 
-async function shareSchedule(){
-  const tom=tomorrow();
-  const lbl=new Date(tom+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const {data:bks}=await db.from('bookings').select('*,profiles(full_name)').eq('date',tom);
-  const jobs=bks||[];
-  const slotOrd=ALL_SLOTS.reduce((a,t,i)=>{a[t]=i;return a},{});
-  jobs.sort((a,b)=>(slotOrd[a.time_slot]||0)-(slotOrd[b.time_slot]||0));
-  let txt=`⚔️ WINDOW WARRIORS SCHEDULE\n📅 ${lbl}\n\n`;
-  jobs.forEach((j,i)=>{txt+=`${i+1}. ${j.time_slot} — ${j.client_name}\n   ${j.client_address||''}\n   ${j.client_phone||''}\n\n`});
-  if(navigator.share){try{await navigator.share({title:'Warriors Schedule',text:txt});return}catch(e){}}
-  copySchedule();
-}
-
-// ══════════════════════════════
-//  HELPERS
-// ══════════════════════════════
-function today(){return new Date().toISOString().split('T')[0]}
-function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0]}
-function weekStart(){const d=new Date();d.setDate(d.getDate()-d.getDay());d.setHours(0,0,0,0);return d.toISOString()}
-function monthStart(){const d=new Date();d.setDate(1);d.setHours(0,0,0,0);return d.toISOString()}
-function fmt(n){if(n>=1000)return(n/1000).toFixed(1)+'k';return Math.round(n).toLocaleString()}
-
-// ══════════════════════════════
-//  SESSION
-// ══════════════════════════════
-window.addEventListener('load',async()=>{
-  const {data:{session}}=await db.auth.getSession();
-  if(session)await bootApp(session.user);
-});
-db.auth.onAuthStateChange(async(ev,session)=>{
-  if(ev==='SIGNED_IN'&&session)await bootApp(session.user);
-  if(ev==='SIGNED_OUT'){G('app').style.display='none';G('auth').style.display='flex'}
+// ══════════════════════════════════════
+//  SESSION RESTORE
+// ══════════════════════════════════════
+window.addEventListener('load', async () => {
+  const saved = loadSession();
+  if (saved) {
+    // Verify profile still exists in DB
+    const { data } = await db.from('profiles').select('*').eq('id', saved.id).maybeSingle();
+    if (data) { boot(data); return; }
+    clearSession();
+  }
+  G('auth').style.display = 'flex';
 });
 </script>
+
+<!-- ═══════════════ EDIT MODAL ═══════════════ -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:500;
+  align-items:flex-end;justify-content:center"></div>
+
+<style>
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px)}
+.modal-box{position:relative;background:#fff;border-radius:20px 20px 0 0;
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;z-index:1;
+  box-shadow:0 -8px 40px rgba(0,0,0,.2);animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;
+  padding:18px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
+.modal-body{padding:16px 18px 32px}
+</style>
 </body>
 </html>
