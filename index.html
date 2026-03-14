@@ -4,471 +4,465 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <title>Warriors Hub</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --ink:#0F0F13;--ink2:#1A1A24;--ink3:#252535;--ink4:#32324A;
-  --gold:#F0B429;--gold2:#FADA7A;
-  --slate:#8B8BA7;--border:#E4E4F0;--off:#F7F7FC;
-  --green:#10B981;--red:#EF4444;
-  --m1:#7C3AED;--m1l:rgba(124,58,237,.1);
-  --m2:#0EA5E9;--m2l:rgba(14,165,233,.1);
-  --r:14px;--sh:0 2px 8px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --ink:#0D0D12;--ink2:#1E1E2E;--ink3:#2E2E42;
+  --gold:#F0C040;--gold2:#D4A020;
+  --slate:#6B7280;--border:#E5E7EB;--off:#F9FAFB;
+  --green:#16A34A;--red:#DC2626;--blue:#2563EB;
+  --r:12px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
 }
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--off);color:var(--ink);overflow:hidden}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:#fff;color:var(--ink);overflow:hidden}
+h1,h2,h3,h4,.syne{font-family:'Syne',sans-serif}
 
 /* ── TOAST ── */
-#toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(12px);
-  background:var(--ink);color:#fff;padding:11px 22px;border-radius:40px;font-size:.82rem;
-  font-weight:500;z-index:9999;opacity:0;transition:all .25s;pointer-events:none;
-  white-space:nowrap;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:30px;font-size:.82rem;
+  font-weight:500;z-index:999;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;
+  max-width:90vw;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ── AUTH ── */
-#auth{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;padding:20px;z-index:200;overflow-y:auto}
-.a-logo{text-align:center;margin-bottom:32px}
-.a-icon{width:72px;height:72px;background:var(--gold);border-radius:20px;
-  display:inline-flex;align-items:center;justify-content:center;font-size:2rem;
-  margin-bottom:14px;box-shadow:0 8px 24px rgba(240,180,41,.35)}
-.a-logo h1{font-family:'Syne',sans-serif;font-size:1.75rem;font-weight:800;color:#fff;letter-spacing:-.03em}
-.a-logo p{color:#5A5A7A;font-size:.85rem;margin-top:4px}
-.a-card{background:var(--ink2);border-radius:20px;padding:28px 24px;width:100%;
-  max-width:380px;border:1px solid var(--ink3)}
-.a-card h2{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:20px}
-.a-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);
-  color:#FCA5A5;padding:10px 13px;border-radius:10px;font-size:.8rem;margin-bottom:14px;display:none;line-height:1.5}
-.a-ok{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);
-  color:#6EE7B7;padding:10px 13px;border-radius:10px;font-size:.8rem;margin-bottom:14px;display:none}
+#auth-screen{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--ink);padding:20px;z-index:500;
+}
+.auth-wrap{width:100%;max-width:380px}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo-mark{
+  width:64px;height:64px;background:var(--gold);border-radius:16px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:1.8rem;margin-bottom:12px;
+}
+.auth-logo h1{font-size:1.6rem;font-weight:800;color:#fff;letter-spacing:-.02em}
+.auth-logo p{font-size:.82rem;color:#666;margin-top:4px}
+.auth-card{background:var(--ink2);border-radius:20px;padding:28px 24px;border:1px solid var(--ink3)}
+.auth-card h2{font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:20px}
+.err-box{background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.3);
+  color:#fca5a5;padding:10px 12px;border-radius:8px;font-size:.8rem;margin-bottom:14px;display:none}
 
-/* ── FORMS ── */
-.field{margin-bottom:13px}
-.field label{display:block;font-size:.7rem;font-weight:600;color:#5A5A7A;
-  text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
-.inp{width:100%;padding:11px 14px;background:var(--ink3);border:1.5px solid transparent;
-  border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;
-  outline:none;transition:border-color .15s}
+/* ── FORM ELEMENTS ── */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.73rem;font-weight:600;color:#9CA3AF;
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.inp{width:100%;padding:11px 13px;background:var(--ink3);border:1.5px solid transparent;
+  border-radius:9px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;
+  transition:border-color .15s}
 .inp:focus{border-color:var(--gold)}
-.inp::placeholder{color:#4A4A6A}
-select.inp option{background:var(--ink2)}
-textarea.inp{resize:none;min-height:68px}
+.inp::placeholder{color:#4B5563}
+select.inp option{background:var(--ink2);color:#fff}
+textarea.inp{resize:vertical;min-height:72px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  padding:12px 18px;border:none;border-radius:11px;cursor:pointer;
+  padding:12px 18px;border:none;border-radius:10px;cursor:pointer;
   font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;
-  transition:opacity .15s,transform .1s;white-space:nowrap}
+  transition:opacity .15s,transform .1s;text-decoration:none;white-space:nowrap}
 .btn:active{transform:scale(.97)}
-.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
-.btn-gold{background:var(--gold);color:var(--ink);width:100%;
-  font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;
-  box-shadow:0 4px 16px rgba(240,180,41,.3)}
-.btn-ink{background:var(--ink);color:#fff;border:1px solid var(--ink3)}
-.btn-off{background:var(--off);color:var(--ink);border:1px solid var(--border)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-gold{background:var(--gold);color:var(--ink);width:100%;font-weight:700}
+.btn-dark{background:var(--ink3);color:#fff;border:1px solid #374151}
+.btn-ghost{background:transparent;color:#9CA3AF;border:1px solid #374151}
 .btn-red{background:var(--red);color:#fff}
-.btn-sm{padding:8px 13px;font-size:.78rem;width:auto;border-radius:9px}
-.btn-xs{padding:5px 10px;font-size:.7rem;width:auto;border-radius:7px}
-.lnk{color:var(--gold);cursor:pointer;font-weight:600;font-size:.83rem}
-.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:360px){.f2{grid-template-columns:1fr}}
+.btn-green{background:var(--green);color:#fff}
+.btn-sm{padding:7px 12px;font-size:.78rem;width:auto;border-radius:8px}
+.btn-xs{padding:5px 9px;font-size:.72rem;width:auto;border-radius:6px}
+.link{color:var(--gold);cursor:pointer;font-weight:600;font-size:.83rem}
 
 /* ── APP SHELL ── */
-#app{position:fixed;inset:0;display:none;flex-direction:column;background:var(--off)}
+#app{position:fixed;inset:0;display:none;flex-direction:column;background:#fff}
 
 /* ── TOP BAR ── */
-.topbar{background:var(--ink);height:54px;display:flex;align-items:center;
+.topbar{
+  background:var(--ink);height:54px;display:flex;align-items:center;
   justify-content:space-between;padding:0 16px;flex-shrink:0;
-  box-shadow:0 1px 0 rgba(255,255,255,.05)}
-.tb-l{display:flex;align-items:center;gap:10px}
-.tb-mark{width:32px;height:32px;background:var(--gold);border-radius:9px;
+}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.topbar-mark{width:32px;height:32px;background:var(--gold);border-radius:8px;
   display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
-.tb-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;color:#fff}
-.tb-r{display:flex;align-items:center;gap:8px}
-.role-pill{padding:3px 10px;border-radius:20px;font-size:.65rem;font-weight:700;letter-spacing:.04em}
-.rp-mgr{background:var(--gold);color:var(--ink)}
-.rp-rep{background:var(--ink3);color:#8B8BA7}
-.tb-user{font-size:.72rem;color:#5A5A7A;max-width:86px;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap}
-.so-btn{background:none;border:1px solid var(--ink3);color:#5A5A7A;padding:5px 10px;
-  border-radius:7px;cursor:pointer;font-size:.7rem;font-family:'DM Sans',sans-serif;transition:all .15s}
-.so-btn:hover{border-color:#5A5A7A;color:#fff}
+.topbar-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;color:#fff}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.role-pill{padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:700;letter-spacing:.04em}
+.role-mgr{background:var(--gold);color:var(--ink)}
+.role-rep{background:var(--ink3);color:#9CA3AF}
+.user-name{font-size:.75rem;color:#9CA3AF;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.signout-btn{background:none;border:1px solid #374151;color:#9CA3AF;padding:5px 10px;
+  border-radius:7px;cursor:pointer;font-size:.72rem;font-family:'DM Sans',sans-serif}
+.signout-btn:hover{border-color:#6B7280;color:#fff}
 
-/* ── SCROLL / PAGES ── */
-.scroll{flex:1;overflow-y:auto;overscroll-behavior:contain}
-.page{display:none;padding:16px 16px 84px;max-width:600px;margin:0 auto;min-height:100%}
-.page.on{display:block}
-.pg-h{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;
-  color:var(--ink);letter-spacing:-.02em;margin-bottom:2px}
-.pg-s{font-size:.78rem;color:var(--slate);margin-bottom:18px}
+/* ── CONTENT AREA ── */
+.content{flex:1;overflow-y:auto;overscroll-behavior:contain}
+.page{display:none;padding:16px 16px 90px;max-width:640px;margin:0 auto}
+.page.active{display:block}
+.pg-title{font-size:1.3rem;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:2px}
+.pg-sub{font-size:.8rem;color:var(--slate);margin-bottom:18px}
 
 /* ── BOTTOM NAV ── */
-.bnav{flex-shrink:0;background:#fff;border-top:1px solid var(--border);display:flex;height:58px}
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;background:none;border:none;cursor:pointer;color:#B0B0C8;
+.bottomnav{
+  flex-shrink:0;background:#fff;border-top:1px solid var(--border);
+  display:flex;height:58px;
+}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;background:none;border:none;cursor:pointer;color:#9CA3AF;
   font-family:'DM Sans',sans-serif;transition:color .15s;padding:0}
-.nb.on{color:var(--ink)}
-.nb svg{width:20px;height:20px;stroke-width:1.8}
-.nb span{font-size:.56rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.nav-btn.active{color:var(--ink)}
+.nav-btn svg{width:20px;height:20px;stroke-width:1.8}
+.nav-btn span{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 
 /* ── CARDS ── */
 .card{background:#fff;border:1px solid var(--border);border-radius:var(--r);
-  padding:16px;margin-bottom:12px;box-shadow:var(--sh)}
-.ct{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;
-  color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-title{font-size:.9rem;font-weight:700;color:var(--ink);margin-bottom:14px;
+  display:flex;align-items:center;gap:7px}
 
 /* ── STAT GRID ── */
-.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.sc{padding:14px;border-radius:var(--r);border:1px solid var(--border);background:#fff}
-.sc.dk{background:var(--ink);border-color:var(--ink)}
-.sc.gd{background:var(--gold);border-color:var(--gold)}
-.sc.v1{background:var(--m1);border-color:var(--m1)}
-.sc.v2{background:var(--m2);border-color:var(--m2)}
-.sn{font-family:'Syne',sans-serif;font-size:1.85rem;font-weight:800;line-height:1}
-.sl{font-size:.63rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-top:4px}
-.sc.dk .sn,.sc.gd .sn,.sc.v1 .sn,.sc.v2 .sn{color:#fff}
-.sc.dk .sl,.sc.v1 .sl,.sc.v2 .sl{color:rgba(255,255,255,.55)}
-.sc.gd .sl{color:rgba(15,15,15,.55)}
-.sc:not(.dk):not(.gd):not(.v1):not(.v2) .sn{color:var(--ink)}
-.sc:not(.dk):not(.gd):not(.v1):not(.v2) .sl{color:var(--slate)}
-
-/* ── MACHINE TABS ── */
-.mtabs{display:flex;gap:9px;margin-bottom:16px}
-.mtab{flex:1;padding:12px 8px;border-radius:12px;border:2px solid var(--border);
-  text-align:center;cursor:pointer;background:#fff;transition:all .18s;box-shadow:var(--sh)}
-.mtab.on.t1{background:var(--m1);border-color:var(--m1)}
-.mtab.on.t2{background:var(--m2);border-color:var(--m2)}
-.mtab:not(.on){color:var(--slate)}
-.mt-ico{font-size:1.2rem;margin-bottom:4px}
-.mt-lbl{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700}
-.mt-lbl.on{color:#fff}
-.mt-cnt{font-size:.67rem;margin-top:2px;opacity:.75}
-.mtab.on .mt-cnt{color:rgba(255,255,255,.8)}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat{border-radius:var(--r);padding:14px;border:1px solid var(--border)}
+.stat.dark{background:var(--ink);border-color:var(--ink)}
+.stat.gold{background:var(--gold);border-color:var(--gold)}
+.stat-n{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:800;line-height:1}
+.stat.dark .stat-n{color:#fff}
+.stat.gold .stat-n{color:var(--ink)}
+.stat-l{font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;opacity:.65;margin-top:4px}
+.stat.dark .stat-l{color:#9CA3AF}
+.stat.gold .stat-l{color:var(--ink)}
 
 /* ── CALENDAR ── */
-.cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.cal-hd h3{font-family:'Syne',sans-serif;font-size:.92rem;font-weight:700}
-.cal-nav{background:var(--off);border:1px solid var(--border);border-radius:8px;
-  padding:5px 11px;cursor:pointer;font-size:.88rem;color:var(--slate);transition:background .15s}
-.cal-nav:hover{background:var(--border)}
-.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.cdn{text-align:center;font-size:.6rem;font-weight:700;color:var(--slate);
-  text-transform:uppercase;padding:5px 0;letter-spacing:.05em}
-.cd{text-align:center;padding:8px 2px;border-radius:8px;cursor:pointer;
-  font-size:.79rem;font-weight:500;transition:all .12s;color:var(--ink)}
-.cd:hover:not(.cpast):not(.cem){background:var(--off)}
-.cd.ctoday{background:var(--ink);color:#fff;font-weight:700}
-.cd.csel.cm1{background:var(--m1);color:#fff;font-weight:700}
-.cd.csel.cm2{background:var(--m2);color:#fff;font-weight:700}
-.cd.cpast{color:#C8C8D8;cursor:default}
-.cd.cem{cursor:default}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-header h3{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;color:var(--ink)}
+.cal-nav-btn{background:var(--off);border:1px solid var(--border);border-radius:8px;
+  padding:5px 10px;cursor:pointer;font-size:.9rem;color:var(--slate)}
+.cal-nav-btn:hover{background:var(--border)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day-name{text-align:center;font-size:.63rem;font-weight:700;color:var(--slate);
+  text-transform:uppercase;padding:4px 0;letter-spacing:.04em}
+.cal-day{text-align:center;padding:8px 2px;border-radius:8px;cursor:pointer;
+  font-size:.8rem;font-weight:500;transition:background .1s;color:var(--ink)}
+.cal-day:hover:not(.disabled):not(.empty){background:var(--off)}
+.cal-day.today{background:var(--ink);color:#fff;font-weight:700}
+.cal-day.selected{background:var(--gold);color:var(--ink);font-weight:700}
+.cal-day.disabled{color:#D1D5DB;cursor:default}
+.cal-day.has-slots::after{content:'';display:block;width:4px;height:4px;
+  border-radius:50%;background:var(--green);margin:2px auto 0}
+.cal-day.empty{cursor:default}
 
-/* ── SLOT ROWS ── */
-.slotrow{display:flex;align-items:center;justify-content:space-between;
-  padding:14px 16px;border-radius:12px;border:1.5px solid var(--border);
-  margin-bottom:8px;cursor:pointer;transition:all .15s;background:#fff;box-shadow:var(--sh)}
-.slotrow:hover:not(.sr-taken){border-color:var(--ink);transform:translateY(-1px)}
-.slotrow.sr-taken{opacity:.55;cursor:not-allowed;background:var(--off)}
-.slotrow.sr-mine1{border-color:var(--m1);background:var(--m1l)}
-.slotrow.sr-mine2{border-color:var(--m2);background:var(--m2l)}
-.slotrow.sr-sel{border-color:var(--ink);background:var(--ink);transform:translateY(-1px)}
-.slotrow.sr-sel .sr-time,.slotrow.sr-sel .sr-sub{color:#fff!important}
-.sr-time{font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;color:var(--ink)}
-.sr-sub{font-size:.7rem;color:var(--slate);margin-top:2px}
-.sbadge{padding:4px 11px;border-radius:20px;font-size:.67rem;font-weight:700;
+/* ── TIME SLOTS ── */
+.slot-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-radius:10px;border:1.5px solid var(--border);
+  margin-bottom:8px;cursor:pointer;transition:all .15s;background:#fff;
+}
+.slot-row:hover:not(.slot-taken):not(.slot-mine){border-color:var(--ink);background:var(--off)}
+.slot-row.slot-taken{background:var(--off);cursor:not-allowed;opacity:.6}
+.slot-row.slot-mine{border-color:var(--gold);background:rgba(240,192,64,.06)}
+.slot-row.slot-selected{border-color:var(--ink);background:var(--ink)}
+.slot-row.slot-selected .slot-time{color:#fff}
+.slot-row.slot-selected .slot-label{color:#9CA3AF}
+.slot-time{font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;color:var(--ink)}
+.slot-label{font-size:.72rem;color:var(--slate);margin-top:2px}
+.slot-badge{padding:4px 10px;border-radius:20px;font-size:.68rem;font-weight:700;
   text-transform:uppercase;letter-spacing:.03em;flex-shrink:0}
-.sb-open{background:#D1FAE5;color:#065F46}
-.sb-taken{background:#FEE2E2;color:#991B1B}
-.sb-mine{background:#FEF3C7;color:#92400E}
-.sb-part{background:#E0E7FF;color:#3730A3}
+.badge-open{background:#DCFCE7;color:#15803D}
+.badge-taken{background:#FEE2E2;color:#991B1B}
+.badge-mine{background:var(--gold);color:var(--ink)}
+.badge-partial{background:#FEF3C7;color:#92400E}
 
-/* ── BOOKING BANNER ── */
-.bbanner{border-radius:12px;padding:14px 16px;margin-bottom:16px;
-  display:flex;align-items:center;gap:12px}
-.bbanner.b1{background:var(--m1)}
-.bbanner.b2{background:var(--m2)}
-.bb-ico{font-size:1.5rem}
-.bb-t{font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:#fff}
-.bb-s{font-size:.72rem;color:rgba(255,255,255,.7);margin-top:2px}
-.finp{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;
-  font-family:'DM Sans',sans-serif;font-size:.87rem;color:var(--ink);
-  background:#fff;outline:none;transition:border-color .15s}
-.finp:focus{border-color:var(--ink)}
-.finp::placeholder{color:#B0B0C8}
-select.finp{cursor:pointer}
-textarea.finp{resize:none;min-height:64px}
+/* ── BOOKING SUMMARY ── */
+.booking-summary{
+  background:var(--ink);color:#fff;border-radius:10px;
+  padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px
+}
+.booking-summary-icon{font-size:1.4rem}
+.booking-summary-text{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700}
+.booking-summary-sub{font-size:.73rem;color:#9CA3AF;margin-top:2px}
 
-/* ── SALE ITEMS ── */
-.sitem{padding:14px;border-radius:12px;border:1px solid var(--border);
-  margin-bottom:8px;background:#fff;box-shadow:var(--sh);
-  border-left:4px solid var(--border)}
-.sitem.si1{border-left-color:var(--m1)}
-.sitem.si2{border-left-color:var(--m2)}
-.si-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.si-name{font-weight:700;font-size:.9rem;color:var(--ink)}
-.si-price{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--ink);flex-shrink:0}
-.si-meta{font-size:.72rem;color:var(--slate);margin-top:5px;line-height:1.7}
-.si-tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.62rem;
-  font-weight:700;text-transform:uppercase;background:#D1FAE5;color:#065F46;margin-top:6px}
+/* ── SALE ROWS ── */
+.sale-item{
+  padding:13px;border-radius:10px;border:1px solid var(--border);
+  margin-bottom:8px;background:#fff;
+}
+.sale-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.sale-item-name{font-weight:700;font-size:.9rem;color:var(--ink)}
+.sale-item-price{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--ink);flex-shrink:0}
+.sale-item-meta{font-size:.73rem;color:var(--slate);margin-top:4px;line-height:1.6}
+.sale-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.63rem;
+  font-weight:700;text-transform:uppercase;background:#DCFCE7;color:#15803D;margin-top:5px}
 
 /* ── LEADERBOARD ── */
-.lbrow{display:flex;align-items:center;gap:12px;padding:13px;
-  border-radius:12px;border:1px solid var(--border);margin-bottom:7px;background:#fff;box-shadow:var(--sh)}
-.lbrow.lbme{border-color:var(--gold);background:rgba(240,180,41,.04)}
-.lbr{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-weight:800;font-size:.82rem;flex-shrink:0}
-.r1{background:var(--gold);color:#fff}
-.r2{background:#E2E8F0;color:#475569}
-.r3{background:#FED7AA;color:#92400E}
-.rn{background:var(--off);color:var(--slate);font-size:.75rem}
+.lb-item{
+  display:flex;align-items:center;gap:12px;padding:13px;
+  border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:#fff;
+}
+.lb-item.lb-me{border-color:var(--gold);background:rgba(240,192,64,.04)}
+.lb-rank{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:.85rem;flex-shrink:0}
+.rank-1{background:var(--gold);color:var(--ink)}
+.rank-2{background:#E5E7EB;color:#374151}
+.rank-3{background:#FED7AA;color:#92400E}
+.rank-n{background:var(--off);color:var(--slate)}
 .lb-info{flex:1;min-width:0}
 .lb-name{font-weight:700;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lb-sub{font-size:.7rem;color:var(--slate);margin-top:1px}
-.lb-bar{height:4px;background:var(--off);border-radius:2px;margin-top:6px;overflow:hidden;border:1px solid var(--border)}
-.lb-fill{height:100%;background:var(--ink);border-radius:2px;transition:width .6s ease}
-.lb-amt{font-family:'Syne',sans-serif;font-weight:800;font-size:.92rem;flex-shrink:0}
+.lb-sales{font-size:.73rem;color:var(--slate);margin-top:2px}
+.lb-bar{height:4px;background:var(--off);border-radius:2px;margin-top:6px;overflow:hidden}
+.lb-bar-fill{height:100%;background:var(--ink);border-radius:2px;transition:width .5s}
+.lb-rev{font-family:'Syne',sans-serif;font-weight:800;font-size:.92rem;color:var(--ink);flex-shrink:0}
 
-/* ── WINNER ── */
-.winner{background:var(--ink);border-radius:var(--r);padding:20px;
-  text-align:center;margin-bottom:12px;position:relative;overflow:hidden}
-.winner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top,rgba(240,180,41,.15),transparent 60%)}
-.w-trophy{font-size:2.5rem;margin-bottom:8px;position:relative}
-.w-name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:#fff;position:relative}
-.w-stat{font-size:.76rem;color:#5A5A7A;margin-top:4px;position:relative}
-.w-crown{display:inline-block;background:var(--gold);color:var(--ink);
-  padding:4px 14px;border-radius:20px;font-size:.68rem;font-weight:800;
-  letter-spacing:.07em;margin-top:10px;position:relative}
+/* ── WINNER CARD ── */
+.winner-card{
+  background:var(--ink);border-radius:var(--r);padding:20px;
+  text-align:center;margin-bottom:12px;
+}
+.winner-trophy{font-size:2.4rem;margin-bottom:8px}
+.winner-name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:#fff}
+.winner-stats{font-size:.78rem;color:#9CA3AF;margin-top:4px}
+.winner-crown{display:inline-block;background:var(--gold);color:var(--ink);
+  padding:4px 14px;border-radius:20px;font-size:.7rem;font-weight:800;
+  letter-spacing:.06em;margin-top:10px}
 
 /* ── TABS ── */
-.tabs{display:flex;background:var(--off);border-radius:10px;padding:3px;
-  margin-bottom:16px;border:1px solid var(--border)}
-.tab{flex:1;text-align:center;padding:8px 4px;border-radius:8px;font-size:.74rem;
-  font-weight:600;cursor:pointer;color:var(--slate);background:none;border:none;
-  font-family:'DM Sans',sans-serif;transition:all .15s}
-.tab.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.tabs{display:flex;background:var(--off);border-radius:10px;padding:3px;margin-bottom:16px;border:1px solid var(--border)}
+.tab-btn{flex:1;text-align:center;padding:7px 4px;border-radius:8px;font-size:.76rem;
+  font-weight:600;cursor:pointer;transition:all .15s;color:var(--slate);background:none;
+  border:none;font-family:'DM Sans',sans-serif}
+.tab-btn.active{background:#fff;color:var(--ink);font-weight:700;
+  box-shadow:0 1px 4px rgba(0,0,0,.08)}
 
 /* ── MAP ── */
-#knock-map{height:350px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
-.mbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
-.mk{padding:7px 12px;border-radius:8px;border:2px solid;cursor:pointer;
-  font-size:.72rem;font-weight:700;background:transparent;
-  font-family:'DM Sans',sans-serif;transition:all .15s}
-.mk.on{transform:scale(1.04)}
-.mk-kn{border-color:#7C3AED;color:#7C3AED}.mk-kn.on{background:rgba(124,58,237,.1)}
-.mk-in{border-color:#10B981;color:#059669}.mk-in.on{background:rgba(16,185,129,.1)}
-.mk-na{border-color:#F59E0B;color:#D97706}.mk-na.on{background:rgba(245,158,11,.1)}
-.mk-ni{border-color:#EF4444;color:#DC2626}.mk-ni.on{background:rgba(239,68,68,.1)}
-.mleg{display:flex;flex-wrap:wrap;gap:9px;margin-top:9px}
-.ml{display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:var(--slate)}
-.mld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+#knock-map{height:360px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+.mark-toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.mark-btn{padding:7px 12px;border-radius:8px;border:2px solid;cursor:pointer;
+  font-size:.73rem;font-weight:700;transition:all .15s;background:transparent;
+  font-family:'DM Sans',sans-serif}
+.mark-btn.active{transform:scale(1.05)}
+.m-knocked{border-color:#6B3FA0;color:#6B3FA0}.m-knocked.active{background:rgba(107,63,160,.12)}
+.m-interested{border-color:#16A34A;color:#16A34A}.m-interested.active{background:rgba(22,163,74,.12)}
+.m-noanswer{border-color:#D97706;color:#D97706}.m-noanswer.active{background:rgba(217,119,6,.12)}
+.m-notint{border-color:#DC2626;color:#DC2626}.m-notint.active{background:rgba(220,38,38,.12)}
+.map-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.leg{display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;color:var(--slate)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
 /* ── SCHEDULE ── */
-.sched-tabs{display:flex;gap:8px;margin-bottom:14px}
-.stab{flex:1;padding:10px 8px;border-radius:12px;border:1.5px solid var(--border);
-  text-align:center;cursor:pointer;background:#fff;transition:all .15s;box-shadow:var(--sh)}
-.stab.on{background:var(--ink);border-color:var(--ink)}
-.stab.on .st-n,.stab.on .st-d{color:#fff}
-.stab.on .st-d{color:#5A5A7A}
-.st-n{font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;color:var(--ink)}
-.st-d{font-size:.68rem;color:var(--slate);margin-top:2px}
-.sjob{display:flex;align-items:flex-start;gap:12px;padding:13px;
-  border-radius:12px;border:1px solid var(--border);margin-bottom:7px;
-  background:#fff;box-shadow:var(--sh)}
-.sj-t{min-width:70px;flex-shrink:0}
-.sj-main{font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;color:var(--ink)}
-.sj-end{font-size:.66rem;color:var(--slate);margin-top:2px}
-.sj-m{display:inline-block;padding:2px 7px;border-radius:5px;
-  font-size:.63rem;font-weight:700;margin-top:5px}
-.sj-m.m1{background:var(--m1l);color:var(--m1)}
-.sj-m.m2{background:var(--m2l);color:var(--m2)}
-.sj-info h4{font-weight:700;font-size:.88rem;color:var(--ink)}
-.sj-info p{font-size:.72rem;color:var(--slate);margin-top:3px;line-height:1.65}
-.sj-rep{display:inline-block;background:var(--off);color:var(--slate);
-  padding:2px 8px;border-radius:5px;font-size:.63rem;font-weight:600;margin-top:5px;border:1px solid var(--border)}
+.sched-date-tabs{display:flex;gap:8px;margin-bottom:14px}
+.sched-tab{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);
+  text-align:center;cursor:pointer;background:#fff;transition:all .15s}
+.sched-tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.sched-tab.active .sched-tab-day{color:#fff}
+.sched-tab.active .sched-tab-date{color:#9CA3AF}
+.sched-tab-day{font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;color:var(--ink)}
+.sched-tab-date{font-size:.7rem;color:var(--slate);margin-top:2px}
+.sched-job{
+  display:flex;align-items:flex-start;gap:12px;padding:13px;
+  border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:#fff;
+}
+.sched-time{min-width:72px;flex-shrink:0}
+.sched-time-main{font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;color:var(--ink)}
+.sched-time-end{font-size:.68rem;color:var(--slate);margin-top:2px}
+.sched-machine{display:inline-block;background:var(--off);border:1px solid var(--border);
+  color:var(--slate);padding:1px 6px;border-radius:4px;font-size:.65rem;font-weight:700;margin-top:4px}
+.sched-info h4{font-weight:700;font-size:.88rem;color:var(--ink)}
+.sched-info p{font-size:.73rem;color:var(--slate);margin-top:3px;line-height:1.6}
+.sched-rep-tag{display:inline-block;background:var(--off);color:var(--slate);
+  padding:2px 8px;border-radius:4px;font-size:.65rem;font-weight:600;margin-top:4px}
 
-/* ── SLOT MANAGER ── */
-.smrow{display:flex;align-items:center;gap:7px;padding:11px 12px;
-  border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:#fff}
-.smrow input{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;
-  font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--ink);outline:none}
-.smrow input:focus{border-color:var(--ink)}
+/* ── SLOT MANAGER (Manager only) ── */
+.slot-mgr-row{
+  display:flex;align-items:center;gap:8px;padding:12px;
+  border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:#fff;
+}
+.slot-mgr-row .inp{background:var(--off);color:var(--ink);padding:8px 10px;font-size:.8rem}
+.slot-mgr-row .inp:focus{border-color:var(--ink)}
 
-/* ── EMPTY ── */
+/* ── EMPTY STATE ── */
 .empty{text-align:center;padding:36px 16px;color:var(--slate)}
-.empty svg{width:36px;height:36px;margin:0 auto 10px;opacity:.2;stroke:var(--slate)}
-.empty p{font-size:.82rem;line-height:1.6}
+.empty svg{width:36px;height:36px;margin:0 auto 10px;opacity:.3;stroke:var(--slate)}
+.empty p{font-size:.83rem}
 
+/* ── FORM GRID ── */
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:360px){.f2{grid-template-columns:1fr}}
+
+/* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 </style>
 </head>
 <body>
+
+<!-- TOAST -->
 <div id="toast"></div>
 
-<!-- ═══════════════ AUTH ═══════════════ -->
-<div id="auth">
-  <div class="a-logo">
-    <div class="a-icon">⚔️</div>
-    <h1>Warriors Hub</h1>
-    <p>Window Warriors Team App</p>
-  </div>
-  <div class="a-card">
-    <div id="a-err" class="a-err"></div>
-    <div id="a-ok"  class="a-ok"></div>
-
-    <!-- LOGIN -->
-    <div id="p-login">
-      <h2>Sign In</h2>
-      <div class="field"><label>Email</label>
-        <input class="inp" id="l-em" type="email" placeholder="you@email.com" autocomplete="email"
-          onkeydown="if(event.key==='Enter')doLogin()"/>
-      </div>
-      <div class="field"><label>Password</label>
-        <input class="inp" id="l-pw" type="password" placeholder="••••••••" autocomplete="current-password"
-          onkeydown="if(event.key==='Enter')doLogin()"/>
-      </div>
-      <button class="btn btn-gold" id="login-btn" onclick="doLogin()">Sign In →</button>
-      <p style="text-align:center;margin-top:14px;color:#5A5A7A;font-size:.83rem">
-        No account? <span class="lnk" onclick="showP('reg')">Create one</span>
-      </p>
+<!-- ═══════════════════════════════════
+     AUTH SCREEN
+═══════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">⚔️</div>
+      <h1>Warriors Hub</h1>
+      <p>Window Warriors Team App</p>
     </div>
+    <div class="auth-card">
+      <div id="err-box" class="err-box"></div>
 
-    <!-- REGISTER -->
-    <div id="p-reg" style="display:none">
-      <h2>Create Account</h2>
-      <div class="field"><label>Full Name</label>
-        <input class="inp" id="r-nm" type="text" placeholder="Your full name"/>
+      <!-- LOGIN -->
+      <div id="login-panel">
+        <h2>Sign In</h2>
+        <div class="field"><label>Email</label>
+          <input class="inp" id="l-email" type="email" placeholder="you@email.com" autocomplete="email"/>
+        </div>
+        <div class="field"><label>Password</label>
+          <input class="inp" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        </div>
+        <button class="btn btn-gold" id="login-btn" onclick="doLogin()">Sign In →</button>
+        <p style="text-align:center;margin-top:14px">
+          <span class="link" onclick="showPanel('register')">Create an account</span>
+        </p>
       </div>
-      <div class="field"><label>Email</label>
-        <input class="inp" id="r-em" type="email" placeholder="you@email.com"/>
+
+      <!-- REGISTER -->
+      <div id="register-panel" style="display:none">
+        <h2>Create Account</h2>
+        <div class="field"><label>Full Name</label>
+          <input class="inp" id="r-name" type="text" placeholder="Your full name"/>
+        </div>
+        <div class="field"><label>Email</label>
+          <input class="inp" id="r-email" type="email" placeholder="you@email.com" autocomplete="email"/>
+        </div>
+        <div class="field"><label>Password</label>
+          <input class="inp" id="r-pass" type="password" placeholder="Min 6 characters"/>
+        </div>
+        <div class="field">
+          <label>Role</label>
+          <select class="inp" id="r-role" onchange="toggleMgrField()">
+            <option value="rep">Sales Rep</option>
+            <option value="manager">Manager</option>
+          </select>
+        </div>
+        <div class="field" id="mgr-field" style="display:none">
+          <label>Manager Code</label>
+          <input class="inp" id="r-code" type="password" placeholder="Enter manager access code"/>
+        </div>
+        <button class="btn btn-gold" id="reg-btn" onclick="doRegister()">Create Account →</button>
+        <p style="text-align:center;margin-top:14px">
+          <span class="link" onclick="showPanel('login')">Already have an account</span>
+        </p>
       </div>
-      <div class="field"><label>Password</label>
-        <input class="inp" id="r-pw" type="password" placeholder="Choose a password (min 4 chars)"/>
-      </div>
-      <div class="field"><label>Role</label>
-        <select class="inp" id="r-role" onchange="toggleMgr()">
-          <option value="rep">Sales Rep</option>
-          <option value="manager">Manager</option>
-        </select>
-      </div>
-      <div class="field" id="mgr-f" style="display:none"><label>Manager Code</label>
-        <input class="inp" id="r-code" type="password" placeholder="Enter manager access code"/>
-      </div>
-      <button class="btn btn-gold" id="reg-btn" onclick="doRegister()">Create Account →</button>
-      <p style="text-align:center;margin-top:14px;color:#5A5A7A;font-size:.83rem">
-        Already have one? <span class="lnk" onclick="showP('login')">Sign in</span>
-      </p>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════ APP ═══════════════ -->
+<!-- ═══════════════════════════════════
+     MAIN APP
+═══════════════════════════════════ -->
 <div id="app">
 
+  <!-- TOP BAR -->
   <header class="topbar">
-    <div class="tb-l">
-      <div class="tb-mark">⚔️</div>
-      <span class="tb-name">Warriors Hub</span>
+    <div class="topbar-brand">
+      <div class="topbar-mark">⚔️</div>
+      <span class="topbar-name">Warriors Hub</span>
     </div>
-    <div class="tb-r">
-      <span class="tb-user" id="tb-user"></span>
+    <div class="topbar-right">
+      <span class="user-name" id="tb-name"></span>
       <span class="role-pill" id="tb-role"></span>
-      <button class="so-btn" onclick="doSignOut()">Sign Out</button>
+      <button class="signout-btn" onclick="doSignOut()">Sign Out</button>
     </div>
   </header>
 
-  <div class="scroll">
+  <!-- PAGES -->
+  <div class="content">
 
-    <!-- ░░ DASHBOARD ░░ -->
-    <div class="page on" id="pg-dash">
-      <div class="pg-h" id="dash-hi">Hey! 👋</div>
-      <div class="pg-s" id="dash-date"></div>
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dash">
+      <div class="pg-title" id="dash-greeting">Hey! 👋</div>
+      <div class="pg-sub" id="dash-date"></div>
 
-      <div id="dv-rep" style="display:none">
-        <div class="sg">
-          <div class="sc dk"><div class="sn" id="r-sales">0</div><div class="sl">My Sales</div></div>
-          <div class="sc gd"><div class="sn" id="r-rev">$0</div><div class="sl">My Revenue</div></div>
-          <div class="sc"><div class="sn" id="r-rank" style="color:var(--ink)">—</div><div class="sl" style="color:var(--slate)">My Rank</div></div>
-          <div class="sc"><div class="sn" id="r-up" style="color:var(--ink)">0</div><div class="sl" style="color:var(--slate)">Upcoming</div></div>
+      <!-- REP DASHBOARD -->
+      <div id="dash-rep" style="display:none">
+        <div class="stat-grid">
+          <div class="stat dark"><div class="stat-n" id="r-sales">0</div><div class="stat-l">My Sales</div></div>
+          <div class="stat gold"><div class="stat-n" id="r-rev">$0</div><div class="stat-l">My Revenue</div></div>
+          <div class="stat"><div class="stat-n" id="r-rank" style="color:var(--ink)">#—</div><div class="stat-l">My Rank</div></div>
+          <div class="stat"><div class="stat-n" id="r-upcoming" style="color:var(--ink)">0</div><div class="stat-l">Upcoming Jobs</div></div>
         </div>
-        <div class="card"><div class="ct">🏆 This Week's Leader</div><div id="r-leader"></div></div>
-        <div class="card"><div class="ct">📋 My Recent Bookings</div><div id="r-recent"></div></div>
+        <div class="card">
+          <div class="card-title">🏆 This Week's Leader</div>
+          <div id="r-week-leader"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 My Recent Bookings</div>
+          <div id="r-recent-sales"></div>
+        </div>
       </div>
 
-      <div id="dv-mgr" style="display:none">
-        <div class="sg">
-          <div class="sc dk"><div class="sn" id="m-sales">0</div><div class="sl">Total Sales</div></div>
-          <div class="sc gd"><div class="sn" id="m-rev">$0</div><div class="sl">Total Revenue</div></div>
-          <div class="sc v1"><div class="sn" id="m-m1">0</div><div class="sl">Machine 1</div></div>
-          <div class="sc v2"><div class="sn" id="m-m2">0</div><div class="sl">Machine 2</div></div>
+      <!-- MANAGER DASHBOARD -->
+      <div id="dash-mgr" style="display:none">
+        <div class="stat-grid">
+          <div class="stat dark"><div class="stat-n" id="m-sales">0</div><div class="stat-l">Total Sales</div></div>
+          <div class="stat gold"><div class="stat-n" id="m-rev">$0</div><div class="stat-l">Total Revenue</div></div>
+          <div class="stat"><div class="stat-n" id="m-reps" style="color:var(--ink)">0</div><div class="stat-l">Active Reps</div></div>
+          <div class="stat"><div class="stat-n" id="m-jobs" style="color:var(--ink)">0</div><div class="stat-l">Jobs Booked</div></div>
         </div>
         <div id="m-winner"></div>
-        <div class="card"><div class="ct">📊 Recent Sales</div><div id="m-recent"></div></div>
+        <div class="card">
+          <div class="card-title">📊 Recent Sales</div>
+          <div id="m-recent-sales"></div>
+        </div>
       </div>
     </div>
 
-    <!-- ░░ BOOK ░░ -->
-    <div class="page" id="pg-book">
-      <div class="pg-h">Book a Job</div>
-      <div class="pg-s">Pick your machine → choose a date → pick a slot → fill in details</div>
+    <!-- ── BOOK A JOB ── -->
+    <div class="page" id="page-book">
+      <div class="pg-title">Book a Job</div>
+      <div class="pg-sub">Step 1: pick a date · Step 2: pick a slot · Step 3: add details</div>
 
-      <div class="mtabs">
-        <div class="mtab on t1" id="mt1" onclick="setMachine(1)">
-          <div class="mt-ico">🟣</div>
-          <div class="mt-lbl on" id="mt1-lbl">Machine 1</div>
-          <div class="mt-cnt" id="mt1-cnt">0 booked today</div>
-        </div>
-        <div class="mtab t2" id="mt2" onclick="setMachine(2)">
-          <div class="mt-ico">🔵</div>
-          <div class="mt-lbl" id="mt2-lbl">Machine 2</div>
-          <div class="mt-cnt" id="mt2-cnt">0 booked today</div>
-        </div>
-      </div>
-
+      <!-- CALENDAR -->
       <div class="card">
-        <div class="cal-hd">
-          <button class="cal-nav" onclick="calPrev()">‹</button>
-          <h3 id="cal-title"></h3>
-          <button class="cal-nav" onclick="calNext()">›</button>
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+          <h3 id="cal-month"></h3>
+          <button class="cal-nav-btn" onclick="calNext()">›</button>
         </div>
-        <div class="cgrid" id="cal-grid"></div>
+        <div class="cal-grid" id="cal-grid"></div>
       </div>
 
-      <div id="slots-sec" style="display:none">
-        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;
-          margin-bottom:10px;color:var(--ink)" id="slots-hd"></div>
+      <!-- SLOTS -->
+      <div id="slots-section" style="display:none">
+        <div class="card-title" style="margin-bottom:10px">🕐 Available Slots — <span id="slots-date-label" style="color:var(--slate);font-weight:500"></span></div>
         <div id="slots-list"></div>
       </div>
 
-      <div id="form-sec" style="display:none">
-        <div class="bbanner" id="bbanner">
-          <div class="bb-ico" id="bb-ico">🟣</div>
+      <!-- BOOKING FORM -->
+      <div id="booking-form-section" style="display:none">
+        <div class="booking-summary">
+          <div class="booking-summary-icon">📅</div>
           <div>
-            <div class="bb-t" id="bb-t">Machine 1</div>
-            <div class="bb-s" id="bb-s">—</div>
+            <div class="booking-summary-text" id="booking-summary-text"></div>
+            <div class="booking-summary-sub" id="booking-summary-sub"></div>
           </div>
         </div>
         <div class="card">
-          <div class="ct">📝 Client Details
-            <span style="font-size:.7rem;font-weight:400;color:var(--slate)">(all optional)</span>
-          </div>
+          <div class="card-title">📝 Client Details <span style="font-size:.72rem;font-weight:400;color:var(--slate)">(optional)</span></div>
           <div class="field"><label>Client Name</label>
-            <input class="finp" id="b-nm" type="text" placeholder="Full name"/>
+            <input class="inp" id="b-name" type="text" placeholder="Full name" style="background:var(--off);color:var(--ink)"/>
           </div>
           <div class="f2">
             <div class="field"><label>Phone</label>
-              <input class="finp" id="b-ph" type="tel" placeholder="(647) 000-0000"/>
+              <input class="inp" id="b-phone" type="tel" placeholder="(647) 000-0000" style="background:var(--off);color:var(--ink)"/>
             </div>
             <div class="field"><label>Price ($)</label>
-              <input class="finp" id="b-pr" type="number" placeholder="0" min="0"/>
+              <input class="inp" id="b-price" type="number" placeholder="0" min="0" style="background:var(--off);color:var(--ink)"/>
             </div>
           </div>
           <div class="field"><label>Address</label>
-            <input class="finp" id="b-ad" type="text" placeholder="123 Main St, Mississauga"/>
+            <input class="inp" id="b-addr" type="text" placeholder="123 Main St, Mississauga" style="background:var(--off);color:var(--ink)"/>
           </div>
           <div class="field"><label>Service</label>
-            <select class="finp" id="b-sv">
+            <select class="inp" id="b-service" style="background:var(--off);color:var(--ink)">
               <option>Exterior Window Cleaning</option>
               <option>Interior Window Cleaning</option>
               <option>Eavestrough / Gutter Cleaning</option>
@@ -478,1128 +472,1354 @@ textarea.finp{resize:none;min-height:64px}
             </select>
           </div>
           <div class="field"><label>Notes</label>
-            <textarea class="finp" id="b-nt" placeholder="Any special instructions..."></textarea>
+            <textarea class="inp" id="b-notes" placeholder="Any special instructions..." style="background:var(--off);color:var(--ink)"></textarea>
           </div>
           <button class="btn btn-gold" id="confirm-btn" onclick="confirmBooking()">✓ Confirm Booking</button>
         </div>
       </div>
     </div>
 
-    <!-- ░░ SALES ░░ -->
-    <div class="page" id="pg-sales">
-      <div class="pg-h" id="sales-h">My Sales</div>
-      <div class="pg-s">Your recorded bookings and sales</div>
+    <!-- ── MY SALES ── -->
+    <div class="page" id="page-sales">
+      <div class="pg-title" id="sales-pg-title">My Sales</div>
+      <div class="pg-sub">Your recorded bookings and sales</div>
       <div class="tabs">
-        <button class="tab on" onclick="setSalesTab('upcoming',this)">Upcoming</button>
-        <button class="tab" onclick="setSalesTab('past',this)">Completed</button>
-        <button class="tab" onclick="setSalesTab('all',this)">All</button>
+        <button class="tab-btn active" onclick="setSalesTab('upcoming',this)">Upcoming</button>
+        <button class="tab-btn" onclick="setSalesTab('past',this)">Completed</button>
+        <button class="tab-btn" onclick="setSalesTab('all',this)">All</button>
       </div>
       <div id="sales-list"></div>
     </div>
 
-    <!-- ░░ LEADERBOARD ░░ -->
-    <div class="page" id="pg-lb">
-      <div class="pg-h">Leaderboard</div>
-      <div class="pg-s">Who's crushing it this week 🔥</div>
+    <!-- ── LEADERBOARD ── -->
+    <div class="page" id="page-lb">
+      <div class="pg-title">Leaderboard</div>
+      <div class="pg-sub">Weekly competition rankings 🔥</div>
       <div class="tabs">
-        <button class="tab on" onclick="setLbTab('week',this)">This Week</button>
-        <button class="tab" onclick="setLbTab('month',this)">This Month</button>
-        <button class="tab" onclick="setLbTab('all',this)">All Time</button>
+        <button class="tab-btn active" onclick="setLbTab('week',this)">This Week</button>
+        <button class="tab-btn" onclick="setLbTab('month',this)">This Month</button>
+        <button class="tab-btn" onclick="setLbTab('all',this)">All Time</button>
       </div>
       <div id="lb-list"></div>
-      <div id="lb-mgr" style="display:none;margin-top:18px">
-        <div class="ct" style="margin-bottom:10px">📋 All Team Sales</div>
-        <div id="lb-all"></div>
+      <!-- Manager sees all sales below board -->
+      <div id="lb-mgr-sales" style="display:none;margin-top:16px">
+        <div class="card-title" style="margin-bottom:10px">📋 All Team Sales</div>
+        <div id="lb-all-sales"></div>
       </div>
     </div>
 
-    <!-- ░░ MAP ░░ -->
-    <div class="page" id="pg-map">
-      <div class="pg-h">Door Knock Map</div>
-      <div class="pg-s">Tap the map to mark every door you knock</div>
+    <!-- ── MAP ── -->
+    <div class="page" id="page-map">
+      <div class="pg-title">Door Knock Map</div>
+      <div class="pg-sub">Tap the map to mark a door you've knocked</div>
       <div class="card" style="padding:13px">
-        <div class="mbar">
-          <span style="font-size:.7rem;font-weight:700;color:var(--slate);
-            width:100%;margin-bottom:3px">Tap map to mark door as:</span>
-          <button class="mk mk-kn on" onclick="setMark('knocked',this)">🚪 Knocked</button>
-          <button class="mk mk-in" onclick="setMark('interested',this)">⭐ Interested</button>
-          <button class="mk mk-na" onclick="setMark('noanswer',this)">🔇 No Answer</button>
-          <button class="mk mk-ni" onclick="setMark('notint',this)">❌ Not Interested</button>
+        <div class="mark-toolbar">
+          <span style="font-size:.73rem;font-weight:700;color:var(--slate);width:100%;margin-bottom:4px">Mark door as:</span>
+          <button class="mark-btn m-knocked active" id="mb-knocked" onclick="setMark('knocked',this)">🚪 Knocked</button>
+          <button class="mark-btn m-interested" id="mb-interested" onclick="setMark('interested',this)">⭐ Interested</button>
+          <button class="mark-btn m-noanswer" id="mb-noanswer" onclick="setMark('noanswer',this)">🔇 No Answer</button>
+          <button class="mark-btn m-notint" id="mb-notint" onclick="setMark('notint',this)">❌ Not Interested</button>
         </div>
+        <p style="font-size:.72rem;color:var(--slate);margin-bottom:8px">📍 Tap any house on the map to drop a pin</p>
         <div id="knock-map"></div>
-        <div class="mleg">
-          <div class="ml"><div class="mld" style="background:#7C3AED"></div>Knocked</div>
-          <div class="ml"><div class="mld" style="background:#10B981"></div>Interested</div>
-          <div class="ml"><div class="mld" style="background:#F59E0B"></div>No Answer</div>
-          <div class="ml"><div class="mld" style="background:#EF4444"></div>Not Interested</div>
+        <div class="map-legend">
+          <div class="leg"><div class="leg-dot" style="background:#6B3FA0"></div>Knocked</div>
+          <div class="leg"><div class="leg-dot" style="background:#16A34A"></div>Interested</div>
+          <div class="leg"><div class="leg-dot" style="background:#D97706"></div>No Answer</div>
+          <div class="leg"><div class="leg-dot" style="background:#DC2626"></div>Not Interested</div>
         </div>
       </div>
-      <div class="sg">
-        <div class="sc dk"><div class="sn" id="map-tot">0</div><div class="sl">Total Knocked</div></div>
-        <div class="sc gd"><div class="sn" id="map-int">0</div><div class="sl">Interested</div></div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-n" id="map-total" style="color:var(--ink)">0</div><div class="stat-l" style="color:var(--slate)">Total Knocked</div></div>
+        <div class="stat gold"><div class="stat-n" id="map-interested">0</div><div class="stat-l">Interested</div></div>
       </div>
     </div>
 
-    <!-- ░░ SCHEDULE ░░ -->
-    <div class="page" id="pg-sched">
-      <div class="pg-h">Schedule</div>
-      <div class="pg-s">Today & tomorrow's jobs for the whole team</div>
-
-      <div class="sched-tabs">
-        <div class="stab on" id="sd-t" onclick="setSchedDay('today')">
-          <div class="st-n">Today</div>
-          <div class="st-d" id="sd-t-lbl"></div>
+    <!-- ── SCHEDULE ── -->
+    <div class="page" id="page-sched">
+      <div class="pg-title">Schedule</div>
+      <div class="pg-sub">Jobs for today and tomorrow</div>
+      <div class="sched-date-tabs">
+        <div class="sched-tab active" id="sched-tab-today" onclick="setSchedDay('today')">
+          <div class="sched-tab-day">Today</div>
+          <div class="sched-tab-date" id="sched-today-label"></div>
         </div>
-        <div class="stab" id="sd-tm" onclick="setSchedDay('tomorrow')">
-          <div class="st-n">Tomorrow</div>
-          <div class="st-d" id="sd-tm-lbl"></div>
+        <div class="sched-tab" id="sched-tab-tomorrow" onclick="setSchedDay('tomorrow')">
+          <div class="sched-tab-day">Tomorrow</div>
+          <div class="sched-tab-date" id="sched-tom-label"></div>
         </div>
       </div>
-
       <div style="display:flex;gap:8px;margin-bottom:14px">
-        <button class="btn btn-ink btn-sm" style="flex:1" onclick="copySchedule()">📋 Copy</button>
+        <button class="btn btn-dark btn-sm" style="flex:1" onclick="copySchedule()">📋 Copy Schedule</button>
         <button class="btn btn-gold btn-sm" style="flex:1" onclick="shareSchedule()">📤 Share</button>
       </div>
-
       <div id="sched-jobs"></div>
 
-      <!-- MANAGER ONLY -->
-      <div id="slot-mgr" style="display:none;margin-top:22px">
-        <div style="background:var(--ink);border-radius:var(--r);padding:16px;margin-bottom:14px">
-          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#fff;margin-bottom:4px">
-            ⚙️ Time Slot Manager
-          </div>
-          <div style="font-size:.75rem;color:#5A5A7A;line-height:1.6">
-            Set the time windows your reps can book. Each slot fits <strong style="color:#fff">1 booking per machine</strong>
-            (so 2 total — one for Machine 1, one for Machine 2).
-          </div>
-        </div>
+      <!-- Manager: Slot Manager -->
+      <div id="slot-manager" style="display:none;margin-top:20px">
+        <div class="card-title" style="margin-bottom:12px">⚙️ Manage Time Slots</div>
+        <p style="font-size:.78rem;color:var(--slate);margin-bottom:12px">
+          Set custom time windows for your team. Each slot supports <strong>2 machines</strong> (2 reps can book same slot).
+        </p>
         <div id="slot-rows"></div>
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <button class="btn btn-off btn-sm" style="flex:1" onclick="addSlotRow()">+ Add Slot</button>
-          <button class="btn btn-gold btn-sm" style="flex:1" onclick="saveSlots()">💾 Save</button>
-        </div>
+        <button class="btn btn-dark btn-sm" style="margin-bottom:8px;width:100%" onclick="addSlotRow()">+ Add Time Slot</button>
+        <button class="btn btn-gold" onclick="saveSlots()">💾 Save Slots</button>
       </div>
     </div>
 
   </div>
 
-  <nav class="bnav">
-    <button class="nb on" onclick="goTo('dash',this)">
+    <!-- PAYROLL PAGE (manager only) -->
+    <div class="page" id="page-pay">
+      <div class="pg-title">Payroll</div>
+      <div class="pg-sub">Weekly revenue by rep — tap a rep to see full detail</div>
+
+      <!-- Week nav -->
+      <div class="card" style="padding:12px 14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <button onclick="payWeekShift(-1)" style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.88rem;color:#6b7280;font-family:'DM Sans',sans-serif">&#8249; Prev</button>
+          <div style="text-align:center">
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;color:#111" id="pay-week-label">This Week</div>
+            <div style="font-size:.7rem;color:#9ca3af;margin-top:2px" id="pay-week-range"></div>
+          </div>
+          <button onclick="payWeekShift(1)" style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.88rem;color:#6b7280;font-family:'DM Sans',sans-serif">Next &#8250;</button>
+        </div>
+      </div>
+
+      <!-- Week totals -->
+      <div class="stat-grid" id="pay-totals"></div>
+
+      <!-- Rep cards (tap to expand) -->
+      <div id="pay-reps"></div>
+    </div>
+
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottomnav">
+    <button class="nav-btn active" onclick="goTo('dash',this)">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      <span>Home</span>
+      <span>Dashboard</span>
     </button>
-    <button class="nb" onclick="goTo('book',this)">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="15" r="1" fill="currentColor"/><circle cx="16" cy="15" r="1" fill="currentColor"/></svg>
+    <button class="nav-btn" onclick="goTo('book',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>Book</span>
     </button>
-    <button class="nb" onclick="goTo('sales',this)">
+    <button class="nav-btn" onclick="goTo('sales',this)">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       <span>Sales</span>
     </button>
-    <button class="nb" onclick="goTo('lb',this)">
+    <button class="nav-btn" onclick="goTo('lb',this)">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <span>Rankings</span>
     </button>
-    <button class="nb" onclick="goTo('map',this)">
+    <button class="nav-btn" onclick="goTo('map',this)">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
       <span>Map</span>
     </button>
-    <button class="nb" onclick="goTo('sched',this)">
+    <button class="nav-btn" onclick="goTo('sched',this)">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       <span>Schedule</span>
+    </button>
+    <button class="nav-btn" id="nav-pay" style="display:none" onclick="goTo('pay',this)">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/><line x1="14" y1="15" x2="18" y2="15"/></svg>
+      <span>Payroll</span>
     </button>
   </nav>
 </div>
 
 <script>
-// ══════════════════════════════════════
-//  CONFIG
-// ══════════════════════════════════════
-const SB_URL  = 'https://dhmlhiqhpijgsxkligqi.supabase.co';
-const SB_KEY  = 'sb_publishable_R0KN0QZ17Vx9wNK2je_jYw_ORcxnBtR';
-const MB_TOK  = 'pk.eyJ1IjoiYWF5dXNoYW5lZWwiLCJhIjoiY21tZWc4OTBtMGVuOTJ2cHZ1c3pmYzEydiJ9.5KgaQSY-Gw4BPZz_3wnWMA';
+// ═══════════════════════════════════════════════
+//  CONFIG — DO NOT CHANGE
+// ═══════════════════════════════════════════════
+const SUPA_URL = 'https://dhmlhiqhpijgsxkligqi.supabase.co';
+const SUPA_KEY = 'sb_publishable_R0KN0QZ17Vx9wNK2je_jYw_ORcxnBtR';
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiYWF5dXNoYW5lZWwiLCJhIjoiY21tZWc4OTBtMGVuOTJ2cHZ1c3pmYzEydiJ9.5KgaQSY-Gw4BPZz_3wnWMA';
 const MGR_CODE = 'warriors2024';
+const MACHINES = 2; // machines running in parallel
 
-mapboxgl.accessToken = MB_TOK;
+mapboxgl.accessToken = MAPBOX_TOKEN;
 const { createClient } = supabase;
-const db = createClient(SB_URL, SB_KEY);
+const sb = createClient(SUPA_URL, SUPA_KEY);
+const db = sb; // alias
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  STATE
-// ══════════════════════════════════════
-let ME = null;                          // current profile object
-let calY = new Date().getFullYear();
-let calM = new Date().getMonth();
-let selDate = null, selSlot = null, selMachine = 1;
-let slots = [];
-let lbPer = 'week', salesPer = 'upcoming', schedDay = 'today';
-let kmap = null, markMode = 'knocked';
+// ═══════════════════════════════════════════════
+let ME = null;       // current user auth
+let PROFILE = null;  // profile row
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selectedDate = null;
+let selectedSlot = null;
+let slots = [];      // loaded from DB
+let lbPeriod = 'week';
+let salesPeriod = 'upcoming';
+let schedDay = 'today';
+let knockMap = null;
+let markMode = 'knocked';
 
-const MC = { knocked:'#7C3AED', interested:'#10B981', noanswer:'#F59E0B', notint:'#EF4444' };
-const ML = { knocked:'Knocked', interested:'Interested', noanswer:'No Answer', notint:'Not Interested' };
+const MARK_COLORS = { knocked:'#6B3FA0', interested:'#16A34A', noanswer:'#D97706', notint:'#DC2626' };
+const MARK_LABELS = { knocked:'Knocked', interested:'Interested', noanswer:'No Answer', notint:'Not Interested' };
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════
+let toastTimer;
+function toast(msg, dur=2800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ═══════════════════════════════════════════════
 //  HELPERS
-// ══════════════════════════════════════
-const G = id => document.getElementById(id);
-let _tt;
-function toast(msg, ms=2800) {
-  const e = G('toast'); e.textContent = msg; e.classList.add('on');
-  clearTimeout(_tt); _tt = setTimeout(() => e.classList.remove('on'), ms);
+// ═══════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+function dateStr(d) { return d.toISOString().split('T')[0]; }
+function todayStr() { return dateStr(new Date()); }
+function tomorrowStr() { const d = new Date(); d.setDate(d.getDate()+1); return dateStr(d); }
+function weekAgo() { const d = new Date(); d.setDate(d.getDate()-7); d.setHours(0,0,0,0); return d.toISOString(); }
+function monthAgo() { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.toISOString(); }
+function fmtMoney(n) { n = parseFloat(n)||0; return n >= 1000 ? '$'+(n/1000).toFixed(1)+'k' : '$'+Math.round(n); }
+function fmtDate(ds) {
+  return new Date(ds+'T12:00:00').toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
 }
-function todayStr()    { return new Date().toISOString().split('T')[0]; }
-function tomorrowStr() { const d=new Date(); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; }
-function fmtD(ds)  { return new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'}); }
-function fmtDL(ds) { return new Date(ds+'T12:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
-function fmtMoney(n) { n=parseFloat(n)||0; return n>=1000?'$'+(n/1000).toFixed(1)+'k':'$'+Math.round(n); }
-function weekAgo()  { const d=new Date(); d.setDate(d.getDate()-7); d.setHours(0,0,0,0); return d.toISOString(); }
-function monthAgo() { const d=new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.toISOString(); }
+function niceLong(ds) {
+  return new Date(ds+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
 
-// ══════════════════════════════════════
-//  AUTH — no Supabase email auth
-//  All accounts stored in profiles table
-// ══════════════════════════════════════
-function showP(p) {
-  G('p-login').style.display = p==='login' ? 'block' : 'none';
-  G('p-reg').style.display   = p==='reg'   ? 'block' : 'none';
-  G('a-err').style.display   = 'none';
-  G('a-ok').style.display    = 'none';
+// ═══════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════
+function showPanel(name) {
+  $('login-panel').style.display = name==='login' ? 'block' : 'none';
+  $('register-panel').style.display = name==='register' ? 'block' : 'none';
+  $('err-box').style.display = 'none';
 }
-function toggleMgr() {
-  G('mgr-f').style.display = G('r-role').value==='manager' ? 'block' : 'none';
+function toggleMgrField() {
+  $('mgr-field').style.display = $('r-role').value === 'manager' ? 'block' : 'none';
 }
-function showErr(m) { const e=G('a-err'); e.textContent=m; e.style.display='block'; }
-function showOk(m)  { const e=G('a-ok');  e.textContent=m; e.style.display='block'; }
-
-// Session via localStorage — no cookies, no email
-function saveSession(p)  { try { localStorage.setItem('wh_v2', JSON.stringify(p)); } catch{} }
-function clearSession()  { try { localStorage.removeItem('wh_v2'); } catch{} }
-function loadSession()   { try { const s=localStorage.getItem('wh_v2'); return s?JSON.parse(s):null; } catch{ return null; } }
+function showErr(msg) {
+  const el = $('err-box');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
 
 async function doLogin() {
-  const btn = G('login-btn');
+  const btn = $('login-btn');
   btn.disabled = true; btn.textContent = 'Signing in...';
-  const email = G('l-em').value.trim().toLowerCase();
-  const pass  = G('l-pw').value.trim();
-  if (!email || !pass) { showErr('Please enter your email and password.'); btn.disabled=false; btn.textContent='Sign In →'; return; }
-  const { data, error } = await db.from('profiles').select('*').eq('email', email).eq('password', pass).maybeSingle();
-  if (error) { showErr('Database error: '+error.message); btn.disabled=false; btn.textContent='Sign In →'; return; }
-  if (!data)  { showErr('Wrong email or password. Try again.'); btn.disabled=false; btn.textContent='Sign In →'; return; }
-  saveSession(data);
-  boot(data);
+  const email = ($('l-email')||$('l-em')||{value:''}).value.trim().toLowerCase();
+  const pass  = ($('l-pass')||$('l-pw')||{value:''}).value.trim();
+  if (!email || !pass) { showErr('Enter your email and password'); btn.disabled=false; btn.textContent='Sign In →'; return; }
+  const { data: prof, error } = await sb.from('profiles').select('*').eq('email',email).eq('password',pass).maybeSingle();
+  if (error || !prof) { showErr('Wrong email or password'); btn.disabled=false; btn.textContent='Sign In →'; return; }
+  try { localStorage.setItem('wh_sess', JSON.stringify(prof)); } catch(e) {}
+  await bootApp(prof);
 }
 
 async function doRegister() {
-  const btn = G('reg-btn');
+  const btn = $('reg-btn');
   btn.disabled = true; btn.textContent = 'Creating...';
-  const name  = G('r-nm').value.trim();
-  const email = G('r-em').value.trim().toLowerCase();
-  const pass  = G('r-pw').value.trim();
-  const role  = G('r-role').value;
-  const code  = G('r-code').value.trim();
-  if (!name||!email||!pass) { showErr('Please fill in all fields.'); btn.disabled=false; btn.textContent='Create Account →'; return; }
-  if (pass.length < 4)      { showErr('Password must be at least 4 characters.'); btn.disabled=false; btn.textContent='Create Account →'; return; }
-  if (role==='manager' && code!==MGR_CODE) { showErr('Wrong manager code.'); btn.disabled=false; btn.textContent='Create Account →'; return; }
-  // Check duplicate email
-  const { data: existing } = await db.from('profiles').select('id').eq('email', email).maybeSingle();
-  if (existing) { showErr('An account with that email already exists. Please sign in.'); btn.disabled=false; btn.textContent='Create Account →'; return; }
-  // Create profile
-  const newProfile = { id: crypto.randomUUID(), full_name: name, email, password: pass, role };
-  const { data, error } = await db.from('profiles').insert(newProfile).select().single();
-  if (error) { showErr('Could not create account: '+error.message); console.error(error); btn.disabled=false; btn.textContent='Create Account →'; return; }
-  saveSession(data);
+  const name = $('r-nm').value.trim(), email = $('r-em').value.trim().toLowerCase();
+  const pass = $('r-pw').value.trim(), role = $('r-role').value, code = $('r-code').value.trim();
+  if (!name||!email||!pass) { showErr('Fill in all fields'); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  if (pass.length < 4) { showErr('Password must be at least 4 characters'); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  if (role==='manager' && code!==MGR_CODE) { showErr('Wrong manager code'); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  const { data: existing } = await sb.from('profiles').select('id').eq('email',email).maybeSingle();
+  if (existing) { showErr('Email already registered. Please sign in.'); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  const newP = { id: crypto.randomUUID(), full_name:name, email, password:pass, role };
+  const { data, error } = await sb.from('profiles').insert(newP).select().single();
+  if (error) { showErr('Error: '+error.message); btn.disabled=false; btn.textContent='Create Account →'; return; }
+  try { localStorage.setItem('wh_sess', JSON.stringify(data)); } catch(e){}
   boot(data);
 }
-
 function doSignOut() {
-  clearSession();
-  ME = null; kmap = null;
-  G('app').style.display  = 'none';
-  G('auth').style.display = 'flex';
-  showP('login');
-  G('l-em').value = ''; G('l-pw').value = '';
+  try { localStorage.removeItem('wh_sess'); } catch(e) {}
+  ME = null; PROFILE = null;
+  $('app').style.display = 'none';
+  $('auth-screen').style.display = 'flex';
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  BOOT APP
-// ══════════════════════════════════════
-async function boot(profile) {
+// ═══════════════════════════════════════════════
+async function bootApp(profile) {
+  // Accept either a profile object (our custom auth) or a Supabase user
+  if (profile && profile.email && !profile.full_name) {
+    // It's a Supabase user — try to load profile from DB
+    let { data: prof } = await sb.from('profiles').select('*').eq('id', profile.id).maybeSingle();
+    if (!prof) {
+      prof = { id: profile.id, full_name: profile.email.split('@')[0], email: profile.email, role: 'rep' };
+      await sb.from('profiles').upsert(prof);
+    }
+    profile = prof;
+  }
   ME = profile;
-  G('auth').style.display = 'none';
-  G('app').style.display  = 'flex';
+  PROFILE = profile;
 
-  // Top bar
-  G('tb-user').textContent = ME.full_name;
-  const rp = G('tb-role');
-  rp.textContent = ME.role==='manager' ? 'Manager' : 'Rep';
-  rp.className   = 'role-pill '+(ME.role==='manager' ? 'rp-mgr' : 'rp-rep');
+  // UI setup
+  $('auth-screen').style.display = 'none';
+  $('app').style.display = 'flex';
+  $('tb-name').textContent = PROFILE.full_name;
+  const rolePill = $('tb-role');
+  rolePill.textContent = PROFILE.role === 'manager' ? 'Manager' : 'Rep';
+  rolePill.className = 'role-pill ' + (PROFILE.role === 'manager' ? 'role-mgr' : 'role-rep');
 
   // Greeting
   const h = new Date().getHours();
-  G('dash-hi').textContent   = (h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', '+ME.full_name.split(' ')[0]+'! 👋';
-  G('dash-date').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  $('dash-greeting').textContent = g + ', ' + PROFILE.full_name.split(' ')[0] + '! 👋';
+  $('dash-date').textContent = new Date().toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-  // Show/hide role-specific UI
-  G('dv-rep').style.display  = ME.role==='rep'     ? 'block' : 'none';
-  G('dv-mgr').style.display  = ME.role==='manager' ? 'block' : 'none';
-  G('lb-mgr').style.display  = ME.role==='manager' ? 'block' : 'none';
-  G('slot-mgr').style.display= ME.role==='manager' ? 'block' : 'none';
-  if (ME.role==='manager') G('sales-h').textContent = 'All Team Sales';
+  // Show correct dashboard
+  $('dash-rep').style.display = PROFILE.role === 'rep' ? 'block' : 'none';
+  $('dash-mgr').style.display = PROFILE.role === 'manager' ? 'block' : 'none';
+  $('lb-mgr-sales').style.display = PROFILE.role === 'manager' ? 'block' : 'none';
+  $('slot-manager').style.display = PROFILE.role === 'manager' ? 'block' : 'none';
+
+  if (PROFILE.role === 'manager') {
+    $('sales-pg-title').textContent = 'All Team Sales';
+    // Show payroll nav button
+    const np = $('nav-pay');
+    if (np) np.style.display = 'flex';
+  }
 
   // Schedule labels
-  G('sd-t-lbl').textContent  = fmtD(todayStr());
-  G('sd-tm-lbl').textContent = fmtD(tomorrowStr());
+  $('sched-today-label').textContent = fmtDate(todayStr());
+  $('sched-tom-label').textContent   = fmtDate(tomorrowStr());
 
+  // Load data
   await loadSlots();
   buildCal();
-  await Promise.all([loadDash(), loadSales(), loadLb()]);
+  await loadDash();
+  await loadSales();
+  await loadLb();
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  NAVIGATION
-// ══════════════════════════════════════
-function goTo(pg, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
-  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
-  G('pg-'+pg).classList.add('on');
-  if (btn) btn.classList.add('on');
-  document.querySelector('.scroll').scrollTop = 0;
-  if (pg==='map')   setTimeout(initMap, 150);
-  if (pg==='sched') { loadSchedule(); if(ME.role==='manager') buildSlotMgr(); }
-  if (pg==='lb')    loadLb();
-  if (pg==='dash')  loadDash();
-  if (pg==='sales') loadSales();
+// ═══════════════════════════════════════════════
+function goTo(page, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  $('page-'+page).classList.add('active');
+  if (btn) btn.classList.add('active');
+  document.querySelector('.content').scrollTop = 0;
+  if (page === 'map') setTimeout(initKnockMap, 150);
+  if (page === 'sched') { loadSchedule(); if(PROFILE.role==='manager') buildSlotMgr(); }
+  if (page === 'lb') loadLb();
+  if (page === 'dash') loadDash();
+  if (page === 'sales') loadSales();
+  if (page === 'pay')   loadPayroll();
 }
 
-// ══════════════════════════════════════
-//  SLOTS
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
+//  SLOTS — load from DB
+// ═══════════════════════════════════════════════
 async function loadSlots() {
-  const { data } = await db.from('slots').select('*').order('sort_order', { ascending: true });
+  const { data } = await sb.from('slots').select('*').order('sort_order', { ascending: true });
   slots = data || [];
 }
 
-// ══════════════════════════════════════
-//  MACHINE SELECTOR
-// ══════════════════════════════════════
-function setMachine(m) {
-  selMachine = m; selDate = null; selSlot = null;
-  G('mt1').className = 'mtab '+(m===1?'on t1':'');
-  G('mt2').className = 'mtab '+(m===2?'on t2':'');
-  G('mt1-lbl').className = 'mt-lbl'+(m===1?' on':'');
-  G('mt2-lbl').className = 'mt-lbl'+(m===2?' on':'');
-  G('slots-sec').style.display = 'none';
-  G('form-sec').style.display  = 'none';
-  buildCal();
-  refreshMachineCounts();
-}
-
-async function refreshMachineCounts() {
-  const { data } = await db.from('bookings').select('machine_num').eq('date', todayStr());
-  const bks = data || [];
-  G('mt1-cnt').textContent = bks.filter(b=>b.machine_num===1).length+' booked today';
-  G('mt2-cnt').textContent = bks.filter(b=>b.machine_num===2).length+' booked today';
-}
-
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  CALENDAR
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 function buildCal() {
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const DAYS   = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-  G('cal-title').textContent = MONTHS[calM]+' '+calY;
+  const MONTHS = ['January','February','March','April','May','June',
+    'July','August','September','October','November','December'];
+  const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  $('cal-month').textContent = MONTHS[calMonth] + ' ' + calYear;
   const tod = todayStr();
-  let h = DAYS.map(d => `<div class="cdn">${d}</div>`).join('');
-  const first = new Date(calY, calM, 1).getDay();
-  const total = new Date(calY, calM+1, 0).getDate();
-  for (let i=0; i<first; i++) h += `<div class="cd cem"></div>`;
-  for (let d=1; d<=total; d++) {
-    const ds = `${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const past  = ds < tod;
-    const isT   = ds === tod;
-    const isSel = ds === selDate;
-    let cls = 'cd';
-    if (past)       cls += ' cpast';
-    else if (isSel) cls += ` csel cm${selMachine}`;
-    else if (isT)   cls += ' ctoday';
-    const click = past ? '' : ` onclick="pickDay('${ds}')"`;
-    h += `<div class="${cls}"${click}>${d}</div>`;
+  let html = DAYS.map(d =>
+    `<div class="cal-day-name">${d}</div>`
+  ).join('');
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isPast = ds < tod;
+    const isToday = ds === tod;
+    const isSel = ds === selectedDate;
+    let cls = 'cal-day';
+    if (isPast) cls += ' disabled';
+    else if (isSel) cls += ' selected';
+    else if (isToday) cls += ' today';
+    const click = isPast ? '' : `onclick="pickDay('${ds}')"`;
+    html += `<div class="${cls}" ${click}>${d}</div>`;
   }
-  G('cal-grid').innerHTML = h;
+  $('cal-grid').innerHTML = html;
 }
-function calPrev() { calM--; if(calM<0){calM=11;calY--;} buildCal(); }
-function calNext() { calM++; if(calM>11){calM=0;calY++;} buildCal(); }
+
+function calPrev() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} buildCal(); }
+function calNext() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} buildCal(); }
 
 async function pickDay(ds) {
-  selDate = ds; selSlot = null;
+  selectedDate = ds;
+  selectedSlot = null;
   buildCal();
-  G('slots-hd').textContent  = `🕐 Slots for Machine ${selMachine} — ${fmtDL(ds)}`;
-  G('slots-sec').style.display = 'block';
-  G('form-sec').style.display  = 'none';
+  $('booking-form-section').style.display = 'none';
+  $('slots-section').style.display = 'block';
+  $('slots-date-label').textContent = niceLong(ds);
   await renderSlots(ds);
 }
 
-// ══════════════════════════════════════
-//  RENDER SLOTS
-// ══════════════════════════════════════
 async function renderSlots(ds) {
-  const el = G('slots-list');
-  el.innerHTML = '<div style="color:var(--slate);padding:8px;font-size:.82rem">Loading slots...</div>';
+  const listEl = $('slots-list');
+  listEl.innerHTML = '<div style="color:var(--slate);font-size:.82rem;padding:8px">Loading...</div>';
+
   if (!slots.length) {
-    el.innerHTML = `<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>No slots set up yet.<br>Manager can add slots in the Schedule tab.</p></div>`;
+    listEl.innerHTML = '<div class="empty"><p>No slots set up yet.<br>Manager can add slots in the Schedule tab.</p></div>';
     return;
   }
-  // Fetch ALL bookings for this date — no filter on machine yet
-  const { data: bks, error } = await db.from('bookings')
-    .select('id, slot_id, rep_id, machine_num, time_start').eq('date', ds);
+
+  // Fetch bookings for this date
+  const { data: bookings, error } = await sb
+    .from('bookings')
+    .select('id, slot_id, rep_id, machine_num')
+    .eq('date', ds);
+
   if (error) {
-    el.innerHTML = `<div style="color:var(--red);padding:8px;font-size:.82rem">Error: ${error.message}</div>`;
+    listEl.innerHTML = `<div style="color:var(--red);padding:8px;font-size:.82rem">Error: ${error.message}</div>`;
     return;
   }
-  const booked = bks || [];
+
+  const bks = bookings || [];
   let html = '';
 
-  slots.forEach((sl, i) => {
-    // A booking matches this slot if slot_id matches OR time_start matches (handles legacy nulls)
-    // AND machine_num matches (coerce both to int to avoid type mismatch)
-    const match = booked.filter(b =>
-      parseInt(b.machine_num) === parseInt(selMachine) &&
-      (b.slot_id === sl.id || b.time_start === sl.time_start)
-    );
+  slots.forEach((slot, idx) => {
+    const slotBks = bks.filter(b => b.slot_id === slot.id);
+    const count = slotBks.length;
+    const isMine = slotBks.some(b => b.rep_id === ME.id);
+    const isFull = count >= MACHINES;
+    const left = MACHINES - count;
 
-    const isMine  = match.some(b => b.rep_id === ME.id);
-    const isTaken = match.length > 0;
+    let rowCls = 'slot-row';
+    let badge = '';
+    let onclick = '';
 
-    // Taken slots do NOT appear at all — just skip rendering them
-    // Unless it's mine (so rep can see their own booking)
-    if (isTaken && !isMine) return; // skip — slot disappears
-
-    let cls = 'slotrow', badge = '', onclick = '';
     if (isMine) {
-      cls   += ` sr-mine${selMachine}`;
-      badge  = `<span class="sbadge sb-mine">✓ Your Booking</span>`;
-      // NO onclick — already booked, clicking does nothing
-      html += `<div class="${cls}" style="cursor:default" data-i="${i}">
-        <div>
-          <div class="sr-time">${sl.time_start} – ${sl.time_end}</div>
-          <div class="sr-sub">${sl.label||''}</div>
-        </div>
-        ${badge}
-      </div>`;
+      rowCls += ' slot-mine';
+      badge = `<span class="slot-badge badge-mine">✓ Yours</span>`;
+      onclick = `onclick="selectSlot('${slot.id}','${slot.label}','${slot.time_start}','${slot.time_end}',${idx})"`;
+    } else if (isFull) {
+      rowCls += ' slot-taken';
+      badge = `<span class="slot-badge badge-taken">🔒 Full</span>`;
+    } else if (count > 0) {
+      badge = `<span class="slot-badge badge-partial">${left} spot${left>1?'s':''} left</span>`;
+      onclick = `onclick="selectSlot('${slot.id}','${slot.label}','${slot.time_start}','${slot.time_end}',${idx})"`;
     } else {
-      badge  = `<span class="sbadge sb-open">Open</span>`;
-      html += `<div class="${cls}" onclick="selectSlot('${sl.id}','${sl.label}','${sl.time_start}','${sl.time_end}',${i})" data-i="${i}">
+      badge = `<span class="slot-badge badge-open">Open</span>`;
+      onclick = `onclick="selectSlot('${slot.id}','${slot.label}','${slot.time_start}','${slot.time_end}',${idx})"`;
+    }
+
+    html += `
+      <div class="${rowCls}" ${onclick} data-sid="${slot.id}">
         <div>
-          <div class="sr-time">${sl.time_start} – ${sl.time_end}</div>
-          <div class="sr-sub">${sl.label||''}</div>
+          <div class="slot-time">${slot.time_start} – ${slot.time_end}</div>
+          <div class="slot-label">${slot.label || ''}</div>
         </div>
         ${badge}
       </div>`;
-    }
   });
 
-  if (!html) {
-    html = `<div class="empty"><p>No slots available for this date on Machine ${selMachine}.<br>All slots are booked.</p></div>`;
-  }
-
-  el.innerHTML = html;
+  listEl.innerHTML = html;
 }
 
-function selectSlot(id, label, start, end, i) {
-  selSlot = { id, label, start, end };
-  document.querySelectorAll('.slotrow').forEach(r => r.classList.remove('sr-sel'));
-  const rows = document.querySelectorAll('.slotrow');
-  if (rows[i]) rows[i].classList.add('sr-sel');
-  // Banner
-  const bm = G('bbanner');
-  bm.className = `bbanner b${selMachine}`;
-  G('bb-ico').textContent = selMachine===1 ? '🟣' : '🔵';
-  G('bb-t').textContent   = `Machine ${selMachine} — ${start} – ${end}`;
-  G('bb-s').textContent   = fmtDL(selDate);
-  G('form-sec').style.display = 'block';
-  setTimeout(() => G('form-sec').scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+function selectSlot(id, label, start, end, idx) {
+  selectedSlot = { id, label, start, end };
+  // Highlight selected
+  document.querySelectorAll('.slot-row').forEach(r => r.classList.remove('slot-selected'));
+  const rows = document.querySelectorAll('.slot-row');
+  if (rows[idx]) rows[idx].classList.add('slot-selected');
+  // Show form
+  $('booking-summary-text').textContent = fmtDate(selectedDate);
+  $('booking-summary-sub').textContent  = start + ' – ' + end;
+  $('booking-form-section').style.display = 'block';
+  setTimeout(() => $('booking-form-section').scrollIntoView({ behavior:'smooth', block:'start' }), 100);
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  CONFIRM BOOKING
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 async function confirmBooking() {
-  const btn = G('confirm-btn');
-  btn.disabled = true; btn.textContent = 'Saving...';
+  const btn = $('confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
   try {
-    if (!selDate || !selSlot) { toast('⚠️ Pick a date and slot first'); return; }
-
-    // Hard server-side double-booking guard
-    // Match by slot_id OR time_start (handles legacy rows), coerce machine_num to int
-    const { data: chk } = await db.from('bookings')
-      .select('id, rep_id, slot_id, time_start, machine_num')
-      .eq('date', selDate)
-      .eq('machine_num', selMachine);
-    const existing = (chk || []).filter(b =>
-      b.slot_id === selSlot.id || b.time_start === selSlot.start
-    );
-    const alreadyMine = existing.some(b => b.rep_id === ME.id);
-    if (!alreadyMine && existing.length > 0) {
-      toast('⚠️ Slot already taken!');
-      await renderSlots(selDate);
-      G('form-sec').style.display = 'none';
-      return;
-    }
-    if (alreadyMine) {
-      toast('⚠️ You already have this slot booked!');
-      G('form-sec').style.display = 'none';
-      await renderSlots(selDate);
+    if (!selectedDate || !selectedSlot) {
+      toast('⚠️ Pick a date and time slot first');
       return;
     }
 
-    const name  = G('b-nm').value.trim() || 'TBD';
-    const phone = G('b-ph').value.trim() || '';
-    const price = parseFloat(G('b-pr').value) || 0;
-    const addr  = G('b-ad').value.trim() || '';
-    const svc   = G('b-sv').value;
-    const notes = G('b-nt').value.trim() || '';
+    // Check capacity one more time
+    const { data: existing } = await sb
+      .from('bookings')
+      .select('id, rep_id, machine_num')
+      .eq('date', selectedDate)
+      .eq('slot_id', selectedSlot.id);
+
+    const bks = existing || [];
+    const alreadyMine = bks.some(b => b.rep_id === ME.id);
+    if (!alreadyMine && bks.length >= MACHINES) {
+      toast('⚠️ This slot just got filled. Please pick another.');
+      await renderSlots(selectedDate);
+      $('booking-form-section').style.display = 'none';
+      return;
+    }
+
+    // Assign machine number
+    const usedNums = bks.map(b => b.machine_num);
+    let machineNum = 1;
+    while (usedNums.includes(machineNum)) machineNum++;
+
+    const clientName = $('b-name').value.trim()   || 'TBD';
+    const phone      = $('b-phone').value.trim()  || '';
+    const price      = parseFloat($('b-price').value) || 0;
+    const address    = $('b-addr').value.trim()   || '';
+    const service    = $('b-service').value       || 'Window Cleaning';
+    const notes      = $('b-notes').value.trim()  || '';
 
     // INSERT BOOKING
-    const { error: bErr } = await db.from('bookings').insert({
-      rep_id: ME.id, date: selDate, slot_id: selSlot.id,
-      time_start: selSlot.start, time_end: selSlot.end,
-      machine_num: selMachine,
-      client_name: name, phone, price, address: addr, service: svc, notes,
-      status: 'confirmed'
+    const { error: bErr } = await sb.from('bookings').insert({
+      rep_id:      ME.id,
+      date:        selectedDate,
+      slot_id:     selectedSlot.id,
+      time_start:  selectedSlot.start,
+      time_end:    selectedSlot.end,
+      machine_num: machineNum,
+      client_name: clientName,
+      phone,
+      price,
+      address,
+      service,
+      notes,
+      status:      'confirmed'
     });
-    if (bErr) { toast('❌ Booking failed: '+bErr.message); console.error(bErr); return; }
+    if (bErr) { toast('❌ ' + bErr.message); console.error(bErr); return; }
 
-    // INSERT SALE (include slot_id so we can link back to booking later)
-    const { error: sErr } = await db.from('sales').insert({
-      rep_id: ME.id, date: selDate,
-      slot_id: selSlot.id,
-      time_start: selSlot.start, time_end: selSlot.end,
-      machine_num: selMachine,
-      client_name: name, phone, price, address: addr, service: svc, notes,
-      status: 'confirmed'
+    // INSERT SALE RECORD
+    const { error: sErr } = await sb.from('sales').insert({
+      rep_id:      ME.id,
+      date:        selectedDate,
+      time_start:  selectedSlot.start,
+      time_end:    selectedSlot.end,
+      client_name: clientName,
+      phone,
+      price,
+      address,
+      service,
+      notes,
+      status:      'confirmed'
     });
-    if (sErr) { toast('❌ Sale record: '+sErr.message); console.error(sErr); return; }
+    if (sErr) { toast('❌ Sale record: ' + sErr.message); console.error(sErr); return; }
 
-    // Clear form — capture values BEFORE nulling selSlot
-    const doneTime = selSlot.start;
-    const doneMachine = selMachine;
-    ['b-nm','b-ph','b-pr','b-ad','b-nt'].forEach(id => G(id).value='');
-    selSlot = null;
-    G('form-sec').style.display = 'none';
-    toast(`✅ Booked! Machine ${doneMachine} · ${doneTime}`);
-    await renderSlots(selDate);
-    refreshMachineCounts();
+    // Success!
+    toast('✅ Booked! ' + fmtDate(selectedDate) + ' · ' + selectedSlot.start);
+
+    // Clear form
+    ['b-name','b-phone','b-price','b-addr','b-notes'].forEach(id => $(id).value = '');
+    $('booking-form-section').style.display = 'none';
+    selectedSlot = null;
+
+    // Refresh slots
+    await renderSlots(selectedDate);
     await loadDash();
     await loadSales();
 
   } finally {
-    btn.disabled = false; btn.textContent = '✓ Confirm Booking';
+    btn.disabled = false;
+    btn.textContent = '✓ Confirm Booking';
   }
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  DASHBOARD
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 async function loadDash() {
-  if (ME.role==='rep') await loadRepDash(); else await loadMgrDash();
+  if (PROFILE.role === 'rep') await loadRepDash();
+  else await loadMgrDash();
 }
 
 async function loadRepDash() {
-  const { data: mySales }  = await db.from('sales').select('*').eq('rep_id', ME.id);
-  const { data: myUpcoming }= await db.from('bookings').select('id').eq('rep_id', ME.id).gte('date', todayStr());
+  const { data: mySales } = await sb.from('sales').select('*').eq('rep_id', ME.id);
+  const { data: myUpcoming } = await sb.from('bookings').select('id').eq('rep_id', ME.id).gte('date', todayStr());
   const arr = mySales || [];
-  const rev = arr.reduce((s,x) => s+(parseFloat(x.price)||0), 0);
-  G('r-sales').textContent = arr.length;
-  G('r-rev').textContent   = fmtMoney(rev);
-  G('r-up').textContent    = (myUpcoming||[]).length;
+  const rev = arr.reduce((s,x) => s + (parseFloat(x.price)||0), 0);
+  $('r-sales').textContent = arr.length;
+  $('r-rev').textContent = fmtMoney(rev);
+  $('r-upcoming').textContent = (myUpcoming||[]).length;
+
   // Rank
-  const { data: allS } = await db.from('sales').select('rep_id');
+  const { data: allS } = await sb.from('sales').select('rep_id');
   if (allS) {
     const cnt = {};
-    allS.forEach(s => cnt[s.rep_id]=(cnt[s.rep_id]||0)+1);
+    allS.forEach(s => cnt[s.rep_id] = (cnt[s.rep_id]||0)+1);
     const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-    const rank = sorted.findIndex(([id])=>id===ME.id)+1;
-    G('r-rank').textContent = rank>0 ? '#'+rank : '#1';
+    const rank = sorted.findIndex(([id]) => id === ME.id) + 1;
+    $('r-rank').textContent = rank > 0 ? '#'+rank : '#1';
   }
+
   // Week leader
   const ranks = await getWeekRanks();
+  const leaderEl = $('r-week-leader');
   if (!ranks.length) {
-    G('r-leader').innerHTML = '<div class="empty"><p>No sales this week yet — be first! 💪</p></div>';
+    leaderEl.innerHTML = '<div class="empty"><p>No sales this week yet. Be first! 💪</p></div>';
   } else {
-    const t = ranks[0];
-    G('r-leader').innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;padding:12px;
-        background:var(--off);border-radius:10px;border:1px solid var(--border)">
+    const top = ranks[0];
+    leaderEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--off);border-radius:10px;border:1px solid var(--border)">
         <div style="font-size:1.8rem">🏆</div>
         <div>
-          <div style="font-weight:700">${t.name}</div>
-          <div style="font-size:.74rem;color:var(--slate)">${t.count} sale${t.count!==1?'s':''} · ${fmtMoney(t.rev)} this week</div>
+          <div style="font-weight:700">${top.name}</div>
+          <div style="font-size:.75rem;color:var(--slate)">${top.count} sale${top.count!==1?'s':''} · ${fmtMoney(top.rev)} this week</div>
         </div>
       </div>`;
   }
-  const { data: rec } = await db.from('sales').select('*').eq('rep_id', ME.id)
+
+  // Recent
+  const { data: recent } = await sb.from('sales').select('*').eq('rep_id', ME.id)
     .order('created_at',{ascending:false}).limit(4);
-  G('r-recent').innerHTML = renderSales(rec||[], false);
+  $('r-recent-sales').innerHTML = renderSaleItems(recent||[], false);
 }
 
 async function loadMgrDash() {
-  const { data: all }   = await db.from('sales').select('*');
-  const arr = all || [];
+  const { data: allSales } = await sb.from('sales').select('*');
+  const { data: allProfs } = await sb.from('profiles').select('id').eq('role','rep');
+  const { data: allBks }   = await sb.from('bookings').select('id');
+  const arr = allSales || [];
   const rev = arr.reduce((s,x) => s+(parseFloat(x.price)||0), 0);
-  G('m-sales').textContent = arr.length;
-  G('m-rev').textContent   = fmtMoney(rev);
-  G('m-m1').textContent    = arr.filter(s=>s.machine_num===1).length;
-  G('m-m2').textContent    = arr.filter(s=>s.machine_num===2).length;
+  $('m-sales').textContent = arr.length;
+  $('m-rev').textContent   = fmtMoney(rev);
+  $('m-reps').textContent  = (allProfs||[]).length;
+  $('m-jobs').textContent  = (allBks||[]).length;
+
   const ranks = await getWeekRanks();
   if (ranks.length) {
     const w = ranks[0];
-    G('m-winner').innerHTML = `
-      <div class="winner">
-        <div class="w-trophy">🏆</div>
-        <div class="w-name">${w.name}</div>
-        <div class="w-stat">${w.count} sale${w.count!==1?'s':''} · ${fmtMoney(w.rev)} this week</div>
-        <div class="w-crown">👑 WEEKLY CHAMPION</div>
+    $('m-winner').innerHTML = `
+      <div class="winner-card">
+        <div class="winner-trophy">🏆</div>
+        <div class="winner-name">${w.name}</div>
+        <div class="winner-stats">${w.count} sale${w.count!==1?'s':''} · ${fmtMoney(w.rev)} this week</div>
+        <div class="winner-crown">👑 WEEKLY CHAMPION</div>
       </div>`;
   } else {
-    G('m-winner').innerHTML = '<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
+    $('m-winner').innerHTML = '<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
   }
-  const { data: rec } = await db.from('sales').select('*,profiles(full_name)')
+
+  const { data: recent } = await sb.from('sales').select('*, profiles(full_name)')
     .order('created_at',{ascending:false}).limit(6);
-  G('m-recent').innerHTML = renderSales(rec||[], true);
+  $('m-recent-sales').innerHTML = renderSaleItems(recent||[], true);
 }
 
 async function getWeekRanks() {
-  const { data } = await db.from('sales')
-    .select('rep_id,price,profiles(full_name)').gte('created_at', weekAgo());
+  const { data } = await sb.from('sales')
+    .select('rep_id, price, profiles(full_name)')
+    .gte('created_at', weekAgo());
   if (!data?.length) return [];
   const cnt = {};
   data.forEach(s => {
-    if (!cnt[s.rep_id]) cnt[s.rep_id]={ name: s.profiles?.full_name||'Unknown', count:0, rev:0 };
+    if (!cnt[s.rep_id]) cnt[s.rep_id] = { name: s.profiles?.full_name||'Unknown', count:0, rev:0 };
     cnt[s.rep_id].count++;
     cnt[s.rep_id].rev += parseFloat(s.price)||0;
   });
-  return Object.values(cnt).sort((a,b)=>b.count-a.count);
+  return Object.values(cnt).sort((a,b) => b.count - a.count);
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  SALES
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 async function loadSales() {
-  let q = db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
-  if (ME.role==='rep') q = q.eq('rep_id', ME.id);
+  let q = sb.from('sales').select('*, profiles(full_name)').order('created_at',{ascending:false});
+  if (PROFILE.role === 'rep') q = q.eq('rep_id', ME.id);
   const { data } = await q;
-  const arr = data||[], tod = todayStr();
-  let f = arr;
-  if      (salesPer==='upcoming') f = arr.filter(s=>s.date>=tod);
-  else if (salesPer==='past')     f = arr.filter(s=>s.date<tod);
-  G('sales-list').innerHTML = renderSales(f, ME.role==='manager');
+  const arr = data || [];
+  const tod = todayStr();
+  let filtered;
+  if      (salesPeriod === 'upcoming') filtered = arr.filter(s => s.date >= tod);
+  else if (salesPeriod === 'past')     filtered = arr.filter(s => s.date <  tod);
+  else                                  filtered = arr;
+  $('sales-list').innerHTML = renderSaleItems(filtered, PROFILE.role==='manager');
 }
 
-function setSalesTab(p, btn) {
-  salesPer = p;
-  document.querySelectorAll('#pg-sales .tab').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
+function setSalesTab(period, btn) {
+  salesPeriod = period;
+  document.querySelectorAll('#page-sales .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
   loadSales();
 }
 
-function renderSales(arr, showRep) {
-  if (!arr.length) return `<div class="empty">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <line x1="12" y1="1" x2="12" y2="23"/>
-      <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-    </svg><p>Nothing here yet</p></div>`;
+function renderSaleItems(arr, showRep) {
+  if (!arr.length) return '<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><p>Nothing here yet</p></div>';
   return arr.map(s => {
-    const canEdit = ME.role==='manager' || s.rep_id===ME.id;
-    return `
-    <div class="sitem si${s.machine_num||1}" id="sitem-${s.id}">
-      <div class="si-top">
-        <div style="flex:1;min-width:0">
-          <div class="si-name">${s.client_name||'TBD'}</div>
-          <div class="si-meta">
-            ${showRep && s.profiles ? '👤 '+s.profiles.full_name+'<br>' : ''}
-            📅 ${s.date||'—'} · <span style="color:var(--m${s.machine_num||1})">Machine ${s.machine_num||1}</span><br>
-            ${s.time_start ? '🕐 '+s.time_start+' – '+s.time_end+'<br>' : ''}
-            ${s.phone   ? '📞 '+s.phone+'<br>'   : ''}
-            ${s.address ? '📍 '+s.address        : ''}
-          </div>
-          <span class="si-tag">Confirmed</span>
-        </div>
-        <div style="text-align:right;flex-shrink:0;margin-left:10px">
-          <div class="si-price">${fmtMoney(s.price)}</div>
-          ${canEdit ? `<div style="display:flex;flex-direction:column;gap:5px;margin-top:7px">
-            <button class="btn btn-xs btn-ink" onclick="openEditModal('${s.id}')">✏️ Edit</button>
-            <button class="btn btn-xs btn-red" onclick="delSale('${s.id}')">🗑️ Delete</button>
-          </div>` : ''}
-        </div>
-      </div>
-    </div>`;
+    const isManager = ME && (ME.role==='manager');
+    const isMine = ME && (s.rep_id === ME.id);
+    const canEdit = isManager || isMine;
+    const repName = s.profiles ? s.profiles.full_name : (isMine ? ME.full_name : 'Unknown Rep');
+    const mn = s.machine_num || 1;
+    const bookedAt = s.created_at
+      ? new Date(s.created_at).toLocaleString('en-CA',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
+      : '';
+    return '<div class="sale-item" id="si-'+s.id+'" style="border-left:4px solid var(--m'+mn+', #999)">'
+      + '<div class="sale-item-head">'
+      + '<div style="flex:1;min-width:0">'
+      + '<div class="sale-item-name">'+(s.client_name||'TBD')+'</div>'
+      + '<div class="sale-item-meta">'
+      + '<b style="color:#111">Rep: '+repName+'</b><br>'
+      + 'Date: <b>'+(s.date||'—')+'</b><br>'
+      + 'Time: '+(s.time_start||'—')+' - '+(s.time_end||'—')+'<br>'
+      + 'Machine: <b style="color:var(--m'+mn+')">'+'Machine '+mn+'</b>'
+      + (s.phone   ? '<br>Phone: '+s.phone     : '')
+      + (s.address ? '<br>Address: '+s.address : '')
+      + (s.service ? '<br>Service: '+s.service : '')
+      + (bookedAt  ? '<br><span style="font-size:.67rem;color:#aaa">Booked on: '+bookedAt+'</span>' : '')
+      + '</div>'
+      + '<span class="sale-badge">Confirmed</span>'
+      + '</div>'
+      + '<div style="text-align:right;flex-shrink:0;margin-left:10px">'
+      + '<div class="sale-item-price">'+fmtMoney(s.price)+'</div>'
+      + (canEdit
+        ? '<div style="display:flex;flex-direction:column;gap:5px;margin-top:7px">'
+        + '<button class="btn btn-dark btn-sm" onclick="openEditModal(''+s.id+'')">Edit</button>'
+        + '<button class="btn btn-red btn-sm" onclick="delSale(''+s.id+'')">Delete</button>'
+        + '</div>'
+        : '')
+      + '</div>'
+      + '</div>'
+      + '</div>';
   }).join('');
 }
-
 async function delSale(id) {
-  if (!confirm('Delete this booking and sale?')) return;
-  // Step 1: fetch sale details BEFORE deleting anything
-  const { data: s } = await db.from('sales')
-    .select('rep_id, date, slot_id, machine_num').eq('id', id).maybeSingle();
-  if (!s) { toast('❌ Could not find sale'); return; }
-  // Step 2: delete the sale
-  const { error: sErr } = await db.from('sales').delete().eq('id', id);
-  if (sErr) { toast('❌ ' + sErr.message); return; }
-  // Step 3: delete the matching booking using slot_id + rep_id + date + machine
-  let bq = db.from('bookings').delete()
-    .eq('rep_id', s.rep_id)
-    .eq('date', s.date)
-    .eq('machine_num', s.machine_num);
-  if (s.slot_id) bq = bq.eq('slot_id', s.slot_id);
+  if (!confirm('Delete this booking?')) return;
+  const { data: s } = await sb.from('sales').select('rep_id,date,machine_num,slot_id').eq('id',id).maybeSingle();
+  if (!s) { toast('Could not find sale'); return; }
+  const { error: sErr } = await sb.from('sales').delete().eq('id',id);
+  if (sErr) { toast('Error: '+sErr.message); return; }
+  let bq = sb.from('bookings').delete().eq('rep_id',s.rep_id).eq('date',s.date).eq('machine_num',s.machine_num||1);
+  if (s.slot_id) bq = bq.eq('slot_id',s.slot_id);
   await bq;
-  toast('🗑️ Booking deleted');
-  await loadSales();
-  await loadDash();
+  toast('Deleted');
+  await loadSales(); await loadDash();
 }
 
-// ══════════════════════════════════════
-//  EDIT / RESCHEDULE MODAL
-// ══════════════════════════════════════
-let editingId = null;
-let editSlots = [];
-
+// ════════════════════
+// EDIT MODAL
+// ════════════════════
 async function openEditModal(saleId) {
-  editingId = saleId;
-  // Load sale data
-  const { data: s } = await db.from('sales').select('*,profiles(full_name)').eq('id', saleId).single();
+  const { data: s } = await sb.from('sales').select('*').eq('id',saleId).maybeSingle();
   if (!s) { toast('Could not load booking'); return; }
-
-  // Load all slots for slot picker
-  const { data: slotData } = await db.from('slots').select('*').order('sort_order');
-  editSlots = slotData || [];
-
-  const slotsOptions = editSlots.map(sl =>
-    `<option value="${sl.id}" data-start="${sl.time_start}" data-end="${sl.time_end}"
-      ${sl.id===s.slot_id?'selected':''}>${sl.time_start} – ${sl.time_end}${sl.label?' ('+sl.label+')':''}</option>`
+  const { data: slotData } = await sb.from('slots').select('*').order('sort_order');
+  const slopts = (slotData||[]).map(sl =>
+    '<option value="'+sl.id+'" data-start="'+sl.time_start+'" data-end="'+sl.time_end+'"'
+    +(sl.id===s.slot_id?' selected':'')+'>'
+    +sl.time_start+' - '+sl.time_end+(sl.label?' ('+sl.label+')':'')+'</option>'
   ).join('');
-
-  const modal = document.getElementById('edit-modal');
-  modal.innerHTML = `
-    <div class="modal-backdrop" onclick="closeEditModal()"></div>
-    <div class="modal-box">
-      <div class="modal-hd">
-        <div>
-          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem">Edit Booking</div>
-          <div style="font-size:.75rem;color:var(--slate);margin-top:2px">${s.client_name||'TBD'}</div>
-        </div>
-        <button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;
-          font-size:1.4rem;color:var(--slate);padding:0;line-height:1">×</button>
-      </div>
-      <div class="modal-body">
-
-        <div class="field"><label>Client Name</label>
-          <input class="finp" id="e-nm" type="text" value="${s.client_name||''}" placeholder="Full name"/>
-        </div>
-        <div class="f2">
-          <div class="field"><label>Phone</label>
-            <input class="finp" id="e-ph" type="tel" value="${s.phone||''}" placeholder="(647) 000-0000"/>
-          </div>
-          <div class="field"><label>Price ($)</label>
-            <input class="finp" id="e-pr" type="number" value="${s.price||0}" min="0"/>
-          </div>
-        </div>
-        <div class="field"><label>Address</label>
-          <input class="finp" id="e-ad" type="text" value="${s.address||''}" placeholder="123 Main St"/>
-        </div>
-        <div class="field"><label>Service</label>
-          <select class="finp" id="e-sv">
-            ${['Exterior Window Cleaning','Interior Window Cleaning','Eavestrough / Gutter Cleaning',
-               'Sliding Door Cleaning','Glass Staircase Cleaning','Full Package']
-              .map(o=>`<option${o===s.service?' selected':''}>${o}</option>`).join('')}
-          </select>
-        </div>
-        <div class="field"><label>Notes</label>
-          <textarea class="finp" id="e-nt" placeholder="Notes...">${s.notes||''}</textarea>
-        </div>
-
-        <div style="background:var(--off);border-radius:10px;padding:13px;border:1px solid var(--border);margin-bottom:12px">
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.82rem;margin-bottom:10px">
-            📅 Reschedule
-          </div>
-          <div class="field"><label>Date</label>
-            <input class="finp" id="e-dt" type="date" value="${s.date||''}"/>
-          </div>
-          <div class="f2">
-            <div class="field"><label>Machine</label>
-              <select class="finp" id="e-mc">
-                <option value="1"${(s.machine_num||1)===1?' selected':''}>Machine 1</option>
-                <option value="2"${(s.machine_num||1)===2?' selected':''}>Machine 2</option>
-              </select>
-            </div>
-            <div class="field"><label>Time Slot</label>
-              <select class="finp" id="e-sl">
-                <option value="">-- keep current --</option>
-                ${slotsOptions}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-off btn-sm" style="flex:1" onclick="closeEditModal()">Cancel</button>
-          <button class="btn btn-gold btn-sm" style="flex:1" id="save-edit-btn" onclick="saveEdit('${saleId}')">💾 Save Changes</button>
-        </div>
-      </div>
-    </div>`;
+  let modal = document.getElementById('edit-modal');
+  if (!modal) { modal = document.createElement('div'); modal.id='edit-modal'; document.body.appendChild(modal); }
+  modal.style.cssText = 'display:flex;position:fixed;inset:0;z-index:500;align-items:flex-end;justify-content:center';
+  modal.innerHTML = '<div onclick="closeEditModal()" style="position:absolute;inset:0;background:rgba(0,0,0,.5)"></div>'
+    +'<div style="position:relative;background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;z-index:1;padding:20px 18px 36px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem">Edit Booking</div>'
+    +'<button onclick="closeEditModal()" style="background:none;border:none;cursor:pointer;font-size:1.4rem;color:#999">x</button>'
+    +'</div>'
+    +'<div class="field"><label>Client Name</label><input class="finp inp" id="e-nm" type="text" value="'+(s.client_name||'')+'" placeholder="Full name" style="background:var(--off,#f9f9f9);color:#111;border:1.5px solid #e5e5e5;border-radius:9px;padding:10px 13px;width:100%"/></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div class="field"><label>Phone</label><input class="inp" id="e-ph" type="tel" value="'+(s.phone||'')+'" style="background:var(--off,#f9f9f9);color:#111;border:1.5px solid #e5e5e5;border-radius:9px;padding:10px 13px;width:100%"/></div>'
+    +'<div class="field"><label>Price ($)</label><input class="inp" id="e-pr" type="number" value="'+(s.price||0)+'" style="background:var(--off,#f9f9f9);color:#111;border:1.5px solid #e5e5e5;border-radius:9px;padding:10px 13px;width:100%"/></div>'
+    +'</div>'
+    +'<div class="field"><label>Address</label><input class="inp" id="e-ad" type="text" value="'+(s.address||'')+'" style="background:var(--off,#f9f9f9);color:#111;border:1.5px solid #e5e5e5;border-radius:9px;padding:10px 13px;width:100%"/></div>'
+    +'<div class="field"><label>Service</label><select class="inp" id="e-sv" style="background:var(--off,#f9f9f9);color:#111;border:1.5px solid #e5e5e5;border-radius:9px;padding:10px 13px;width:100%">'
+    +['Exterior Window Cleaning','Interior Window Cleaning','Eavestrough / Gutter Cleaning','Sliding Door Cleaning','Glass Staircase Cleaning','Full Package']
+      .map(o=>'<option'+(o===s.service?' selected':'')+'>'+o+'</option>').join('')
+    +'</select></div>'
+    +'<div class="field"><label>Notes</label><textarea class="inp" id="e-nt" style="background:var(--off,#f9f9f9);color:#111;border:1.5px solid #e5e5e5;border-radius:9px;padding:10px 13px;width:100%;min-height:60px">'+(s.notes||'')+'</textarea></div>'
+    +'<div style="background:#f7f7fc;border-radius:10px;padding:13px;border:1px solid #e4e4f0;margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:.82rem;margin-bottom:10px">Reschedule</div>'
+    +'<div class="field"><label>Date</label><input class="inp" id="e-dt" type="date" value="'+(s.date||'')+'" style="background:#fff;color:#111;border:1.5px solid #e5e5e5;border-radius:9px;padding:10px 13px;width:100%"/></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div class="field"><label>Machine</label><select class="inp" id="e-mc" style="background:#fff;color:#111;border:1.5px solid #e5e5e5;border-radius:9px;padding:10px 13px;width:100%"><option value="1"'+(( s.machine_num||1)===1?' selected':'')+'>Machine 1</option><option value="2"'+((s.machine_num||1)===2?' selected':'')+'>Machine 2</option></select></div>'
+    +'<div class="field"><label>Time Slot</label><select class="inp" id="e-sl" style="background:#fff;color:#111;border:1.5px solid #e5e5e5;border-radius:9px;padding:10px 13px;width:100%"><option value="">-- keep current --</option>'+slopts+'</select></div>'
+    +'</div></div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="closeEditModal()" style="flex:1;padding:11px;border:1.5px solid #e5e5e5;border-radius:10px;background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600">Cancel</button>'
+    +'<button id="save-edit-btn" onclick="saveEdit(''+saleId+'')" style="flex:1;padding:11px;border:none;border-radius:10px;background:#F0B429;color:#fff;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700">Save Changes</button>'
+    +'</div>'
+    +'</div>';
   modal.style.display = 'flex';
 }
 
 function closeEditModal() {
   const m = document.getElementById('edit-modal');
-  m.style.display = 'none';
-  m.innerHTML = '';
-  editingId = null;
+  if (m) { m.style.display='none'; m.innerHTML=''; }
 }
 
 async function saveEdit(saleId) {
   const btn = document.getElementById('save-edit-btn');
-  if (!btn) return;
-  btn.disabled = true; btn.textContent = 'Saving...';
+  if (btn) { btn.disabled=true; btn.textContent='Saving...'; }
   try {
-    // Fetch the FULL current sale record first — we need old values as lookup keys
-    const { data: old, error: fetchErr } = await db.from('sales')
-      .select('*').eq('id', saleId).maybeSingle();
-    if (fetchErr || !old) { toast('❌ Could not load booking data'); return; }
-
-    // Read form values
-    const name    = document.getElementById('e-nm').value.trim() || 'TBD';
-    const phone   = document.getElementById('e-ph').value.trim() || '';
-    const price   = parseFloat(document.getElementById('e-pr').value) || 0;
-    const addr    = document.getElementById('e-ad').value.trim() || '';
-    const svc     = document.getElementById('e-sv').value;
-    const notes   = document.getElementById('e-nt').value.trim() || '';
-    const newDate = document.getElementById('e-dt').value || old.date;
-    const newMach = parseInt(document.getElementById('e-mc').value) || old.machine_num || 1;
+    const { data: old } = await sb.from('sales').select('*').eq('id',saleId).maybeSingle();
+    if (!old) { toast('Could not load booking'); return; }
+    const name  = document.getElementById('e-nm').value.trim()||'TBD';
+    const phone = document.getElementById('e-ph').value.trim()||'';
+    const price = parseFloat(document.getElementById('e-pr').value)||0;
+    const addr  = document.getElementById('e-ad').value.trim()||'';
+    const svc   = document.getElementById('e-sv').value;
+    const notes = document.getElementById('e-nt').value.trim()||'';
+    const newDate = document.getElementById('e-dt').value||old.date;
+    const newMach = parseInt(document.getElementById('e-mc').value)||old.machine_num||1;
     const slotEl  = document.getElementById('e-sl');
-    const newSlotId = slotEl.value || old.slot_id || null;
+    const newSlotId = slotEl.value||old.slot_id||null;
     const slotOpt = slotEl.value ? slotEl.selectedOptions[0] : null;
     const newTStart = slotOpt ? slotOpt.dataset.start : old.time_start;
     const newTEnd   = slotOpt ? slotOpt.dataset.end   : old.time_end;
-
-    // ── Update SALES row
-    const { error: sErr } = await db.from('sales').update({
-      client_name: name, phone, price, address: addr,
-      service: svc, notes, date: newDate,
-      machine_num: newMach, slot_id: newSlotId,
-      time_start: newTStart, time_end: newTEnd
-    }).eq('id', saleId);
-    if (sErr) { toast('❌ Save failed: ' + sErr.message); return; }
-
-    // ── Update BOOKINGS row — use OLD rep_id + OLD date + OLD slot_id + OLD machine as keys
-    let bq = db.from('bookings').update({
-      client_name: name, phone, price, address: addr,
-      service: svc, notes, date: newDate,
-      machine_num: newMach, slot_id: newSlotId,
-      time_start: newTStart, time_end: newTEnd
-    }).eq('rep_id', old.rep_id).eq('date', old.date).eq('machine_num', old.machine_num || 1);
-    if (old.slot_id) bq = bq.eq('slot_id', old.slot_id);
-    const { error: bErr } = await bq;
-    if (bErr) console.warn('Booking update warning:', bErr.message);
-
-    toast('✅ Booking updated!');
+    const { error: sErr } = await sb.from('sales').update({
+      client_name:name,phone,price,address:addr,service:svc,notes,
+      date:newDate,machine_num:newMach,slot_id:newSlotId,time_start:newTStart,time_end:newTEnd
+    }).eq('id',saleId);
+    if (sErr) { toast('Save failed: '+sErr.message); return; }
+    let bq = sb.from('bookings').update({
+      client_name:name,phone,price,address:addr,service:svc,notes,
+      date:newDate,machine_num:newMach,slot_id:newSlotId,time_start:newTStart,time_end:newTEnd
+    }).eq('rep_id',old.rep_id).eq('date',old.date).eq('machine_num',old.machine_num||1);
+    if (old.slot_id) bq = bq.eq('slot_id',old.slot_id);
+    await bq;
+    toast('Booking updated!');
     closeEditModal();
-    await loadSales();
-    await loadDash();
+    await loadSales(); await loadDash();
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '💾 Save Changes'; }
+    if (btn) { btn.disabled=false; btn.textContent='Save Changes'; }
   }
 }
 
-// ══════════════════════════════════════
+function setSalesTab(period, btn) {
+  salesPeriod = period;
+  document.querySelectorAll('#page-sales .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadSales();
+}
+
+// duplicate renderSaleItems removed
+
+// ═══════════════════════════════════════════════
 //  LEADERBOARD
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 async function loadLb() {
   let since = null;
-  if (lbPer==='week')  since = weekAgo();
-  if (lbPer==='month') since = monthAgo();
-  let q = db.from('sales').select('rep_id,price,profiles(full_name)');
+  if (lbPeriod === 'week')  since = weekAgo();
+  if (lbPeriod === 'month') since = monthAgo();
+
+  // Fetch sales + the rep's role so we can exclude managers
+  let q = sb.from('sales').select('rep_id, price, profiles(full_name)');
   if (since) q = q.gte('created_at', since);
   const { data } = await q;
+
   const cnt = {};
   (data||[]).forEach(s => {
-    if (!cnt[s.rep_id]) cnt[s.rep_id]={ name:s.profiles?.full_name||'Unknown', count:0, rev:0 };
+    if (!cnt[s.rep_id]) cnt[s.rep_id] = { name: s.profiles?.full_name||'Unknown', count:0, rev:0 };
     cnt[s.rep_id].count++;
     cnt[s.rep_id].rev += parseFloat(s.price)||0;
   });
-  const sorted = Object.entries(cnt).sort((a,b)=>b[1].count-a[1].count);
-  const max = sorted[0]?.[1]?.count || 1;
-  G('lb-list').innerHTML = sorted.length ? sorted.map(([rid,d],i) => {
-    const rc = i===0?'r1':i===1?'r2':i===2?'r3':'rn';
-    const rl = i===0?'👑':i===1?'🥈':i===2?'🥉':`${i+1}`;
-    const isMe = rid===ME.id;
-    const pct  = Math.round((d.count/max)*100);
-    return `<div class="lbrow${isMe?' lbme':''}">
-      <div class="lbr ${rc}">${rl}</div>
-      <div class="lb-info">
-        <div class="lb-name">${d.name}${isMe?' <span style="font-size:.68rem;color:var(--slate)">(you)</span>':''}</div>
-        <div class="lb-sub">${d.count} sale${d.count!==1?'s':''}</div>
-        <div class="lb-bar"><div class="lb-fill" style="width:${pct}%"></div></div>
-      </div>
-      <div class="lb-amt">${fmtMoney(d.rev)}</div>
-    </div>`;
-  }).join('') : '<div class="empty"><p>No sales in this period yet 💪</p></div>';
 
-  if (ME.role==='manager') {
-    let q2 = db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
+  // Sort by REVENUE descending
+  const sorted = Object.entries(cnt).sort((a,b) => b[1].rev - a[1].rev);
+  const maxRev = sorted[0]?.[1]?.rev || 1;
+
+  if (!sorted.length) {
+    $('lb-list').innerHTML = '<div class="empty"><p>No sales in this period yet 💪</p></div>';
+  } else {
+    $('lb-list').innerHTML = sorted.map(([rid, d], i) => {
+      const rCls = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
+      const rLbl = i===0?'👑':i===1?'🥈':i===2?'🥉':`${i+1}`;
+      const isMe = rid === ME.id;
+      const pct  = Math.round((d.rev/maxRev)*100);
+      return `<div class="lb-item${isMe?' lb-me':''}">
+        <div class="lb-rank ${rCls}">${rLbl}</div>
+        <div class="lb-info">
+          <div class="lb-name">${d.name}${isMe?' <span style="font-size:.7rem;color:var(--slate)">(you)</span>':''}</div>
+          <div class="lb-sales">${d.count} sale${d.count!==1?'s':''} · ${fmtMoney(d.rev)}</div>
+          <div class="lb-bar"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="lb-rev">${fmtMoney(d.rev)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Manager: all sales list
+  if (PROFILE.role === 'manager') {
+    let q2 = sb.from('sales').select('*, profiles(full_name)').order('created_at',{ascending:false});
     if (since) q2 = q2.gte('created_at', since);
-    const { data: a } = await q2;
-    G('lb-all').innerHTML = renderSales(a||[], true);
+    const { data: all } = await q2;
+    $('lb-all-sales').innerHTML = renderSaleItems(all||[], true);
   }
 }
 
-function setLbTab(p, btn) {
-  lbPer = p;
-  document.querySelectorAll('#pg-lb .tab').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on'); loadLb();
+function setLbTab(period, btn) {
+  lbPeriod = period;
+  document.querySelectorAll('#page-lb .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadLb();
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  DOOR KNOCK MAP
-// ══════════════════════════════════════
-function initMap() {
-  if (kmap) { kmap.resize(); return; }
-  const el = G('knock-map');
-  if (!el || el.offsetHeight===0) { setTimeout(initMap, 200); return; }
-  kmap = new mapboxgl.Map({
+// ═══════════════════════════════════════════════
+function initKnockMap() {
+  if (knockMap) { knockMap.resize(); return; }
+  const el = document.getElementById('knock-map');
+  if (!el || el.offsetHeight === 0) { setTimeout(initKnockMap, 200); return; }
+
+  knockMap = new mapboxgl.Map({
     container: 'knock-map',
     style: 'mapbox://styles/mapbox/streets-v12',
-    center: [-79.6441, 43.5890], zoom: 13
+    center: [-79.6441, 43.5890],
+    zoom: 13
   });
-  kmap.addControl(new mapboxgl.NavigationControl(), 'top-right');
-  kmap.addControl(new mapboxgl.GeolocateControl({
-    positionOptions: { enableHighAccuracy: true }, trackUserLocation: false
+  knockMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  knockMap.addControl(new mapboxgl.GeolocateControl({
+    positionOptions: { enableHighAccuracy: true },
+    trackUserLocation: false
   }), 'top-right');
-  kmap.on('load', async () => {
-    const { data } = await db.from('door_knocks').select('*');
-    (data||[]).forEach(addPin);
-    updateMapStats();
+
+  knockMap.on('load', async () => {
+    await loadPins();
   });
-  kmap.on('click', async e => {
+
+  knockMap.on('click', async e => {
     const { lng, lat } = e.lngLat;
-    const { data, error } = await db.from('door_knocks')
-      .insert({ rep_id: ME.id, lat, lng, status: markMode }).select().single();
-    if (error) { toast('❌ '+error.message); return; }
-    addPin(data); updateMapStats();
-    toast('📍 '+ML[markMode]);
+    const { data, error } = await sb.from('door_knocks').insert({
+      rep_id: ME.id, lat, lng, status: markMode
+    }).select().single();
+    if (error) { toast('❌ ' + error.message); console.error(error); return; }
+    addPin(data);
+    updateMapStats();
+    toast('📍 ' + MARK_LABELS[markMode]);
   });
+}
+
+async function loadPins() {
+  const { data, error } = await sb.from('door_knocks').select('*');
+  if (error) { console.error('Pins load error:', error); return; }
+  (data||[]).forEach(addPin);
+  updateMapStats();
 }
 
 function addPin(k) {
-  if (!kmap) return;
+  if (!knockMap) return;
   const el = document.createElement('div');
-  const c  = MC[k.status]||'#7C3AED';
-  el.style.cssText = `width:13px;height:13px;border-radius:50%;background:${c};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer`;
+  const col = MARK_COLORS[k.status] || '#6B3FA0';
+  el.style.cssText = `width:14px;height:14px;border-radius:50%;background:${col};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer`;
   new mapboxgl.Marker({ element: el })
     .setLngLat([k.lng, k.lat])
-    .setPopup(new mapboxgl.Popup({ offset:10, closeButton:false })
-      .setHTML(`<b style="color:${c}">${ML[k.status]||k.status}</b>`))
-    .addTo(kmap);
+    .setPopup(new mapboxgl.Popup({ offset: 10, closeButton: false })
+      .setHTML(`<b style="color:${col}">${MARK_LABELS[k.status]||k.status}</b>`))
+    .addTo(knockMap);
 }
 
 async function updateMapStats() {
-  const { data } = await db.from('door_knocks').select('status');
-  G('map-tot').textContent = (data||[]).length;
-  G('map-int').textContent = (data||[]).filter(x=>x.status==='interested').length;
+  const { data } = await sb.from('door_knocks').select('status');
+  const all = data || [];
+  $('map-total').textContent = all.length;
+  $('map-interested').textContent = all.filter(x => x.status==='interested').length;
 }
 
-function setMark(s, btn) {
-  markMode = s;
-  document.querySelectorAll('.mk').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  toast('📍 Marking: '+ML[s]);
+function setMark(status, btn) {
+  markMode = status;
+  document.querySelectorAll('.mark-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  toast('📍 Marking: ' + MARK_LABELS[status]);
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  SCHEDULE
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 async function loadSchedule() {
-  const ds  = schedDay==='today' ? todayStr() : tomorrowStr();
-  const { data: bks, error } = await db.from('bookings')
-    .select('*,profiles(full_name)').eq('date', ds).order('machine_num').order('time_start');
+  const ds = schedDay === 'today' ? todayStr() : tomorrowStr();
+  const { data: bks, error } = await sb
+    .from('bookings')
+    .select('*, profiles(full_name)')
+    .eq('date', ds)
+    .order('time_start', { ascending: true });
+
   const jobs = bks || [];
-  const hdr  = `<div style="background:var(--ink);color:#fff;border-radius:12px;
-    padding:16px;margin-bottom:12px">
-    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem">${fmtDL(ds)}</div>
-    <div style="font-size:.74rem;color:#5A5A7A;margin-top:4px">
-      Window Warriors · ${jobs.length} job${jobs.length!==1?'s':''}</div>
-  </div>`;
+  const lbl  = niceLong(ds);
+
   if (!jobs.length) {
-    G('sched-jobs').innerHTML = hdr + `<div class="empty">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <rect x="3" y="4" width="18" height="18" rx="2"/>
-        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-        <line x1="3" y1="10" x2="21" y2="10"/>
-      </svg><p>No jobs booked yet for this day</p></div>`;
+    $('sched-jobs').innerHTML = `
+      <div style="background:var(--ink);color:#fff;border-radius:12px;padding:16px;margin-bottom:12px">
+        <div style="font-family:'Syne',sans-serif;font-weight:700">${lbl}</div>
+        <div style="font-size:.75rem;color:#9CA3AF;margin-top:4px">Window Warriors Schedule</div>
+      </div>
+      <div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <p>No jobs booked for ${schedDay === 'today' ? 'today' : 'tomorrow'}</p></div>`;
     return;
   }
-  G('sched-jobs').innerHTML = hdr + jobs.map(j => `
-    <div class="sjob">
-      <div class="sj-t">
-        <div class="sj-main">${j.time_start||'—'}</div>
-        <div class="sj-end">to ${j.time_end||''}</div>
-        <span class="sj-m m${j.machine_num||1}">M${j.machine_num||1}</span>
+
+  const header = `
+    <div style="background:var(--ink);color:#fff;border-radius:12px;padding:16px;margin-bottom:12px">
+      <div style="font-family:'Syne',sans-serif;font-weight:700">${lbl}</div>
+      <div style="font-size:.75rem;color:#9CA3AF;margin-top:4px">Window Warriors · ${jobs.length} job${jobs.length!==1?'s':''}</div>
+    </div>`;
+
+  const rows = jobs.map(j => `
+    <div class="sched-job">
+      <div class="sched-time">
+        <div class="sched-time-main">${j.time_start || '—'}</div>
+        <div class="sched-time-end">to ${j.time_end||''}</div>
+        <div class="sched-machine">M${j.machine_num||1}</div>
       </div>
-      <div class="sj-info">
-        <h4>${j.client_name||'TBD'}</h4>
-        <p>${j.address?'📍 '+j.address+'<br>':''}${j.phone?'📞 '+j.phone+'<br>':''}🧹 ${j.service||'Window Cleaning'}</p>
-        <span class="sj-rep">👤 ${j.profiles?.full_name||'Unknown'}</span>
+      <div class="sched-info">
+        <h4>${j.client_name || 'TBD'}</h4>
+        <p>${j.address ? '📍 '+j.address+'<br>' : ''}${j.phone ? '📞 '+j.phone+'<br>' : ''}🧹 ${j.service||'Window Cleaning'}</p>
+        <span class="sched-rep-tag">👤 ${j.profiles?.full_name||'Unknown'}</span>
       </div>
     </div>`).join('');
+
+  $('sched-jobs').innerHTML = header + rows;
 }
 
-function setSchedDay(d) {
-  schedDay = d;
-  G('sd-t').classList.toggle('on',  d==='today');
-  G('sd-tm').classList.toggle('on', d==='tomorrow');
+function setSchedDay(day) {
+  schedDay = day;
+  $('sched-tab-today').classList.toggle('active', day==='today');
+  $('sched-tab-tomorrow').classList.toggle('active', day==='tomorrow');
   loadSchedule();
 }
 
 async function copySchedule() {
-  const ds = schedDay==='today' ? todayStr() : tomorrowStr();
-  const { data: bks } = await db.from('bookings')
-    .select('*,profiles(full_name)').eq('date', ds).order('machine_num').order('time_start');
-  const jobs = bks||[];
+  const ds = schedDay === 'today' ? todayStr() : tomorrowStr();
+  const { data: bks } = await sb.from('bookings').select('*, profiles(full_name)')
+    .eq('date', ds).order('time_start',{ascending:true});
+  const jobs = bks || [];
   if (!jobs.length) { toast('No jobs to copy'); return; }
-  let txt = `⚔️ WINDOW WARRIORS SCHEDULE\n📅 ${fmtDL(ds)}\n${'─'.repeat(32)}\n\n`;
+  let txt = `⚔️ WINDOW WARRIORS SCHEDULE\n📅 ${niceLong(ds)}\n${'─'.repeat(32)}\n\n`;
   jobs.forEach((j,i) => {
-    txt += `${i+1}. [Machine ${j.machine_num||1}] ${j.time_start} – ${j.time_end}\n`;
-    txt += `   Client:  ${j.client_name||'TBD'}\n`;
-    if (j.address) txt += `   Address: ${j.address}\n`;
-    if (j.phone)   txt += `   Phone:   ${j.phone}\n`;
+    txt += `${i+1}. ${j.time_start} – ${j.time_end}  [Machine ${j.machine_num||1}]\n`;
+    txt += `   Client: ${j.client_name||'TBD'}\n`;
+    if (j.address) txt += `   📍 ${j.address}\n`;
+    if (j.phone)   txt += `   📞 ${j.phone}\n`;
     txt += `   Service: ${j.service||'Window Cleaning'}\n`;
-    txt += `   Rep:     ${j.profiles?.full_name||'Unknown'}\n\n`;
+    txt += `   Rep: ${j.profiles?.full_name||'Unknown'}\n\n`;
   });
   txt += `${'─'.repeat(32)}\n${jobs.length} job${jobs.length!==1?'s':''} · windowwarriors.ca`;
-  try { await navigator.clipboard.writeText(txt); toast('📋 Copied to clipboard!'); }
-  catch { shareSchedule(); }
+  try { await navigator.clipboard.writeText(txt); toast('📋 Copied!'); }
+  catch { toast('Use Share button instead'); }
 }
 
 async function shareSchedule() {
-  const ds = schedDay==='today' ? todayStr() : tomorrowStr();
-  const { data: bks } = await db.from('bookings')
-    .select('*,profiles(full_name)').eq('date', ds).order('machine_num').order('time_start');
-  const jobs = bks||[];
-  let txt = `⚔️ WARRIORS\n📅 ${fmtDL(ds)}\n\n`;
-  jobs.forEach((j,i) => { txt+=`${i+1}. M${j.machine_num||1} · ${j.time_start}–${j.time_end} — ${j.client_name||'TBD'}\n${j.address||''} ${j.phone||''}\n\n`; });
-  if (navigator.share) { try { await navigator.share({ title:'Warriors Schedule', text:txt }); return; } catch{} }
-  toast('📋 Use Copy button');
+  const ds = schedDay === 'today' ? todayStr() : tomorrowStr();
+  const { data: bks } = await sb.from('bookings').select('*, profiles(full_name)')
+    .eq('date', ds).order('time_start',{ascending:true});
+  const jobs = bks || [];
+  let txt = `⚔️ WINDOW WARRIORS\n📅 ${niceLong(ds)}\n\n`;
+  jobs.forEach((j,i) => { txt += `${i+1}. ${j.time_start}–${j.time_end} — ${j.client_name||'TBD'}\n   ${j.address||''} ${j.phone||''}\n\n`; });
+  if (navigator.share) { try { await navigator.share({ title:'Warriors Schedule', text:txt }); return; } catch {} }
+  copySchedule();
 }
 
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 //  SLOT MANAGER (Manager only)
-// ══════════════════════════════════════
+// ═══════════════════════════════════════════════
 function buildSlotMgr() {
-  G('slot-rows').innerHTML = slots.map((s,i) => slotHTML(s,i)).join('');
+  const container = $('slot-rows');
+  container.innerHTML = slots.map((s,i) => slotRowHTML(s, i)).join('');
 }
 
-function slotHTML(s, i) {
-  return `<div class="smrow" id="smr-${i}">
-    <input type="text" value="${s.label||''}" placeholder="Label e.g. Morning" style="flex:2"
-      onchange="updateSlot(${i},'label',this.value)"/>
-    <input type="time" value="${to24(s.time_start)}" style="flex:1"
-      onchange="updateSlot(${i},'time_start',from24(this.value))"/>
-    <span style="color:var(--slate);font-size:.8rem;flex-shrink:0">–</span>
-    <input type="time" value="${to24(s.time_end)}" style="flex:1"
-      onchange="updateSlot(${i},'time_end',from24(this.value))"/>
-    <button onclick="G('smr-${i}').remove()"
-      style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.1rem;padding:0 4px;flex-shrink:0">✕</button>
-  </div>`;
+function slotRowHTML(s, i) {
+  return `
+    <div class="slot-mgr-row" id="smr-${i}">
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px">
+          <input class="inp" type="text" placeholder="Label e.g. Morning" value="${s.label||''}"
+            style="flex:2" onchange="updateSlotField(${i},'label',this.value)"/>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input class="inp" type="time" value="${to24(s.time_start)}"
+            onchange="updateSlotField(${i},'time_start',from24(this.value))" style="flex:1"/>
+          <span style="font-size:.8rem;color:var(--slate)">to</span>
+          <input class="inp" type="time" value="${to24(s.time_end)}"
+            onchange="updateSlotField(${i},'time_end',from24(this.value))" style="flex:1"/>
+        </div>
+      </div>
+      <button onclick="removeSlotRow(${i})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.2rem;padding:0 6px;flex-shrink:0">✕</button>
+    </div>`;
 }
 
-function updateSlot(i, field, val) {
-  if (slots[i]) slots[i][field] = val;
+let pendingSlots = [];
+function updateSlotField(i, field, val) {
+  if (!pendingSlots[i]) pendingSlots[i] = {...slots[i]};
+  pendingSlots[i][field] = val;
 }
-
+function removeSlotRow(i) {
+  pendingSlots[i] = null; // mark for deletion
+  const el = $('smr-'+i);
+  if (el) el.style.display = 'none';
+}
 function addSlotRow() {
-  const newSlot = { label:'', time_start:'9:00 AM', time_end:'11:00 AM', sort_order:999 };
-  const i = 'n'+Date.now();
-  const d = document.createElement('div');
-  d.innerHTML = `<div class="smrow" id="smr-${i}">
-    <input type="text" placeholder="Label" style="flex:2"/>
-    <input type="time" value="09:00" style="flex:1"/>
-    <span style="color:var(--slate);font-size:.8rem;flex-shrink:0">–</span>
-    <input type="time" value="11:00" style="flex:1"/>
-    <button onclick="this.closest('.smrow').remove()"
-      style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.1rem;padding:0 4px;flex-shrink:0">✕</button>
-  </div>`;
-  G('slot-rows').appendChild(d.firstElementChild);
+  pendingSlots.push({ label:'', time_start:'9:00 AM', time_end:'11:00 AM', sort_order: slots.length });
+  const i = pendingSlots.length - 1;
+  const div = document.createElement('div');
+  div.innerHTML = slotRowHTML(pendingSlots[i], i);
+  $('slot-rows').appendChild(div.firstElementChild);
 }
 
 async function saveSlots() {
-  const rows = document.querySelectorAll('.smrow');
+  // Collect all visible rows
+  const rows = document.querySelectorAll('.slot-mgr-row');
   const toSave = [];
   let order = 0;
-  rows.forEach(row => {
-    const inputs = row.querySelectorAll('input[type="text"],input[type="time"]');
-    if (inputs.length < 3) return;
-    const label = inputs[0].value.trim();
-    const start = from24(inputs[1].value);
-    const end   = from24(inputs[2].value);
-    if (start && end) toSave.push({ label, time_start:start, time_end:end, sort_order:order++ });
+  rows.forEach((row, i) => {
+    if (row.style.display === 'none') return;
+    const inputs = row.querySelectorAll('input');
+    const label  = inputs[0].value.trim();
+    const start  = from24(inputs[1].value);
+    const end    = from24(inputs[2].value);
+    if (start && end) toSave.push({ label, time_start: start, time_end: end, sort_order: order++ });
   });
-  // Delete all then re-insert
-  await db.from('slots').delete().neq('id','00000000-0000-0000-0000-000000000000');
+
+  // Delete all existing slots then re-insert
+  await sb.from('slots').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   if (toSave.length) {
-    const { error } = await db.from('slots').insert(toSave);
-    if (error) { toast('❌ '+error.message); console.error(error); return; }
+    const { error } = await sb.from('slots').insert(toSave);
+    if (error) { toast('❌ ' + error.message); console.error(error); return; }
   }
+
   toast('✅ Slots saved!');
   await loadSlots();
   buildSlotMgr();
 }
 
+// Time helpers
 function to24(t) {
   if (!t) return '09:00';
   const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-  if (!m) return t.length===5 ? t : '09:00';
-  let h=parseInt(m[1]), mn=m[2], p=m[3].toUpperCase();
-  if(p==='PM'&&h!==12) h+=12;
-  if(p==='AM'&&h===12) h=0;
+  if (!m) return '09:00';
+  let h = parseInt(m[1]), mn = m[2], p = m[3].toUpperCase();
+  if (p==='PM' && h!==12) h+=12;
+  if (p==='AM' && h===12) h=0;
   return `${String(h).padStart(2,'0')}:${mn}`;
 }
 function from24(t) {
   if (!t) return '9:00 AM';
-  const [hs,mn] = t.split(':');
-  let h = parseInt(hs);
-  const p = h>=12?'PM':'AM';
-  if(h>12) h-=12; if(h===0) h=12;
+  const [hStr, mn] = t.split(':');
+  let h = parseInt(hStr);
+  const p = h >= 12 ? 'PM' : 'AM';
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
   return `${h}:${mn} ${p}`;
 }
 
-// ══════════════════════════════════════
-//  SESSION RESTORE
-// ══════════════════════════════════════
-window.addEventListener('load', async () => {
-  const saved = loadSession();
-  if (saved) {
-    // Verify profile still exists in DB
-    const { data } = await db.from('profiles').select('*').eq('id', saved.id).maybeSingle();
-    if (data) { boot(data); return; }
-    clearSession();
+// ═══════════════════════════════════════════════
+//  SESSION CHECK ON LOAD
+// ═══════════════════════════════════════════════
+
+// ════════════════════════════════════════
+// PAYROLL
+// ════════════════════════════════════════
+let payWeekOffset = 0;
+let payExpandedRep = null; // which rep card is expanded
+
+function payWeekShift(dir) {
+  payWeekOffset += dir;
+  payExpandedRep = null;
+  loadPayroll();
+}
+
+function getPayWeekBounds() {
+  const now = new Date();
+  const day = now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((day + 6) % 7) + payWeekOffset * 7);
+  mon.setHours(0, 0, 0, 0);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23, 59, 59, 999);
+  return { mon, sun };
+}
+
+function togglePayRep(repId) {
+  payExpandedRep = payExpandedRep === repId ? null : repId;
+  // Re-render just the rep cards without re-fetching
+  renderPayRepCards(window._payRepData || [], window._payWeekStr || '');
+}
+
+function renderPayRepCards(sorted, weekStr) {
+  window._payRepData = sorted;
+  window._payWeekStr = weekStr;
+  const pr = document.getElementById('pay-reps');
+  if (!pr) return;
+
+  if (!sorted.length) {
+    pr.innerHTML = '<div style="text-align:center;padding:30px;color:#9ca3af;font-size:.84rem">No sales this period yet</div>';
+    return;
   }
-  G('auth').style.display = 'flex';
+
+  let html = '';
+  sorted.forEach(([rid, rep], ri) => {
+    const repRev   = rep.sales.reduce((s, x) => s + (parseFloat(x.price) || 0), 0);
+    const isTop    = ri === 0;
+    const expanded = payExpandedRep === rid;
+    const medal    = ri === 0 ? '🏆' : ri === 1 ? '🥈' : ri === 2 ? '🥉' : '#' + (ri + 1);
+
+    // Build day-by-day breakdown (only shown when expanded)
+    let detailHtml = '';
+    if (expanded) {
+      const byDay = {};
+      rep.sales.forEach(s => {
+        if (!byDay[s.date]) byDay[s.date] = [];
+        byDay[s.date].push(s);
+      });
+
+      Object.entries(byDay).sort((a, b) => a[0] > b[0] ? 1 : -1).forEach(([date, ds]) => {
+        const dayRev   = ds.reduce((s, x) => s + (parseFloat(x.price) || 0), 0);
+        const dayLabel = new Date(date + 'T12:00').toLocaleDateString('en-CA', {weekday:'long', month:'short', day:'numeric'});
+
+        let saleRows = '';
+        ds.forEach(s => {
+          const mn = s.machine_num || 1;
+          // When was this booking recorded
+          const bookedAt = s.created_at
+            ? new Date(s.created_at).toLocaleString('en-CA', {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})
+            : '';
+          saleRows +=
+            '<div style="padding:11px 0;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+            + '<div style="flex:1;min-width:0">'
+            + '<div style="font-weight:700;font-size:.87rem;color:#111">' + (s.client_name || 'TBD') + '</div>'
+            + '<div style="font-size:.72rem;color:#6b7280;margin-top:4px;line-height:1.8">'
+            + '<span style="background:#f3f4f6;border-radius:4px;padding:1px 6px;font-weight:600;font-size:.68rem">JOB TIME</span> '
+            + '<b style="color:#111">' + (s.time_start || '—') + ' – ' + (s.time_end || '—') + '</b>'
+            + ' &nbsp;<span style="color:var(--m' + mn + ',#7c3aed);font-weight:700">M' + mn + '</span><br>'
+            + (s.address ? '📍 ' + s.address + '<br>' : '')
+            + (s.phone   ? '📞 ' + s.phone   + '<br>' : '')
+            + (s.service ? '🧹 ' + s.service + '<br>' : '')
+            + (bookedAt  ? '<span style="background:#fef3c7;border-radius:4px;padding:1px 6px;font-weight:600;font-size:.68rem;color:#92400e">BOOKED</span> <span style="color:#92400e">' + bookedAt + '</span>' : '')
+            + '</div>'
+            + '</div>'
+            + '<div style="text-align:right;flex-shrink:0">'
+            + '<div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.97rem;color:#111">' + fmtMoney(s.price) + '</div>'
+            + '<button onclick="delSale('' + s.id + '')" style="margin-top:5px;padding:3px 9px;border:none;border-radius:6px;background:#fee2e2;color:#dc2626;font-size:.68rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600">Delete</button>'
+            + '</div>'
+            + '</div>';
+        });
+
+        detailHtml +=
+          '<div style="margin-bottom:10px">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#f7f7fc;border-radius:8px;border:1px solid #e4e4f0;margin-bottom:2px">'
+          + '<span style="font-weight:700;font-size:.8rem;color:#111">' + dayLabel + '</span>'
+          + '<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:.82rem;color:#059669">' + fmtMoney(dayRev) + '</span>'
+          + '</div>'
+          + '<div style="padding:0 4px">' + saleRows + '</div>'
+          + '</div>';
+      });
+    }
+
+    html +=
+      '<div style="background:#fff;border:1px solid #e4e4f0;border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)">'
+      // Header row — always visible, tappable
+      + '<div onclick="togglePayRep('' + rid + '')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;background:' + (isTop ? '#0f0f13' : '#fff') + ';user-select:none">'
+      + '<div style="display:flex;align-items:center;gap:11px">'
+      + '<div style="font-size:1.2rem;width:32px;text-align:center">' + medal + '</div>'
+      + '<div>'
+      + '<div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;color:' + (isTop ? '#fff' : '#111') + '">' + rep.name + '</div>'
+      + '<div style="font-size:.71rem;color:' + (isTop ? '#9ca3af' : '#6b7280') + ';margin-top:2px">'
+      + rep.sales.length + ' sale' + (rep.sales.length !== 1 ? 's' : '') + ' &nbsp;·&nbsp; ' + weekStr
+      + '</div>'
+      + '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:10px">'
+      + '<div style="text-align:right">'
+      + '<div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;color:' + (isTop ? '#F0B429' : '#111') + '">' + fmtMoney(repRev) + '</div>'
+      + '<div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:' + (isTop ? '#6b7280' : '#9ca3af') + '">revenue</div>'
+      + '</div>'
+      + '<div style="color:' + (isTop ? '#9ca3af' : '#6b7280') + ';font-size:.9rem;transition:transform .2s;transform:rotate(' + (expanded ? '90' : '0') + 'deg)">&#9654;</div>'
+      + '</div>'
+      + '</div>'
+      // Expandable detail
+      + (expanded
+          ? '<div style="padding:4px 14px 14px;border-top:1px solid #e4e4f0">' + detailHtml + '</div>'
+          : '')
+      + '</div>';
+  });
+
+  pr.innerHTML = html;
+}
+
+async function loadPayroll() {
+  if (!ME || ME.role !== 'manager') return;
+  const wl = document.getElementById('pay-week-label');
+  const wr = document.getElementById('pay-week-range');
+  const pt = document.getElementById('pay-totals');
+  if (!wl) return;
+
+  const { mon, sun } = getPayWeekBounds();
+  const monS = mon.toISOString().split('T')[0];
+  const sunS = sun.toISOString().split('T')[0];
+  const fmtOpts = { month: 'short', day: 'numeric' };
+
+  wl.textContent = payWeekOffset === 0 ? 'This Week'
+    : payWeekOffset === -1 ? 'Last Week'
+    : mon.toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' });
+  const weekStr = mon.toLocaleDateString('en-CA', fmtOpts) + ' – ' + sun.toLocaleDateString('en-CA', fmtOpts);
+  wr.textContent = weekStr;
+
+  document.getElementById('pay-reps').innerHTML = '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:.82rem">Loading...</div>';
+
+  const { data: sales, error } = await sb.from('sales')
+    .select('*, profiles(full_name)')
+    .gte('date', monS)
+    .lte('date', sunS)
+    .order('date', { ascending: true });
+
+  if (error) {
+    document.getElementById('pay-reps').innerHTML = '<div style="padding:20px;text-align:center;color:#dc2626">Error: ' + error.message + '</div>';
+    return;
+  }
+
+  const arr = sales || [];
+  const repSales = arr;
+  const totalRev = repSales.reduce((s, x) => s + (parseFloat(x.price) || 0), 0);
+  const repsSet  = new Set(repSales.map(s => s.rep_id));
+  const numReps  = repsSet.size || 1;
+
+  pt.innerHTML =
+    '<div class="stat dark"><div class="stat-n">' + repSales.length + '</div><div class="stat-l">Total Sales</div></div>'
+    + '<div class="stat gold"><div class="stat-n">' + fmtMoney(totalRev) + '</div><div class="stat-l">Total Revenue</div></div>'
+    + '<div class="stat"><div class="stat-n" style="color:#111">' + repsSet.size + '</div><div class="stat-l">Active Reps</div></div>'
+    + '<div class="stat"><div class="stat-n" style="color:#111">' + fmtMoney(totalRev / numReps) + '</div><div class="stat-l">Avg / Rep</div></div>';
+
+  // Group by rep (reps only)
+  const byRep = {};
+  repSales.forEach(s => {
+    if (!byRep[s.rep_id]) byRep[s.rep_id] = { name: (s.profiles && s.profiles.full_name) ? s.profiles.full_name : 'Unknown', sales: [] };
+    byRep[s.rep_id].sales.push(s);
+  });
+
+  // Sort by revenue desc
+  const sorted = Object.entries(byRep).sort((a, b) => {
+    const ra = a[1].sales.reduce((s, x) => s + (parseFloat(x.price) || 0), 0);
+    const rb = b[1].sales.reduce((s, x) => s + (parseFloat(x.price) || 0), 0);
+    return rb - ra;
+  });
+
+  renderPayRepCards(sorted, weekStr);
+}
+
+
+window.addEventListener('load', async () => {
+  try {
+    const saved = localStorage.getItem('wh_sess');
+    if (saved) {
+      const prof = JSON.parse(saved);
+      const { data } = await sb.from('profiles').select('*').eq('id', prof.id).maybeSingle();
+      if (data) { await bootApp(data); return; }
+      localStorage.removeItem('wh_sess');
+    }
+  } catch(e) {}
+  $('auth-screen').style.display = 'flex';
 });
 </script>
-
-<!-- ═══════════════ EDIT MODAL ═══════════════ -->
-<div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:500;
-  align-items:flex-end;justify-content:center"></div>
-
-<style>
-.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px)}
-.modal-box{position:relative;background:#fff;border-radius:20px 20px 0 0;
-  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;z-index:1;
-  box-shadow:0 -8px 40px rgba(0,0,0,.2);animation:slideUp .25s ease}
-@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-hd{display:flex;align-items:center;justify-content:space-between;
-  padding:18px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2}
-.modal-body{padding:16px 18px 32px}
-</style>
 </body>
 </html>
