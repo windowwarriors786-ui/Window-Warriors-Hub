@@ -677,6 +677,14 @@ function fmtDL(ds) { return new Date(ds+'T12:00').toLocaleDateString('en-CA',{we
 function fmtMoney(n) { n=parseFloat(n)||0; return n>=1000?'$'+(n/1000).toFixed(1)+'k':'$'+Math.round(n); }
 function weekAgo()  { const d=new Date(); d.setDate(d.getDate()-7); d.setHours(0,0,0,0); return d.toISOString(); }
 function monthAgo() { const d=new Date(); d.setDate(1); d.setHours(0,0,0,0); return d.toISOString(); }
+function currentWeekBounds() {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const day = now.getDay();
+  const diffToMon = (day===0) ? -6 : 1-day;
+  const mon = new Date(now); mon.setDate(now.getDate()+diffToMon);
+  const sun = new Date(mon); sun.setDate(mon.getDate()+6); sun.setHours(23,59,59,999);
+  return { mon, sun };
+}
 
 // ══════════════════════════════════════
 //  AUTH — no Supabase email auth
@@ -1097,8 +1105,11 @@ async function loadMgrDash() {
 }
 
 async function getWeekRanks() {
+  const wb = currentWeekBounds();
   const { data } = await db.from('sales')
-    .select('rep_id,price,profiles(full_name)').gte('created_at', weekAgo());
+    .select('rep_id,price,profiles(full_name)')
+    .gte('created_at', wb.mon.toISOString())
+    .lte('created_at', wb.sun.toISOString());
   if (!data?.length) return [];
   const cnt = {};
   data.forEach(s => {
@@ -1343,11 +1354,16 @@ async function saveEdit(saleId) {
 //  LEADERBOARD
 // ══════════════════════════════════════
 async function loadLb() {
-  let since = null;
-  if (lbPer==='week')  since = weekAgo();
+  let since = null, until = null;
+  if (lbPer==='week') {
+    const wb = currentWeekBounds();
+    since = wb.mon.toISOString();
+    until = wb.sun.toISOString();
+  }
   if (lbPer==='month') since = monthAgo();
   let q = db.from('sales').select('rep_id,price,profiles(full_name)');
   if (since) q = q.gte('created_at', since);
+  if (until) q = q.lte('created_at', until);
   const { data } = await q;
   const cnt = {};
   (data||[]).forEach(s => {
@@ -1376,6 +1392,7 @@ async function loadLb() {
   if (ME.role==='manager') {
     let q2 = db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
     if (since) q2 = q2.gte('created_at', since);
+    if (until) q2 = q2.lte('created_at', until);
     const { data: a } = await q2;
     G('lb-all').innerHTML = renderSales(a||[], true);
   }
@@ -1475,8 +1492,11 @@ async function loadSchedule() {
       </div>
       <div class="sj-info">
         <h4>${j.client_name||'TBD'}</h4>
-        <p>${j.address?'📍 '+j.address+'<br>':''}${j.phone?'📞 '+j.phone+'<br>':''}🧹 ${j.service||'Window Cleaning'}</p>
-        <span class="sj-rep">👤 ${j.profiles?.full_name||'Unknown'}</span>
+        <p>${j.address?'📍 '+j.address+'<br>':''}${j.phone?'📞 '+j.phone+'<br>':''}🧹 ${j.service||'Window Cleaning'}${j.notes?'<br>📝 <em style="color:#6b7280">'+j.notes+'</em>':''}</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
+          <span class="sj-rep">👤 ${j.profiles?.full_name||'Unknown'}</span>
+          ${j.price ? `<span style="font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;color:var(--ink)">${fmtMoney(j.price)}</span>` : ''}
+        </div>
       </div>
     </div>`).join('');
 }
@@ -1741,8 +1761,8 @@ async function loadPayroll() {
   if (!wl) return;
 
   var bounds  = payWeekBounds();
-  var monStr  = bounds.mon.toISOString().split('T')[0];
-  var sunStr  = bounds.sun.toISOString().split('T')[0];
+  var monISO  = bounds.mon.toISOString();
+  var sunISO  = bounds.sun.toISOString();
   var fmtOpts = { month: 'short', day: 'numeric' };
   var weekStr = bounds.mon.toLocaleDateString('en-CA', fmtOpts) + ' – ' + bounds.sun.toLocaleDateString('en-CA', fmtOpts);
 
@@ -1753,9 +1773,9 @@ async function loadPayroll() {
 
   var result = await db.from('sales')
     .select('*, profiles(full_name)')
-    .gte('date', monStr)
-    .lte('date', sunStr)
-    .order('date', { ascending: true });
+    .gte('created_at', monISO)
+    .lte('created_at', sunISO)
+    .order('created_at', { ascending: true });
 
   if (result.error) {
     pr.innerHTML = '<div class="empty"><p>Error: ' + result.error.message + '</p></div>';
