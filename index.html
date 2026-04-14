@@ -554,14 +554,19 @@ textarea.finp{resize:none;min-height:64px}
           <div class="st-n">Tomorrow</div>
           <div class="st-d" id="sd-tm-lbl"></div>
         </div>
+        <div class="stab" id="sd-wk" onclick="setSchedDay('week')">
+          <div class="st-n">Week</div>
+          <div class="st-d">Upcoming</div>
+        </div>
       </div>
 
-      <div style="display:flex;gap:8px;margin-bottom:14px">
+      <div id="sched-copy-row" style="display:flex;gap:8px;margin-bottom:14px">
         <button class="btn btn-ink btn-sm" style="flex:1" onclick="copySchedule()">📋 Copy</button>
         <button class="btn btn-gold btn-sm" style="flex:1" onclick="shareSchedule()">📤 Share</button>
       </div>
 
       <div id="sched-jobs"></div>
+      <div id="sched-week" style="display:none"></div>
 
       <!-- MANAGER ONLY -->
       <div id="slot-mgr" style="display:none;margin-top:22px">
@@ -1505,7 +1510,156 @@ function setSchedDay(d) {
   schedDay = d;
   G('sd-t').classList.toggle('on',  d==='today');
   G('sd-tm').classList.toggle('on', d==='tomorrow');
-  loadSchedule();
+  G('sd-wk').classList.toggle('on', d==='week');
+  G('sched-jobs').style.display   = d==='week' ? 'none' : 'block';
+  G('sched-week').style.display   = d==='week' ? 'block' : 'none';
+  G('sched-copy-row').style.display = d==='week' ? 'none' : 'flex';
+  if (d==='week') loadWeekSchedule(); else loadSchedule();
+}
+
+async function loadWeekSchedule() {
+  const el = G('sched-week');
+  el.innerHTML = '<div style="color:var(--slate);padding:12px;font-size:.82rem;text-align:center">Loading week…</div>';
+
+  // Current Mon–Sun week
+  const now = new Date(); now.setHours(0,0,0,0);
+  const dow = now.getDay();
+  const diffToMon = (dow===0) ? -6 : 1-dow;
+  const weekMon = new Date(now); weekMon.setDate(now.getDate()+diffToMon);
+  const weekSun = new Date(weekMon); weekSun.setDate(weekMon.getDate()+6);
+  const monStr = weekMon.toISOString().split('T')[0];
+  const sunStr = weekSun.toISOString().split('T')[0];
+  const today  = todayStr();
+
+  const { data: bks } = await db.from('bookings')
+    .select('*,profiles(full_name)')
+    .gte('date', monStr)
+    .lte('date', sunStr)
+    .order('date').order('machine_num').order('time_start');
+
+  const jobs = bks || [];
+
+  // Group by date
+  const byDay = {};
+  jobs.forEach(j => {
+    if (!byDay[j.date]) byDay[j.date] = [];
+    byDay[j.date].push(j);
+  });
+
+  // Build Mon–Sun date array
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekMon); d.setDate(weekMon.getDate()+i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+
+  const totalJobs = jobs.length;
+  const totalRev  = jobs.reduce((s,j)=>s+(parseFloat(j.price)||0),0);
+  const DAY_SHORT  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const CARD_COLORS = [
+    '#EDE9FE','#DBEAFE','#D1FAE5','#FEF3C7','#FCE7F3','#E0F2FE','#FEE2E2'
+  ];
+  const CARD_BORDERS = [
+    '#7C3AED','#2563EB','#059669','#D97706','#DB2777','#0284C7','#DC2626'
+  ];
+  const M1_BG = '#EDE9FE'; const M1_BD = '#7C3AED';
+  const M2_BG = '#DBEAFE'; const M2_BD = '#2563EB';
+
+  // Collect all unique time slots sorted
+  const timeSet = new Set();
+  jobs.forEach(j => { if(j.time_start) timeSet.add(j.time_start); });
+  const times = Array.from(timeSet).sort((a,b)=>{
+    const toMin = t => { const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i); if(!m) return 0; let h=parseInt(m[1]); if(m[3].toUpperCase()==='PM'&&h!==12)h+=12; if(m[3].toUpperCase()==='AM'&&h===12)h=0; return h*60+parseInt(m[2]); }; return toMin(a)-toMin(b);
+  });
+
+  // ── Summary strip
+  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div class="sc dk"><div class="sn">${totalJobs}</div><div class="sl">Jobs This Week</div></div>
+    <div class="sc gd"><div class="sn">${fmtMoney(totalRev)}</div><div class="sl">Week Revenue</div></div>
+  </div>`;
+
+  // ── Calendar grid (horizontally scrollable)
+  // Each column = one day, rows = time slots
+  const COL_W = 130; // px per day column
+  const TIME_W = 58; // px for time label column
+
+  html += `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:0 16px 4px">
+  <div style="min-width:${TIME_W + COL_W*7}px">`;
+
+  // ── Header row: day names
+  html += `<div style="display:grid;grid-template-columns:${TIME_W}px repeat(7,${COL_W}px);margin-bottom:0">
+    <div></div>`;
+  dates.forEach((ds,i) => {
+    const d   = new Date(ds+'T12:00');
+    const isT = ds===today;
+    const dayN = DAY_SHORT[d.getDay()];
+    const dayD = d.getDate();
+    html += `<div style="text-align:center;padding:8px 4px 6px;border-left:1px solid var(--border);
+      background:${isT?'var(--ink)':'#fff'};${i===0?'border-radius:12px 0 0 0':''}${i===6?'border-radius:0 12px 0 0':''}">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.72rem;
+        color:${isT?'var(--gold)':'var(--slate)'};text-transform:uppercase;letter-spacing:.04em">${dayN}</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;
+        color:${isT?'#fff':'var(--ink)'};line-height:1.2">${dayD}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // ── Time rows
+  if (!times.length) {
+    html += `<div style="grid-column:1/-1;padding:32px;text-align:center;color:var(--slate);font-size:.82rem;
+      background:#fff;border:1px solid var(--border);border-radius:0 0 12px 12px">
+      No jobs booked this week</div>`;
+  } else {
+    times.forEach((t, ti) => {
+      const isLast = ti === times.length-1;
+      html += `<div style="display:grid;grid-template-columns:${TIME_W}px repeat(7,${COL_W}px);
+        border-top:1px solid var(--border)">
+        <div style="padding:8px 6px 8px 0;text-align:right;font-size:.65rem;font-weight:700;
+          color:var(--slate);padding-top:10px;flex-shrink:0">${t}</div>`;
+
+      dates.forEach((ds,di) => {
+        const cell = (byDay[ds]||[]).filter(j=>j.time_start===t);
+        const isT  = ds===today;
+        const borderR = di<6 ? 'border-right:1px solid var(--border);' : '';
+        const radii = isLast && di===0 ? 'border-radius:0 0 0 12px' : isLast && di===6 ? 'border-radius:0 0 12px 0' : '';
+        html += `<div style="padding:4px 5px;min-height:${cell.length?'auto':'48px'};
+          background:${isT?'rgba(240,180,41,.04)':'#fff'};${borderR}${radii}">`;
+
+        cell.forEach(j => {
+          const mc = j.machine_num||1;
+          const bg = mc===1 ? M1_BG : M2_BG;
+          const bd = mc===1 ? M1_BD : M2_BD;
+          const rep = j.profiles?.full_name ? j.profiles.full_name.split(' ')[0] : '—';
+          html += `<div style="background:${bg};border-left:3px solid ${bd};border-radius:6px;
+            padding:5px 6px;margin-bottom:3px;font-size:.68rem;line-height:1.4">
+            <div style="font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;
+              text-overflow:ellipsis;max-width:${COL_W-22}px">${j.client_name||'TBD'}</div>
+            <div style="color:${bd};font-weight:700;font-size:.6rem">${j.time_start}–${j.time_end}</div>
+            ${j.price?`<div style="font-weight:800;color:var(--ink);font-size:.65rem">${fmtMoney(j.price)}</div>`:''}
+            <div style="color:#6b7280;font-size:.6rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">👤 ${rep} · M${mc}</div>
+            ${j.service?`<div style="color:#6b7280;font-size:.58rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🧹 ${j.service}</div>`:''}
+          </div>`;
+        });
+
+        html += `</div>`;
+      });
+      html += `</div>`;
+    });
+  }
+
+  html += `</div></div>`; // end min-width div + overflow div
+
+  // ── Legend
+  html += `<div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:var(--slate)">
+      <div style="width:12px;height:12px;border-radius:3px;background:${M1_BG};border-left:3px solid ${M1_BD}"></div>Machine 1
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:var(--slate)">
+      <div style="width:12px;height:12px;border-radius:3px;background:${M2_BG};border-left:3px solid ${M2_BD}"></div>Machine 2
+    </div>
+  </div>`;
+
+  el.innerHTML = html;
 }
 
 async function copySchedule() {
