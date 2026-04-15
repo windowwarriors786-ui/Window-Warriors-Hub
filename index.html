@@ -1387,10 +1387,10 @@ async function loadLb() {
       <div class="lbr ${rc}">${rl}</div>
       <div class="lb-info">
         <div class="lb-name">${d.name}${isMe?' <span style="font-size:.68rem;color:var(--slate)">(you)</span>':''}</div>
-        <div class="lb-sub">${d.count} sale${d.count!==1?'s':''} · ${fmtMoney(d.rev)}</div>
+        <div class="lb-sub">${d.count} sale${d.count!==1?'s':''}${(ME.role==='manager'||lbPer==='week')?' · '+fmtMoney(d.rev):''}</div>
         <div class="lb-bar"><div class="lb-fill" style="width:${pct}%"></div></div>
       </div>
-      <div class="lb-amt">${fmtMoney(d.rev)}</div>
+      ${(ME.role==='manager'||lbPer==='week')?`<div class="lb-amt">${fmtMoney(d.rev)}</div>`:''}
     </div>`;
   }).join('') : '<div class="empty"><p>No sales in this period yet 💪</p></div>';
 
@@ -1573,9 +1573,10 @@ async function loadWeekSchedule() {
   });
 
   // ── Summary strip
-  let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+  const isManager = ME && ME.role === 'manager';
+  let html = `<div style="display:grid;grid-template-columns:${isManager?'1fr 1fr':'1fr'};gap:10px;margin-bottom:14px">
     <div class="sc dk"><div class="sn">${totalJobs}</div><div class="sl">Jobs This Week</div></div>
-    <div class="sc gd"><div class="sn">${fmtMoney(totalRev)}</div><div class="sl">Week Revenue</div></div>
+    ${isManager ? `<div class="sc gd"><div class="sn">${fmtMoney(totalRev)}</div><div class="sl">Week Revenue</div></div>` : ''}
   </div>`;
 
   // ── Calendar grid (horizontally scrollable)
@@ -1635,7 +1636,7 @@ async function loadWeekSchedule() {
             <div style="font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;
               text-overflow:ellipsis;max-width:${COL_W-22}px">${j.client_name||'TBD'}</div>
             <div style="color:${bd};font-weight:700;font-size:.6rem">${j.time_start}–${j.time_end}</div>
-            ${j.price?`<div style="font-weight:800;color:var(--ink);font-size:.65rem">${fmtMoney(j.price)}</div>`:''}
+            ${j.price && isManager ?`<div style="font-weight:800;color:var(--ink);font-size:.65rem">${fmtMoney(j.price)}</div>`:''}
             <div style="color:#6b7280;font-size:.6rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">👤 ${rep} · M${mc}</div>
             ${j.service?`<div style="color:#6b7280;font-size:.58rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🧹 ${j.service}</div>`:''}
           </div>`;
