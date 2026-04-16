@@ -525,6 +525,7 @@ textarea.finp{resize:none;min-height:64px}
           <button class="mk mk-in" onclick="setMark('interested',this)">⭐ Interested</button>
           <button class="mk mk-na" onclick="setMark('noanswer',this)">🔇 No Answer</button>
           <button class="mk mk-ni" onclick="setMark('notint',this)">❌ Not Interested</button>
+          <button class="mk mk-rm" onclick="setMark('remove',this)" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5">🗑️ Remove</button>
         </div>
         <div id="knock-map"></div>
         <div class="mleg">
@@ -532,6 +533,12 @@ textarea.finp{resize:none;min-height:64px}
           <div class="ml"><div class="mld" style="background:#10B981"></div>Interested</div>
           <div class="ml"><div class="mld" style="background:#F59E0B"></div>No Answer</div>
           <div class="ml"><div class="mld" style="background:#EF4444"></div>Not Interested</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button onclick="clearMyPins()" style="flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid #fca5a5;background:#fee2e2;color:#dc2626;font-weight:700;font-size:.75rem;cursor:pointer">🗑️ Clear My Pins</button>
+          <span id="map-clear-all-wrap" style="display:none;flex:1">
+            <button onclick="clearAllPins()" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--off);color:var(--slate);font-weight:700;font-size:.75rem;cursor:pointer">🗑️ Clear All Pins</button>
+          </span>
         </div>
       </div>
       <div class="sg">
@@ -662,6 +669,7 @@ let selDate = null, selSlot = null, selMachine = 1;
 let slots = [];
 let lbPer = 'week', salesPer = 'upcoming', schedDay = 'today';
 let kmap = null, markMode = 'knocked';
+const pinMarkers = {};
 
 const MC = { knocked:'#7C3AED', interested:'#10B981', noanswer:'#F59E0B', notint:'#EF4444' };
 const ML = { knocked:'Knocked', interested:'Interested', noanswer:'No Answer', notint:'Not Interested' };
@@ -1429,8 +1437,13 @@ function initMap() {
     const { data } = await db.from('door_knocks').select('*');
     (data||[]).forEach(addPin);
     updateMapStats();
+    if (ME.role==='manager') {
+      const w = G('map-clear-all-wrap');
+      if (w) w.style.display = 'flex';
+    }
   });
   kmap.on('click', async e => {
+    if (markMode === 'remove') { toast('👆 Tap a pin directly to remove it'); return; }
     const { lng, lat } = e.lngLat;
     const { data, error } = await db.from('door_knocks')
       .insert({ rep_id: ME.id, lat, lng, status: markMode }).select().single();
@@ -1444,12 +1457,47 @@ function addPin(k) {
   if (!kmap) return;
   const el = document.createElement('div');
   const c  = MC[k.status]||'#7C3AED';
-  el.style.cssText = `width:13px;height:13px;border-radius:50%;background:${c};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer`;
-  new mapboxgl.Marker({ element: el })
+  el.style.cssText = `width:13px;height:13px;border-radius:50%;background:${c};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);cursor:pointer;transition:transform .15s`;
+  el.addEventListener('click', async ev => {
+    if (markMode !== 'remove') return;
+    ev.stopPropagation();
+    if (ME.role !== 'manager' && k.rep_id !== ME.id) { toast('⚠️ You can only remove your own pins'); return; }
+    const { error } = await db.from('door_knocks').delete().eq('id', k.id);
+    if (error) { toast('❌ '+error.message); return; }
+    if (pinMarkers[k.id]) { pinMarkers[k.id].remove(); delete pinMarkers[k.id]; }
+    updateMapStats();
+    toast('🗑️ Pin removed');
+  });
+  const marker = new mapboxgl.Marker({ element: el })
     .setLngLat([k.lng, k.lat])
     .setPopup(new mapboxgl.Popup({ offset:10, closeButton:false })
       .setHTML(`<b style="color:${c}">${ML[k.status]||k.status}</b>`))
     .addTo(kmap);
+  pinMarkers[k.id] = marker;
+}
+
+async function clearMyPins() {
+  if (!confirm('Remove all your pins from the map?')) return;
+  const { error } = await db.from('door_knocks').delete().eq('rep_id', ME.id);
+  if (error) { toast('❌ '+error.message); return; }
+  // Remove only this user's markers from the map
+  const { data } = await db.from('door_knocks').select('id');
+  const remaining = new Set((data||[]).map(r=>r.id));
+  Object.keys(pinMarkers).forEach(id => {
+    if (!remaining.has(id)) { pinMarkers[id].remove(); delete pinMarkers[id]; }
+  });
+  updateMapStats();
+  toast('🗑️ Your pins cleared');
+}
+
+async function clearAllPins() {
+  if (ME.role !== 'manager') return;
+  if (!confirm('Remove ALL pins from the map for everyone?')) return;
+  const { error } = await db.from('door_knocks').delete().gte('id', '00000000-0000-0000-0000-000000000000');
+  if (error) { toast('❌ '+error.message); return; }
+  Object.keys(pinMarkers).forEach(id => { pinMarkers[id].remove(); delete pinMarkers[id]; });
+  updateMapStats();
+  toast('🗑️ All pins cleared');
 }
 
 async function updateMapStats() {
@@ -1462,7 +1510,7 @@ function setMark(s, btn) {
   markMode = s;
   document.querySelectorAll('.mk').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  toast('📍 Marking: '+ML[s]);
+  toast(s==='remove' ? '🗑️ Tap a pin to remove it' : '📍 Marking: '+ML[s]);
 }
 
 // ══════════════════════════════════════
@@ -1639,6 +1687,7 @@ async function loadWeekSchedule() {
             ${j.price && isManager ?`<div style="font-weight:800;color:var(--ink);font-size:.65rem">${fmtMoney(j.price)}</div>`:''}
             <div style="color:#6b7280;font-size:.6rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">👤 ${rep} · M${mc}</div>
             ${j.service?`<div style="color:#6b7280;font-size:.58rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🧹 ${j.service}</div>`:''}
+            ${j.address?`<div style="color:#6b7280;font-size:.58rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📍 ${j.address}</div>`:''}
           </div>`;
         });
 
