@@ -540,6 +540,7 @@ textarea.finp{resize:none;min-height:64px}
             <button onclick="clearAllPins()" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--off);color:var(--slate);font-weight:700;font-size:.75rem;cursor:pointer">🗑️ Clear All Pins</button>
           </span>
         </div>
+        <button id="map-bookings-btn" onclick="toggleBookingPins()" style="width:100%;margin-top:8px;padding:9px 12px;border-radius:10px;border:1.5px solid #7C3AED;background:#EDE9FE;color:#7C3AED;font-weight:700;font-size:.75rem;cursor:pointer">📅 Show All Booking Addresses</button>
       </div>
       <div class="sg">
         <div class="sc dk"><div class="sn" id="map-tot">0</div><div class="sl">Total Knocked</div></div>
@@ -563,7 +564,7 @@ textarea.finp{resize:none;min-height:64px}
         </div>
         <div class="stab" id="sd-wk" onclick="setSchedDay('week')">
           <div class="st-n">Week</div>
-          <div class="st-d">Upcoming</div>
+          <div class="st-d" id="sd-wk-lbl">This Week</div>
         </div>
       </div>
 
@@ -573,6 +574,11 @@ textarea.finp{resize:none;min-height:64px}
       </div>
 
       <div id="sched-jobs"></div>
+      <div id="sched-week-nav" style="display:none;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <button onclick="shiftWeek(-1)" style="background:var(--off);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-weight:700;font-size:.85rem;cursor:pointer">‹ Prev</button>
+        <span id="sched-week-range" style="font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;color:var(--slate)"></span>
+        <button onclick="shiftWeek(1)" style="background:var(--off);border:1.5px solid var(--border);border-radius:10px;padding:8px 16px;font-weight:700;font-size:.85rem;cursor:pointer">Next ›</button>
+      </div>
       <div id="sched-week" style="display:none"></div>
 
       <!-- MANAGER ONLY -->
@@ -1162,6 +1168,11 @@ function renderSales(arr, showRep) {
     </svg><p>Nothing here yet</p></div>`;
   return arr.map(s => {
     const canEdit = ME.role==='manager' || s.rep_id===ME.id;
+    const isManager = ME.role==='manager';
+    const ps = s.payment_status || 'pending';
+    const psBadge = ps==='cash'       ? `<span style="background:#D1FAE5;color:#059669;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px">💵 Cash</span>`
+                  : ps==='etransfer'  ? `<span style="background:#DBEAFE;color:#2563EB;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px">📲 e-Transfer</span>`
+                  : `<span style="background:#FEF3C7;color:#D97706;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px">⏳ Pending</span>`;
     return `
     <div class="sitem si${s.machine_num||1}" id="sitem-${s.id}">
       <div class="si-top">
@@ -1175,7 +1186,15 @@ function renderSales(arr, showRep) {
             ${s.address ? '📍 '+s.address+'<br>' : ''}
             ${s.created_at ? '<span style="font-size:.67rem;color:#aaa">🖊 Booked: '+new Date(s.created_at).toLocaleString('en-CA',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</span>' : ''}
           </div>
-          <span class="si-tag">Confirmed</span>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <span class="si-tag">Confirmed</span>
+            ${psBadge}
+          </div>
+          ${isManager ? `<div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+            <button onclick="setPayStatus('${s.id}','cash')" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid ${ps==='cash'?'#059669':'#d1d5db'};background:${ps==='cash'?'#D1FAE5':'#f9fafb'};color:${ps==='cash'?'#059669':'#6b7280'};font-size:.65rem;font-weight:700;cursor:pointer">💵 Cash</button>
+            <button onclick="setPayStatus('${s.id}','etransfer')" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid ${ps==='etransfer'?'#2563EB':'#d1d5db'};background:${ps==='etransfer'?'#DBEAFE':'#f9fafb'};color:${ps==='etransfer'?'#2563EB':'#6b7280'};font-size:.65rem;font-weight:700;cursor:pointer">📲 e-Transfer</button>
+            <button onclick="setPayStatus('${s.id}','pending')" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid ${ps==='pending'?'#D97706':'#d1d5db'};background:${ps==='pending'?'#FEF3C7':'#f9fafb'};color:${ps==='pending'?'#D97706':'#6b7280'};font-size:.65rem;font-weight:700;cursor:pointer">⏳ Pending</button>
+          </div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0;margin-left:10px">
           <div class="si-price">${fmtMoney(s.price)}</div>
@@ -1187,6 +1206,15 @@ function renderSales(arr, showRep) {
       </div>
     </div>`;
   }).join('');
+}
+
+async function setPayStatus(id, status) {
+  const { error } = await db.from('sales').update({ payment_status: status }).eq('id', id);
+  if (error) { toast('❌ '+error.message); return; }
+  const labels = { cash:'💵 Cash', etransfer:'📲 e-Transfer', pending:'⏳ Pending' };
+  toast('✅ Marked as '+labels[status]);
+  await loadSales();
+  await loadLb();
 }
 
 async function delSale(id) {
@@ -1426,7 +1454,7 @@ function initMap() {
   if (!el || el.offsetHeight===0) { setTimeout(initMap, 200); return; }
   kmap = new mapboxgl.Map({
     container: 'knock-map',
-    style: 'mapbox://styles/mapbox/streets-v12',
+    style: 'mapbox://styles/mapbox/satellite-streets-v12',
     center: [-79.6441, 43.5890], zoom: 13
   });
   kmap.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -1513,6 +1541,68 @@ function setMark(s, btn) {
   toast(s==='remove' ? '🗑️ Tap a pin to remove it' : '📍 Marking: '+ML[s]);
 }
 
+// ── Booking address pins on map
+let bookingPinsVisible = false;
+const bookingMarkers = [];
+
+async function toggleBookingPins() {
+  if (bookingPinsVisible) {
+    bookingMarkers.forEach(m => m.remove());
+    bookingMarkers.length = 0;
+    bookingPinsVisible = false;
+    G('map-bookings-btn').textContent = "📅 Show All Booking Addresses";
+    G('map-bookings-btn').style.background = '#EDE9FE';
+    toast('📅 Booking pins hidden');
+    return;
+  }
+  toast('🔍 Geocoding booking addresses…');
+  G('map-bookings-btn').textContent = '⏳ Loading…';
+  const { data: bks } = await db.from('bookings')
+    .select('client_name,address,date,time_start,price,service')
+    .not('address', 'is', null)
+    .neq('address', '');
+  const jobs = (bks||[]).filter(j => j.address && j.address.trim());
+  if (!jobs.length) { toast('No addresses found'); G('map-bookings-btn').textContent = "📅 Show All Booking Addresses"; return; }
+
+  let placed = 0;
+  for (const j of jobs) {
+    try {
+      const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(j.address+', Ontario, Canada')}.json?access_token=${MB_TOK}&limit=1`);
+      const geo = await res.json();
+      if (!geo.features || !geo.features.length) continue;
+      const [lng, lat] = geo.features[0].center;
+      const el = document.createElement('div');
+      el.style.cssText = `width:18px;height:18px;border-radius:4px;background:#F59E0B;border:2.5px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px`;
+      el.textContent = '🏠';
+      const popup = new mapboxgl.Popup({ offset:12, closeButton:false }).setHTML(
+        `<div style="font-size:.75rem;line-height:1.5">
+          <b>${j.client_name||'Client'}</b><br>
+          📍 ${j.address}<br>
+          📅 ${j.date||'—'} · 🕐 ${j.time_start||'—'}<br>
+          ${j.price?'💰 '+fmtMoney(j.price)+'<br>':''}
+          🧹 ${j.service||'Window Cleaning'}
+        </div>`
+      );
+      const marker = new mapboxgl.Marker({ element: el }).setLngLat([lng,lat]).setPopup(popup).addTo(kmap);
+      bookingMarkers.push(marker);
+      placed++;
+    } catch(e) { /* skip failed geocodes */ }
+  }
+
+  bookingPinsVisible = true;
+  G('map-bookings-btn').textContent = `📅 Hide Booking Addresses (${placed})`;
+  G('map-bookings-btn').style.background = '#D1FAE5';
+  G('map-bookings-btn').style.borderColor = '#059669';
+  G('map-bookings-btn').style.color = '#059669';
+  // Fit map to show all booking markers if any
+  if (placed > 0 && bookingMarkers.length) {
+    const bounds = new mapboxgl.LngLatBounds();
+    bookingMarkers.forEach(m => bounds.extend(m.getLngLat()));
+    kmap.fitBounds(bounds, { padding: 60, maxZoom: 14 });
+  }
+  toast(`📅 Showing ${placed} booking address${placed!==1?'es':''}`);
+}
+
 // ══════════════════════════════════════
 //  SCHEDULE
 // ══════════════════════════════════════
@@ -1554,30 +1644,45 @@ async function loadSchedule() {
     </div>`).join('');
 }
 
+let weekOffset = 0;
+
+function shiftWeek(dir) {
+  weekOffset += dir;
+  loadWeekSchedule();
+}
+
 function setSchedDay(d) {
   schedDay = d;
   G('sd-t').classList.toggle('on',  d==='today');
   G('sd-tm').classList.toggle('on', d==='tomorrow');
   G('sd-wk').classList.toggle('on', d==='week');
-  G('sched-jobs').style.display   = d==='week' ? 'none' : 'block';
-  G('sched-week').style.display   = d==='week' ? 'block' : 'none';
-  G('sched-copy-row').style.display = d==='week' ? 'none' : 'flex';
-  if (d==='week') loadWeekSchedule(); else loadSchedule();
+  G('sched-jobs').style.display        = d==='week' ? 'none' : 'block';
+  G('sched-week').style.display        = d==='week' ? 'block' : 'none';
+  G('sched-week-nav').style.display    = d==='week' ? 'flex' : 'none';
+  G('sched-copy-row').style.display    = d==='week' ? 'none' : 'flex';
+  if (d==='week') { weekOffset = 0; loadWeekSchedule(); } else loadSchedule();
 }
 
 async function loadWeekSchedule() {
   const el = G('sched-week');
   el.innerHTML = '<div style="color:var(--slate);padding:12px;font-size:.82rem;text-align:center">Loading week…</div>';
 
-  // Current Mon–Sun week
+  // Compute Mon–Sun for the offset week
   const now = new Date(); now.setHours(0,0,0,0);
   const dow = now.getDay();
   const diffToMon = (dow===0) ? -6 : 1-dow;
-  const weekMon = new Date(now); weekMon.setDate(now.getDate()+diffToMon);
+  const weekMon = new Date(now); weekMon.setDate(now.getDate() + diffToMon + weekOffset*7);
   const weekSun = new Date(weekMon); weekSun.setDate(weekMon.getDate()+6);
   const monStr = weekMon.toISOString().split('T')[0];
   const sunStr = weekSun.toISOString().split('T')[0];
   const today  = todayStr();
+
+  // Update nav label
+  const fmtOpts = { month:'short', day:'numeric' };
+  const rangeLabel = weekMon.toLocaleDateString('en-CA',fmtOpts) + ' – ' + weekSun.toLocaleDateString('en-CA',fmtOpts);
+  const weekLabel  = weekOffset===0 ? 'This Week' : weekOffset===-1 ? 'Last Week' : weekOffset===1 ? 'Next Week' : rangeLabel;
+  const wkLbl = G('sd-wk-lbl'); if (wkLbl) wkLbl.textContent = weekLabel;
+  const wkRng = G('sched-week-range'); if (wkRng) wkRng.textContent = rangeLabel;
 
   const { data: bks } = await db.from('bookings')
     .select('*,profiles(full_name)')
