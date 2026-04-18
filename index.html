@@ -477,12 +477,6 @@ textarea.finp{resize:none;min-height:64px}
               <option>Full Package</option>
             </select>
           </div>
-          <div class="field" id="b-rep-field" style="display:none">
-            <label>Book as Rep</label>
-            <select class="finp" id="b-rep">
-              <option value="">Loading reps…</option>
-            </select>
-          </div>
           <div class="field"><label>Notes</label>
             <textarea class="finp" id="b-nt" placeholder="Any special instructions..."></textarea>
           </div>
@@ -516,8 +510,6 @@ textarea.finp{resize:none;min-height:64px}
       <div id="lb-mgr" style="display:none;margin-top:18px">
         <div class="ct" style="margin-bottom:10px">📋 All Team Sales</div>
         <div id="lb-all"></div>
-        <div class="ct" style="margin:18px 0 10px;color:#ef4444">🗑️ Deleted Sales</div>
-        <div id="lb-deleted"></div>
       </div>
     </div>
 
@@ -603,7 +595,6 @@ textarea.finp{resize:none;min-height:64px}
         <div id="slot-rows"></div>
         <div style="display:flex;gap:8px;margin-top:6px">
           <button class="btn btn-off btn-sm" style="flex:1" onclick="addSlotRow()">+ Add Slot</button>
-          <button class="btn btn-ink btn-sm" style="flex:1" onclick="sortSlotsByTime()">🕐 Sort</button>
           <button class="btn btn-gold btn-sm" style="flex:1" onclick="saveSlots()">💾 Save</button>
         </div>
       </div>
@@ -833,18 +824,6 @@ function goTo(pg, btn) {
   if (pg==='dash')  loadDash();
   if (pg==='sales') loadSales();
   if (pg==='pay')   { if(typeof loadPayroll==='function') loadPayroll(); }
-  if (pg==='book' && ME.role==='manager') loadRepPicker();
-}
-
-async function loadRepPicker() {
-  const field = G('b-rep-field');
-  const sel   = G('b-rep');
-  if (!field || !sel) return;
-  field.style.display = 'block';
-  const { data } = await db.from('profiles').select('id,full_name').eq('role','rep').order('full_name');
-  const reps = data || [];
-  sel.innerHTML = `<option value="">— Select rep —</option>` +
-    reps.map(r => `<option value="${r.id}">${r.full_name}</option>`).join('');
 }
 
 // ══════════════════════════════════════
@@ -1035,16 +1014,9 @@ async function confirmBooking() {
     const svc   = G('b-sv').value;
     const notes = G('b-nt').value.trim() || '';
 
-    // Manager can book on behalf of a rep
-    const repSel = G('b-rep');
-    const bookingRepId = (ME.role==='manager' && repSel && repSel.value) ? repSel.value : ME.id;
-    if (ME.role==='manager' && repSel && !repSel.value) {
-      toast('⚠️ Please select a rep to book for'); return;
-    }
-
     // INSERT BOOKING
     const { error: bErr } = await db.from('bookings').insert({
-      rep_id: bookingRepId, date: selDate, slot_id: selSlot.id,
+      rep_id: ME.id, date: selDate, slot_id: selSlot.id,
       time_start: selSlot.start, time_end: selSlot.end,
       machine_num: selMachine,
       client_name: name, phone, price, address: addr, service: svc, notes,
@@ -1052,9 +1024,9 @@ async function confirmBooking() {
     });
     if (bErr) { toast('❌ Booking failed: '+bErr.message); console.error(bErr); return; }
 
-    // INSERT SALE
+    // INSERT SALE (include slot_id so we can link back to booking later)
     const { error: sErr } = await db.from('sales').insert({
-      rep_id: bookingRepId, date: selDate,
+      rep_id: ME.id, date: selDate,
       slot_id: selSlot.id,
       time_start: selSlot.start, time_end: selSlot.end,
       machine_num: selMachine,
@@ -1067,7 +1039,6 @@ async function confirmBooking() {
     const doneTime = selSlot.start;
     const doneMachine = selMachine;
     ['b-nm','b-ph','b-pr','b-ad','b-nt'].forEach(id => G(id).value='');
-    if (G('b-rep')) G('b-rep').value = '';
     selSlot = null;
     G('form-sec').style.display = 'none';
     toast(`✅ Booked! Machine ${doneMachine} · ${doneTime}`);
@@ -1089,7 +1060,7 @@ async function loadDash() {
 }
 
 async function loadRepDash() {
-  const { data: mySales }  = await db.from('sales').select('*').eq('rep_id', ME.id).is('deleted_at', null);
+  const { data: mySales }  = await db.from('sales').select('*').eq('rep_id', ME.id);
   const { data: myUpcoming }= await db.from('bookings').select('id').eq('rep_id', ME.id).gte('date', todayStr());
   const arr = mySales || [];
   const rev = arr.reduce((s,x) => s+(parseFloat(x.price)||0), 0);
@@ -1097,7 +1068,7 @@ async function loadRepDash() {
   G('r-rev').textContent   = fmtMoney(rev);
   G('r-up').textContent    = (myUpcoming||[]).length;
   // Rank
-  const { data: allS } = await db.from('sales').select('rep_id').is('deleted_at', null);
+  const { data: allS } = await db.from('sales').select('rep_id');
   if (allS) {
     const cnt = {};
     allS.forEach(s => cnt[s.rep_id]=(cnt[s.rep_id]||0)+1);
@@ -1121,13 +1092,13 @@ async function loadRepDash() {
         </div>
       </div>`;
   }
-  const { data: rec } = await db.from('sales').select('*').eq('rep_id', ME.id).is('deleted_at', null)
+  const { data: rec } = await db.from('sales').select('*').eq('rep_id', ME.id)
     .order('created_at',{ascending:false}).limit(4);
   G('r-recent').innerHTML = renderSales(rec||[], false);
 }
 
 async function loadMgrDash() {
-  const { data: all }   = await db.from('sales').select('*').is('deleted_at', null);
+  const { data: all }   = await db.from('sales').select('*');
   const arr = all || [];
   const rev = arr.reduce((s,x) => s+(parseFloat(x.price)||0), 0);
   G('m-sales').textContent = arr.length;
@@ -1147,7 +1118,7 @@ async function loadMgrDash() {
   } else {
     G('m-winner').innerHTML = '<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
   }
-  const { data: rec } = await db.from('sales').select('*,profiles(full_name)').is('deleted_at', null)
+  const { data: rec } = await db.from('sales').select('*,profiles(full_name)')
     .order('created_at',{ascending:false}).limit(6);
   G('m-recent').innerHTML = renderSales(rec||[], true);
 }
@@ -1156,7 +1127,6 @@ async function getWeekRanks() {
   const wb = currentWeekBounds();
   const { data } = await db.from('sales')
     .select('rep_id,price,profiles(full_name)')
-    .is('deleted_at', null)
     .gte('created_at', wb.mon.toISOString())
     .lte('created_at', wb.sun.toISOString());
   if (!data?.length) return [];
@@ -1173,7 +1143,7 @@ async function getWeekRanks() {
 //  SALES
 // ══════════════════════════════════════
 async function loadSales() {
-  let q = db.from('sales').select('*,profiles(full_name)').is('deleted_at', null).order('created_at',{ascending:false});
+  let q = db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
   if (ME.role==='rep') q = q.eq('rep_id', ME.id);
   const { data } = await q;
   const arr = data||[], tod = todayStr();
@@ -1198,6 +1168,11 @@ function renderSales(arr, showRep) {
     </svg><p>Nothing here yet</p></div>`;
   return arr.map(s => {
     const canEdit = ME.role==='manager' || s.rep_id===ME.id;
+    const isManager = ME.role==='manager';
+    const ps = s.payment_status || 'pending';
+    const psBadge = ps==='cash'       ? `<span style="background:#D1FAE5;color:#059669;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px">💵 Cash</span>`
+                  : ps==='etransfer'  ? `<span style="background:#DBEAFE;color:#2563EB;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px">📲 e-Transfer</span>`
+                  : `<span style="background:#FEF3C7;color:#D97706;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px">⏳ Pending</span>`;
     return `
     <div class="sitem si${s.machine_num||1}" id="sitem-${s.id}">
       <div class="si-top">
@@ -1213,7 +1188,13 @@ function renderSales(arr, showRep) {
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
             <span class="si-tag">Confirmed</span>
+            ${psBadge}
           </div>
+          ${isManager ? `<div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+            <button onclick="setPayStatus('${s.id}','cash')" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid ${ps==='cash'?'#059669':'#d1d5db'};background:${ps==='cash'?'#D1FAE5':'#f9fafb'};color:${ps==='cash'?'#059669':'#6b7280'};font-size:.65rem;font-weight:700;cursor:pointer">💵 Cash</button>
+            <button onclick="setPayStatus('${s.id}','etransfer')" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid ${ps==='etransfer'?'#2563EB':'#d1d5db'};background:${ps==='etransfer'?'#DBEAFE':'#f9fafb'};color:${ps==='etransfer'?'#2563EB':'#6b7280'};font-size:.65rem;font-weight:700;cursor:pointer">📲 e-Transfer</button>
+            <button onclick="setPayStatus('${s.id}','pending')" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid ${ps==='pending'?'#D97706':'#d1d5db'};background:${ps==='pending'?'#FEF3C7':'#f9fafb'};color:${ps==='pending'?'#D97706':'#6b7280'};font-size:.65rem;font-weight:700;cursor:pointer">⏳ Pending</button>
+          </div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0;margin-left:10px">
           <div class="si-price">${fmtMoney(s.price)}</div>
@@ -1227,25 +1208,34 @@ function renderSales(arr, showRep) {
   }).join('');
 }
 
+async function setPayStatus(id, status) {
+  const { error } = await db.from('sales').update({ payment_status: status }).eq('id', id);
+  if (error) { toast('❌ '+error.message); return; }
+  const labels = { cash:'💵 Cash', etransfer:'📲 e-Transfer', pending:'⏳ Pending' };
+  toast('✅ Marked as '+labels[status]);
+  await loadSales();
+  await loadLb();
+}
+
 async function delSale(id) {
-  if (!confirm('Delete this sale? It will be moved to Deleted Sales.')) return;
+  if (!confirm('Delete this booking and sale?')) return;
+  // Step 1: fetch sale details BEFORE deleting anything
   const { data: s } = await db.from('sales')
     .select('rep_id, date, slot_id, machine_num').eq('id', id).maybeSingle();
   if (!s) { toast('❌ Could not find sale'); return; }
-  // Soft-delete: stamp deleted_at instead of removing the row
-  const { error: sErr } = await db.from('sales').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  // Step 2: delete the sale
+  const { error: sErr } = await db.from('sales').delete().eq('id', id);
   if (sErr) { toast('❌ ' + sErr.message); return; }
-  // Still remove the matching booking slot
+  // Step 3: delete the matching booking using slot_id + rep_id + date + machine
   let bq = db.from('bookings').delete()
     .eq('rep_id', s.rep_id)
     .eq('date', s.date)
     .eq('machine_num', s.machine_num);
   if (s.slot_id) bq = bq.eq('slot_id', s.slot_id);
   await bq;
-  toast('🗑️ Sale deleted');
+  toast('🗑️ Booking deleted');
   await loadSales();
   await loadDash();
-  if (ME.role==='manager') await loadDeletedSales();
 }
 
 // ══════════════════════════════════════
@@ -1412,7 +1402,7 @@ async function loadLb() {
     until = wb.sun.toISOString();
   }
   if (lbPer==='month') since = monthAgo();
-  let q = db.from('sales').select('rep_id,price,profiles(full_name)').is('deleted_at', null);
+  let q = db.from('sales').select('rep_id,price,profiles(full_name)');
   if (since) q = q.gte('created_at', since);
   if (until) q = q.lte('created_at', until);
   const { data } = await q;
@@ -1441,12 +1431,11 @@ async function loadLb() {
   }).join('') : '<div class="empty"><p>No sales in this period yet 💪</p></div>';
 
   if (ME.role==='manager') {
-    let q2 = db.from('sales').select('*,profiles(full_name)').is('deleted_at', null).order('created_at',{ascending:false});
+    let q2 = db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
     if (since) q2 = q2.gte('created_at', since);
     if (until) q2 = q2.lte('created_at', until);
     const { data: a } = await q2;
     G('lb-all').innerHTML = renderSales(a||[], true);
-    await loadDeletedSales();
   }
 }
 
@@ -1454,49 +1443,6 @@ function setLbTab(p, btn) {
   lbPer = p;
   document.querySelectorAll('#pg-lb .tab').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on'); loadLb();
-}
-
-async function loadDeletedSales() {
-  const el = G('lb-deleted');
-  if (!el) return;
-  el.innerHTML = '<div style="color:var(--slate);font-size:.78rem;padding:8px">Loading…</div>';
-  const { data } = await db.from('sales')
-    .select('*,profiles(full_name)')
-    .not('deleted_at', 'is', null)
-    .order('deleted_at', { ascending: false });
-  const arr = data || [];
-  if (!arr.length) {
-    el.innerHTML = '<div class="empty"><p>No deleted sales</p></div>';
-    return;
-  }
-  el.innerHTML = arr.map(s => `
-    <div class="sitem" style="opacity:.8;border-left:3px solid #EF4444;background:#fff5f5">
-      <div class="si-top">
-        <div style="flex:1;min-width:0">
-          <div class="si-name" style="text-decoration:line-through;color:#9ca3af">${s.client_name||'TBD'}</div>
-          <div class="si-meta">
-            <b>👤 ${s.profiles?.full_name||'Unknown'}</b><br>
-            📅 <b>${s.date||'—'}</b> · Machine ${s.machine_num||1}<br>
-            ${s.address ? '📍 '+s.address+'<br>' : ''}
-            <span style="font-size:.67rem;color:#ef4444">🗑️ Deleted: ${new Date(s.deleted_at).toLocaleString('en-CA',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</span>
-          </div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;margin-left:10px">
-          <div class="si-price" style="color:#9ca3af">${fmtMoney(s.price)}</div>
-          <button class="btn btn-xs btn-ink" style="margin-top:7px" onclick="restoreSale('${s.id}')">↩️ Restore</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-async function restoreSale(id) {
-  if (!confirm('Restore this sale?')) return;
-  const { error } = await db.from('sales').update({ deleted_at: null }).eq('id', id);
-  if (error) { toast('❌ '+error.message); return; }
-  toast('✅ Sale restored');
-  await loadSales();
-  await loadDash();
-  await loadDeletedSales();
 }
 
 // ══════════════════════════════════════
@@ -1907,12 +1853,10 @@ async function shareSchedule() {
 // ══════════════════════════════════════
 function buildSlotMgr() {
   G('slot-rows').innerHTML = slots.map((s,i) => slotHTML(s,i)).join('');
-  initSlotDrag();
 }
 
 function slotHTML(s, i) {
-  return `<div class="smrow" id="smr-${i}" draggable="true">
-    <div class="smrow-drag" title="Drag to reorder" style="cursor:grab;color:var(--slate);font-size:1.1rem;padding:0 6px 0 2px;flex-shrink:0;touch-action:none">⠿</div>
+  return `<div class="smrow" id="smr-${i}">
     <input type="text" value="${s.label||''}" placeholder="Label e.g. Morning" style="flex:2"
       onchange="updateSlot(${i},'label',this.value)"/>
     <input type="time" value="${to24(s.time_start)}" style="flex:1"
@@ -1925,144 +1869,15 @@ function slotHTML(s, i) {
   </div>`;
 }
 
-function initSlotDrag() {
-  const container = G('slot-rows');
-  let dragging = null;
-
-  // Desktop drag
-  container.addEventListener('dragstart', e => {
-    const row = e.target.closest('.smrow');
-    if (!row) return;
-    dragging = row;
-    setTimeout(() => row.style.opacity = '0.4', 0);
-  });
-  container.addEventListener('dragend', e => {
-    if (dragging) { dragging.style.opacity = ''; dragging = null; }
-    container.querySelectorAll('.smrow').forEach(r => r.style.borderTop = '');
-  });
-  container.addEventListener('dragover', e => {
-    e.preventDefault();
-    const row = e.target.closest('.smrow');
-    if (!row || row === dragging) return;
-    container.querySelectorAll('.smrow').forEach(r => r.style.borderTop = '');
-    row.style.borderTop = '2.5px solid var(--ink)';
-    const rect = row.getBoundingClientRect();
-    if (e.clientY < rect.top + rect.height / 2) container.insertBefore(dragging, row);
-    else container.insertBefore(dragging, row.nextSibling);
-  });
-
-  // Mobile touch drag — attach to each drag handle
-  container.querySelectorAll('.smrow-drag').forEach(handle => {
-    handle.addEventListener('touchstart', onTouchStart, { passive: false });
-  });
-
-  let touchDragging = null, touchClone = null, touchOffsetY = 0;
-
-  function onTouchStart(e) {
-    const row = e.currentTarget.closest('.smrow');
-    if (!row) return;
-    e.preventDefault();
-    touchDragging = row;
-    const touch = e.touches[0];
-    const rect  = row.getBoundingClientRect();
-    touchOffsetY = touch.clientY - rect.top;
-    row.style.opacity = '0.45';
-
-    // Floating clone
-    touchClone = row.cloneNode(true);
-    touchClone.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;
-      width:${rect.width}px;pointer-events:none;z-index:9999;opacity:.85;
-      border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);background:#fff;`;
-    document.body.appendChild(touchClone);
-
-    document.addEventListener('touchmove', onTouchMove, { passive: false });
-    document.addEventListener('touchend',  onTouchEnd,  { passive: false });
-  }
-
-  function onTouchMove(e) {
-    if (!touchDragging) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
-
-    // Find target row
-    container.querySelectorAll('.smrow').forEach(r => r.style.borderTop = '');
-    const rows = Array.from(container.querySelectorAll('.smrow')).filter(r => r !== touchDragging);
-    for (const r of rows) {
-      const rect = r.getBoundingClientRect();
-      if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-        r.style.borderTop = touch.clientY < rect.top + rect.height / 2
-          ? '2.5px solid var(--ink)' : '';
-        r.style.borderBottom = touch.clientY >= rect.top + rect.height / 2
-          ? '2.5px solid var(--ink)' : '';
-        break;
-      }
-    }
-  }
-
-  function onTouchEnd(e) {
-    if (!touchDragging) return;
-    document.removeEventListener('touchmove', onTouchMove);
-    document.removeEventListener('touchend',  onTouchEnd);
-    touchDragging.style.opacity = '';
-    if (touchClone) { touchClone.remove(); touchClone = null; }
-
-    const touch = e.changedTouches[0];
-    const rows = Array.from(container.querySelectorAll('.smrow')).filter(r => r !== touchDragging);
-    for (const r of rows) {
-      r.style.borderTop = ''; r.style.borderBottom = '';
-      const rect = r.getBoundingClientRect();
-      if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-        if (touch.clientY < rect.top + rect.height / 2) container.insertBefore(touchDragging, r);
-        else container.insertBefore(touchDragging, r.nextSibling);
-        break;
-      }
-    }
-    touchDragging = null;
-  }
-}
-
-function sortSlotsByTime() {
-  const container = G('slot-rows');
-  const rows = Array.from(container.querySelectorAll('.smrow'));
-  if (!rows.length) return;
-
-  function toMinutes(timeStr) {
-    if (!timeStr) return 0;
-    // Handle 24h format from time input
-    if (/^\d{2}:\d{2}$/.test(timeStr)) {
-      const [h, m] = timeStr.split(':').map(Number);
-      return h * 60 + m;
-    }
-    // Handle AM/PM format
-    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
-    if (!match) return 0;
-    let h = parseInt(match[1]), m = parseInt(match[2]);
-    const p = match[3].toUpperCase();
-    if (p === 'PM' && h !== 12) h += 12;
-    if (p === 'AM' && h === 12) h = 0;
-    return h * 60 + m;
-  }
-
-  rows.sort((a, b) => {
-    const aInput = a.querySelectorAll('input[type="time"]')[0];
-    const bInput = b.querySelectorAll('input[type="time"]')[0];
-    return toMinutes(aInput ? aInput.value : '') - toMinutes(bInput ? bInput.value : '');
-  });
-
-  rows.forEach(r => container.appendChild(r));
-  toast('🕐 Slots sorted by time!');
-}
-
 function updateSlot(i, field, val) {
   if (slots[i]) slots[i][field] = val;
 }
 
 function addSlotRow() {
+  const newSlot = { label:'', time_start:'9:00 AM', time_end:'11:00 AM', sort_order:999 };
   const i = 'n'+Date.now();
   const d = document.createElement('div');
-  d.innerHTML = `<div class="smrow" id="smr-${i}" draggable="true">
-    <div class="smrow-drag" title="Drag to reorder" style="cursor:grab;color:var(--slate);font-size:1.1rem;padding:0 6px 0 2px;flex-shrink:0">⠿</div>
+  d.innerHTML = `<div class="smrow" id="smr-${i}">
     <input type="text" placeholder="Label" style="flex:2"/>
     <input type="time" value="09:00" style="flex:1"/>
     <span style="color:var(--slate);font-size:.8rem;flex-shrink:0">–</span>
@@ -2071,7 +1886,6 @@ function addSlotRow() {
       style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.1rem;padding:0 4px;flex-shrink:0">✕</button>
   </div>`;
   G('slot-rows').appendChild(d.firstElementChild);
-  initSlotDrag();
 }
 
 async function saveSlots() {
