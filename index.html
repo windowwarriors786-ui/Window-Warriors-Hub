@@ -289,10 +289,17 @@ textarea.finp{resize:none;min-height:64px}
 
 /* ── SLOT MANAGER ── */
 .smrow{display:flex;align-items:center;gap:7px;padding:11px 12px;
-  border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:#fff}
+  border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:#fff;
+  transition:box-shadow .15s,opacity .15s,transform .15s;cursor:default}
+.smrow.dragging{opacity:.45;transform:scale(.98);box-shadow:0 0 0 2px var(--gold)}
+.smrow.drag-over{border-color:var(--gold);box-shadow:0 0 0 2px rgba(240,180,41,.35);transform:translateY(-2px)}
 .smrow input{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;
   font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--ink);outline:none}
 .smrow input:focus{border-color:var(--ink)}
+.drag-handle{cursor:grab;color:var(--border);font-size:1rem;padding:0 2px;flex-shrink:0;
+  user-select:none;transition:color .15s;touch-action:none}
+.drag-handle:hover{color:var(--slate)}
+.drag-handle:active{cursor:grabbing}
 
 /* ── EMPTY ── */
 .empty{text-align:center;padding:36px 16px;color:var(--slate)}
@@ -1609,8 +1616,16 @@ async function toggleBookingPins() {
 async function loadSchedule() {
   const ds  = schedDay==='today' ? todayStr() : tomorrowStr();
   const { data: bks, error } = await db.from('bookings')
-    .select('*,profiles(full_name)').eq('date', ds).order('machine_num').order('time_start');
-  const jobs = bks || [];
+    .select('*,profiles(full_name)').eq('date', ds);
+  // Sort by manager-defined slot order, then machine as tiebreaker
+  const slotOrder = {};
+  slots.forEach((s, i) => { slotOrder[s.time_start] = i; });
+  const jobs = (bks || []).sort((a, b) => {
+    const oa = slotOrder[a.time_start] ?? 999;
+    const ob = slotOrder[b.time_start] ?? 999;
+    if (oa !== ob) return oa - ob;
+    return (a.machine_num||1) - (b.machine_num||1);
+  });
   const hdr  = `<div style="background:var(--ink);color:#fff;border-radius:12px;
     padding:16px;margin-bottom:12px">
     <div style="font-family:Syne,sans-serif;font-weight:800;font-size:1rem">${fmtDL(ds)}</div>
@@ -1688,9 +1703,18 @@ async function loadWeekSchedule() {
     .select('*,profiles(full_name)')
     .gte('date', monStr)
     .lte('date', sunStr)
-    .order('date').order('machine_num').order('time_start');
+    .order('date');
 
-  const jobs = bks || [];
+  // Sort within each day by manager-defined slot order
+  const slotOrder = {};
+  slots.forEach((s, i) => { slotOrder[s.time_start] = i; });
+  const jobs = (bks || []).sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    const oa = slotOrder[a.time_start] ?? 999;
+    const ob = slotOrder[b.time_start] ?? 999;
+    if (oa !== ob) return oa - ob;
+    return (a.machine_num||1) - (b.machine_num||1);
+  });
 
   // Group by date
   const byDay = {};
@@ -1820,8 +1844,9 @@ async function loadWeekSchedule() {
 async function copySchedule() {
   const ds = schedDay==='today' ? todayStr() : tomorrowStr();
   const { data: bks } = await db.from('bookings')
-    .select('*,profiles(full_name)').eq('date', ds).order('machine_num').order('time_start');
-  const jobs = bks||[];
+    .select('*,profiles(full_name)').eq('date', ds);
+  const slotOrd = {}; slots.forEach((s,i)=>{ slotOrd[s.time_start]=i; });
+  const jobs = (bks||[]).sort((a,b)=>{ const oa=slotOrd[a.time_start]??999,ob=slotOrd[b.time_start]??999; return oa!==ob?oa-ob:(a.machine_num||1)-(b.machine_num||1); });
   if (!jobs.length) { toast('No jobs to copy'); return; }
   let txt = `⚔️ WINDOW WARRIORS SCHEDULE\n📅 ${fmtDL(ds)}\n${'─'.repeat(32)}\n\n`;
   jobs.forEach((j,i) => {
@@ -1840,8 +1865,9 @@ async function copySchedule() {
 async function shareSchedule() {
   const ds = schedDay==='today' ? todayStr() : tomorrowStr();
   const { data: bks } = await db.from('bookings')
-    .select('*,profiles(full_name)').eq('date', ds).order('machine_num').order('time_start');
-  const jobs = bks||[];
+    .select('*,profiles(full_name)').eq('date', ds);
+  const slotOrd = {}; slots.forEach((s,i)=>{ slotOrd[s.time_start]=i; });
+  const jobs = (bks||[]).sort((a,b)=>{ const oa=slotOrd[a.time_start]??999,ob=slotOrd[b.time_start]??999; return oa!==ob?oa-ob:(a.machine_num||1)-(b.machine_num||1); });
   let txt = `⚔️ WARRIORS\n📅 ${fmtDL(ds)}\n\n`;
   jobs.forEach((j,i) => { txt+=`${i+1}. M${j.machine_num||1} · ${j.time_start}–${j.time_end} — ${j.client_name||'TBD'}\n${j.address||''} ${j.phone||''}\n\n`; });
   if (navigator.share) { try { await navigator.share({ title:'Warriors Schedule', text:txt }); return; } catch{} }
@@ -1852,11 +1878,14 @@ async function shareSchedule() {
 //  SLOT MANAGER (Manager only)
 // ══════════════════════════════════════
 function buildSlotMgr() {
-  G('slot-rows').innerHTML = slots.map((s,i) => slotHTML(s,i)).join('');
+  const container = G('slot-rows');
+  container.innerHTML = slots.map((s,i) => slotHTML(s,i)).join('');
+  initSlotDrag();
 }
 
 function slotHTML(s, i) {
-  return `<div class="smrow" id="smr-${i}">
+  return `<div class="smrow" id="smr-${i}" draggable="true">
+    <span class="drag-handle" title="Drag to reorder">⠿</span>
     <input type="text" value="${s.label||''}" placeholder="Label e.g. Morning" style="flex:2"
       onchange="updateSlot(${i},'label',this.value)"/>
     <input type="time" value="${to24(s.time_start)}" style="flex:1"
@@ -1864,9 +1893,118 @@ function slotHTML(s, i) {
     <span style="color:var(--slate);font-size:.8rem;flex-shrink:0">–</span>
     <input type="time" value="${to24(s.time_end)}" style="flex:1"
       onchange="updateSlot(${i},'time_end',from24(this.value))"/>
-    <button onclick="G('smr-${i}').remove()"
+    <button onclick="this.closest('.smrow').remove()"
       style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.1rem;padding:0 4px;flex-shrink:0">✕</button>
   </div>`;
+}
+
+function initSlotDrag() {
+  const container = G('slot-rows');
+  let dragSrc = null;
+
+  function onDragStart(e) {
+    dragSrc = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+  }
+  function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.smrow').forEach(r => r.classList.remove('drag-over'));
+    if (this !== dragSrc) this.classList.add('drag-over');
+    return false;
+  }
+  function onDragLeave() {
+    this.classList.remove('drag-over');
+  }
+  function onDrop(e) {
+    e.stopPropagation();
+    if (dragSrc && this !== dragSrc) {
+      // Swap DOM positions
+      const rows = [...container.querySelectorAll('.smrow')];
+      const srcIdx = rows.indexOf(dragSrc);
+      const tgtIdx = rows.indexOf(this);
+      if (srcIdx < tgtIdx) {
+        container.insertBefore(dragSrc, this.nextSibling);
+      } else {
+        container.insertBefore(dragSrc, this);
+      }
+      toast('↕️ Order updated — tap Save to keep it');
+    }
+    this.classList.remove('drag-over');
+    return false;
+  }
+  function onDragEnd() {
+    document.querySelectorAll('.smrow').forEach(r => {
+      r.classList.remove('dragging');
+      r.classList.remove('drag-over');
+    });
+    dragSrc = null;
+  }
+
+  // Touch drag support (mobile)
+  let touchSrc = null, touchClone = null, touchOffX = 0, touchOffY = 0;
+
+  function onTouchStart(e) {
+    if (!e.target.closest('.drag-handle')) return;
+    touchSrc = this;
+    const rect = this.getBoundingClientRect();
+    touchOffX = e.touches[0].clientX - rect.left;
+    touchOffY = e.touches[0].clientY - rect.top;
+    // Create a floating clone
+    touchClone = this.cloneNode(true);
+    touchClone.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:.85;
+      pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.18);border-radius:10px;
+      background:#fff;left:${rect.left}px;top:${rect.top}px;transform:scale(1.02)`;
+    document.body.appendChild(touchClone);
+    this.classList.add('dragging');
+    e.preventDefault();
+  }
+
+  function onTouchMove(e) {
+    if (!touchSrc || !touchClone) return;
+    const x = e.touches[0].clientX - touchOffX;
+    const y = e.touches[0].clientY - touchOffY;
+    touchClone.style.left = x + 'px';
+    touchClone.style.top  = y + 'px';
+    // Find row under finger
+    touchClone.style.display = 'none';
+    const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+    touchClone.style.display = '';
+    const target = el ? el.closest('.smrow') : null;
+    document.querySelectorAll('.smrow').forEach(r => r.classList.remove('drag-over'));
+    if (target && target !== touchSrc) target.classList.add('drag-over');
+    e.preventDefault();
+  }
+
+  function onTouchEnd(e) {
+    if (!touchSrc) return;
+    if (touchClone) { touchClone.remove(); touchClone = null; }
+    touchSrc.classList.remove('dragging');
+    const target = document.querySelector('.smrow.drag-over');
+    if (target && target !== touchSrc) {
+      const rows = [...container.querySelectorAll('.smrow')];
+      const srcIdx = rows.indexOf(touchSrc);
+      const tgtIdx = rows.indexOf(target);
+      if (srcIdx < tgtIdx) container.insertBefore(touchSrc, target.nextSibling);
+      else container.insertBefore(touchSrc, target);
+      toast('↕️ Order updated — tap Save to keep it');
+    }
+    document.querySelectorAll('.smrow').forEach(r => r.classList.remove('drag-over'));
+    touchSrc = null;
+  }
+
+  container.querySelectorAll('.smrow').forEach(row => {
+    row.addEventListener('dragstart',  onDragStart);
+    row.addEventListener('dragover',   onDragOver);
+    row.addEventListener('dragleave',  onDragLeave);
+    row.addEventListener('drop',       onDrop);
+    row.addEventListener('dragend',    onDragEnd);
+    row.addEventListener('touchstart', onTouchStart, { passive: false });
+    row.addEventListener('touchmove',  onTouchMove,  { passive: false });
+    row.addEventListener('touchend',   onTouchEnd);
+  });
 }
 
 function updateSlot(i, field, val) {
@@ -1874,10 +2012,10 @@ function updateSlot(i, field, val) {
 }
 
 function addSlotRow() {
-  const newSlot = { label:'', time_start:'9:00 AM', time_end:'11:00 AM', sort_order:999 };
   const i = 'n'+Date.now();
   const d = document.createElement('div');
-  d.innerHTML = `<div class="smrow" id="smr-${i}">
+  d.innerHTML = `<div class="smrow" id="smr-${i}" draggable="true">
+    <span class="drag-handle" title="Drag to reorder">⠿</span>
     <input type="text" placeholder="Label" style="flex:2"/>
     <input type="time" value="09:00" style="flex:1"/>
     <span style="color:var(--slate);font-size:.8rem;flex-shrink:0">–</span>
@@ -1886,6 +2024,7 @@ function addSlotRow() {
       style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1.1rem;padding:0 4px;flex-shrink:0">✕</button>
   </div>`;
   G('slot-rows').appendChild(d.firstElementChild);
+  initSlotDrag(); // re-init so new row gets drag listeners
 }
 
 async function saveSlots() {
