@@ -1021,17 +1021,7 @@ async function confirmBooking() {
     const svc   = G('b-sv').value;
     const notes = G('b-nt').value.trim() || '';
 
-    // INSERT BOOKING
-    const { error: bErr } = await db.from('bookings').insert({
-      rep_id: ME.id, date: selDate, slot_id: selSlot.id,
-      time_start: selSlot.start, time_end: selSlot.end,
-      machine_num: selMachine,
-      client_name: name, phone, price, address: addr, service: svc, notes,
-      status: 'confirmed'
-    });
-    if (bErr) { toast('❌ Booking failed: '+bErr.message); console.error(bErr); return; }
-
-    // INSERT SALE (include slot_id so we can link back to booking later)
+    // INSERT SALE only — DB trigger (tr_sync_sale_to_booking) syncs bookings automatically
     const { error: sErr } = await db.from('sales').insert({
       rep_id: ME.id, date: selDate,
       slot_id: selSlot.id,
@@ -1040,7 +1030,7 @@ async function confirmBooking() {
       client_name: name, phone, price, address: addr, service: svc, notes,
       status: 'confirmed'
     });
-    if (sErr) { toast('❌ Sale record: '+sErr.message); console.error(sErr); return; }
+    if (sErr) { toast('❌ Booking failed: '+sErr.message); console.error(sErr); return; }
 
     // Clear form — capture values BEFORE nulling selSlot
     const doneTime = selSlot.start;
@@ -1226,20 +1216,9 @@ async function setPayStatus(id, status) {
 
 async function delSale(id) {
   if (!confirm('Delete this booking and sale?')) return;
-  // Step 1: fetch sale details BEFORE deleting anything
-  const { data: s } = await db.from('sales')
-    .select('rep_id, date, slot_id, machine_num').eq('id', id).maybeSingle();
-  if (!s) { toast('❌ Could not find sale'); return; }
-  // Step 2: delete the sale
+  // Delete from sales only — DB trigger handles bookings deletion automatically
   const { error: sErr } = await db.from('sales').delete().eq('id', id);
   if (sErr) { toast('❌ ' + sErr.message); return; }
-  // Step 3: delete the matching booking using slot_id + rep_id + date + machine
-  let bq = db.from('bookings').delete()
-    .eq('rep_id', s.rep_id)
-    .eq('date', s.date)
-    .eq('machine_num', s.machine_num);
-  if (s.slot_id) bq = bq.eq('slot_id', s.slot_id);
-  await bq;
   toast('🗑️ Booking deleted');
   await loadSales();
   await loadDash();
@@ -1251,20 +1230,17 @@ async function delSale(id) {
 let editingId = null;
 let editSlots = [];
 
+// Holds the original sale being edited — used by refreshEditSlots
+let _editOriginal = null;
+
 async function openEditModal(saleId) {
   editingId = saleId;
-  // Load sale data
   const { data: s } = await db.from('sales').select('*,profiles(full_name)').eq('id', saleId).single();
   if (!s) { toast('Could not load booking'); return; }
+  _editOriginal = s;
 
-  // Load all slots for slot picker
   const { data: slotData } = await db.from('slots').select('*').order('sort_order');
   editSlots = slotData || [];
-
-  const slotsOptions = editSlots.map(sl =>
-    `<option value="${sl.id}" data-start="${sl.time_start}" data-end="${sl.time_end}"
-      ${sl.id===s.slot_id?'selected':''}>${sl.time_start} – ${sl.time_end}${sl.label?' ('+sl.label+')':''}</option>`
-  ).join('');
 
   const modal = document.getElementById('edit-modal');
   modal.innerHTML = `
@@ -1310,21 +1286,23 @@ async function openEditModal(saleId) {
             📅 Reschedule
           </div>
           <div class="field"><label>Date</label>
-            <input class="finp" id="e-dt" type="date" value="${s.date||''}"/>
+            <input class="finp" id="e-dt" type="date" value="${s.date||''}"
+              oninput="refreshEditSlots()" onchange="refreshEditSlots()"/>
           </div>
-          <div class="f2">
-            <div class="field"><label>Machine</label>
-              <select class="finp" id="e-mc">
-                <option value="1"${(s.machine_num||1)===1?' selected':''}>Machine 1</option>
-                <option value="2"${(s.machine_num||1)===2?' selected':''}>Machine 2</option>
-              </select>
+          <div class="field"><label>Machine</label>
+            <select class="finp" id="e-mc" onchange="refreshEditSlots()">
+              <option value="1"${(s.machine_num||1)===1?' selected':''}>Machine 1</option>
+              <option value="2"${(s.machine_num||1)===2?' selected':''}>Machine 2</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Time Slot</label>
+            <div id="edit-slot-grid" style="display:flex;flex-direction:column;gap:7px;margin-top:4px">
+              <div style="color:var(--slate);font-size:.8rem;padding:8px 0">Loading slots…</div>
             </div>
-            <div class="field"><label>Time Slot</label>
-              <select class="finp" id="e-sl">
-                <option value="">-- keep current --</option>
-                ${slotsOptions}
-              </select>
-            </div>
+            <input type="hidden" id="e-sl-id"/>
+            <input type="hidden" id="e-sl-start"/>
+            <input type="hidden" id="e-sl-end"/>
           </div>
         </div>
 
@@ -1335,6 +1313,115 @@ async function openEditModal(saleId) {
       </div>
     </div>`;
   modal.style.display = 'flex';
+
+  // Populate slots immediately for the current date/machine
+  await refreshEditSlots();
+}
+
+async function refreshEditSlots() {
+  const s    = _editOriginal;
+  if (!s) return;
+  const grid = document.getElementById('edit-slot-grid');
+  if (!grid) return;
+
+  const dateEl = document.getElementById('e-dt');
+  const machEl = document.getElementById('e-mc');
+  if (!dateEl || !machEl) return;
+
+  const date = dateEl.value || s.date;
+  const mach = parseInt(machEl.value) || s.machine_num || 1;
+
+  grid.innerHTML = '<div style="color:var(--slate);font-size:.8rem;padding:8px 0">Checking availability…</div>';
+
+  // Fetch all bookings for this date+machine
+  const { data: bks } = await db.from('bookings')
+    .select('slot_id, rep_id, client_name')
+    .eq('date', date)
+    .eq('machine_num', mach);
+  const booked = bks || [];
+
+  if (!editSlots.length) {
+    grid.innerHTML = '<div style="color:var(--slate);font-size:.8rem;padding:8px 0">No slots configured yet.</div>';
+    return;
+  }
+
+  // Pre-select: if same date+machine as original, keep original slot selected
+  const sameContext = (date === s.date && mach === (s.machine_num||1));
+  // Default selected = original slot if context unchanged, else nothing
+  let selectedId = document.getElementById('e-sl-id').value || (sameContext ? s.slot_id : '');
+
+  let html = '';
+  editSlots.forEach(sl => {
+    const booking = booked.find(b => b.slot_id === sl.id);
+    // This slot is "taken by someone else" if booked and NOT the booking we're editing
+    const takenByOther = booking && booking.rep_id !== s.rep_id;
+    // It's "currently this booking" if same date+machine+slot as original
+    const isCurrentSlot = sameContext && sl.id === s.slot_id;
+
+    const isSelected = sl.id === selectedId;
+
+    let statusBadge, cardStyle, clickable;
+    if (isCurrentSlot) {
+      statusBadge = `<span style="background:#FEF3C7;color:#92400E;font-size:.65rem;font-weight:800;
+        padding:3px 9px;border-radius:20px;letter-spacing:.02em">📌 CURRENT</span>`;
+      cardStyle = `border:2px solid #F59E0B;background:#FFFBEB;cursor:pointer`;
+      clickable = true;
+    } else if (takenByOther) {
+      const who = booking.client_name ? booking.client_name : 'Someone';
+      statusBadge = `<span style="background:#FEE2E2;color:#991B1B;font-size:.65rem;font-weight:800;
+        padding:3px 9px;border-radius:20px;letter-spacing:.02em">🔴 TAKEN — ${who}</span>`;
+      cardStyle = `border:2px solid #FECACA;background:#FFF5F5;cursor:not-allowed;opacity:.7`;
+      clickable = false;
+    } else {
+      statusBadge = `<span style="background:#D1FAE5;color:#065F46;font-size:.65rem;font-weight:800;
+        padding:3px 9px;border-radius:20px;letter-spacing:.02em">🟢 AVAILABLE</span>`;
+      cardStyle = `border:2px solid ${isSelected?'var(--ink)':'var(--border)'};
+        background:${isSelected?'var(--ink)':'#fff'};cursor:pointer`;
+      clickable = true;
+    }
+
+    // Override style if this card is selected
+    if (isSelected && !takenByOther) {
+      cardStyle = `border:2px solid var(--ink);background:var(--ink);cursor:pointer`;
+    }
+
+    const timeColor = (isSelected && !takenByOther) ? '#fff' : 'var(--ink)';
+    const labelColor = (isSelected && !takenByOther) ? 'rgba(255,255,255,.65)' : 'var(--slate)';
+
+    html += `<div onclick="${clickable ? `pickEditSlot('${sl.id}','${sl.time_start}','${sl.time_end}',${takenByOther})` : ''}"
+      style="display:flex;align-items:center;justify-content:space-between;
+        padding:11px 13px;border-radius:10px;transition:all .15s;${cardStyle}">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.88rem;color:${timeColor}">
+          ${sl.time_start} – ${sl.time_end}
+        </div>
+        ${sl.label ? `<div style="font-size:.68rem;color:${labelColor};margin-top:2px">${sl.label}</div>` : ''}
+      </div>
+      ${statusBadge}
+    </div>`;
+  });
+
+  grid.innerHTML = html;
+
+  // If the selected slot is no longer valid for this date/machine, clear it
+  if (selectedId) {
+    const stillValid = editSlots.find(sl => sl.id === selectedId);
+    const nowTaken   = booked.find(b => b.slot_id === selectedId && b.rep_id !== s.rep_id);
+    if (!stillValid || nowTaken) {
+      document.getElementById('e-sl-id').value    = '';
+      document.getElementById('e-sl-start').value = '';
+      document.getElementById('e-sl-end').value   = '';
+    }
+  }
+}
+
+function pickEditSlot(slotId, start, end, isTaken) {
+  if (isTaken) return;
+  document.getElementById('e-sl-id').value    = slotId;
+  document.getElementById('e-sl-start').value = start;
+  document.getElementById('e-sl-end').value   = end;
+  // Re-render to show selection highlight
+  refreshEditSlots();
 }
 
 function closeEditModal() {
@@ -1342,6 +1429,7 @@ function closeEditModal() {
   m.style.display = 'none';
   m.innerHTML = '';
   editingId = null;
+  _editOriginal = null;
 }
 
 async function saveEdit(saleId) {
@@ -1349,12 +1437,10 @@ async function saveEdit(saleId) {
   if (!btn) return;
   btn.disabled = true; btn.textContent = 'Saving...';
   try {
-    // Fetch the FULL current sale record first — we need old values as lookup keys
     const { data: old, error: fetchErr } = await db.from('sales')
       .select('*').eq('id', saleId).maybeSingle();
     if (fetchErr || !old) { toast('❌ Could not load booking data'); return; }
 
-    // Read form values
     const name    = document.getElementById('e-nm').value.trim() || 'TBD';
     const phone   = document.getElementById('e-ph').value.trim() || '';
     const price   = parseFloat(document.getElementById('e-pr').value) || 0;
@@ -1363,13 +1449,26 @@ async function saveEdit(saleId) {
     const notes   = document.getElementById('e-nt').value.trim() || '';
     const newDate = document.getElementById('e-dt').value || old.date;
     const newMach = parseInt(document.getElementById('e-mc').value) || old.machine_num || 1;
-    const slotEl  = document.getElementById('e-sl');
-    const newSlotId = slotEl.value || old.slot_id || null;
-    const slotOpt = slotEl.value ? slotEl.selectedOptions[0] : null;
-    const newTStart = slotOpt ? slotOpt.dataset.start : old.time_start;
-    const newTEnd   = slotOpt ? slotOpt.dataset.end   : old.time_end;
 
-    // ── Update SALES row
+    // Read from hidden inputs set by pickEditSlot
+    const pickedId    = document.getElementById('e-sl-id').value;
+    const pickedStart = document.getElementById('e-sl-start').value;
+    const pickedEnd   = document.getElementById('e-sl-end').value;
+
+    // If user picked a slot use it, otherwise keep original
+    const newSlotId = pickedId  || old.slot_id  || null;
+    const newTStart = pickedStart || old.time_start;
+    const newTEnd   = pickedEnd   || old.time_end;
+
+    // Guard: if they changed date/machine but didn't pick a slot, warn them
+    const scheduleChanged = newDate !== old.date || newMach !== (old.machine_num||1);
+    if (scheduleChanged && !pickedId) {
+      toast('⚠️ Please select a time slot for the new date/machine');
+      btn.disabled = false; btn.textContent = '💾 Save Changes';
+      return;
+    }
+
+    // Update SALES only — DB trigger syncs bookings automatically
     const { error: sErr } = await db.from('sales').update({
       client_name: name, phone, price, address: addr,
       service: svc, notes, date: newDate,
@@ -1378,21 +1477,13 @@ async function saveEdit(saleId) {
     }).eq('id', saleId);
     if (sErr) { toast('❌ Save failed: ' + sErr.message); return; }
 
-    // ── Update BOOKINGS row — use OLD rep_id + OLD date + OLD slot_id + OLD machine as keys
-    let bq = db.from('bookings').update({
-      client_name: name, phone, price, address: addr,
-      service: svc, notes, date: newDate,
-      machine_num: newMach, slot_id: newSlotId,
-      time_start: newTStart, time_end: newTEnd
-    }).eq('rep_id', old.rep_id).eq('date', old.date).eq('machine_num', old.machine_num || 1);
-    if (old.slot_id) bq = bq.eq('slot_id', old.slot_id);
-    const { error: bErr } = await bq;
-    if (bErr) console.warn('Booking update warning:', bErr.message);
-
     toast('✅ Booking updated!');
     closeEditModal();
     await loadSales();
     await loadDash();
+    if (typeof loadSchedule === 'function') await loadSchedule();
+    if (schedDay === 'week' && typeof loadWeekSchedule === 'function') await loadWeekSchedule();
+    if (selDate) await renderSlots(selDate);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '💾 Save Changes'; }
   }
