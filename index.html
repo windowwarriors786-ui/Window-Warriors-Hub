@@ -1171,7 +1171,7 @@ function renderSales(arr, showRep) {
                   : ps==='etransfer'  ? `<span style="background:#DBEAFE;color:#2563EB;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px">📲 e-Transfer</span>`
                   : `<span style="background:#FEF3C7;color:#D97706;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px">⏳ Pending</span>`;
     return `
-    <div class="sitem si${s.machine_num||1}" id="sitem-${s.id}">
+    <div class="sitem si${s.machine_num||1}" id="sitem-${s.id}" style="${s.completed ? 'border-left-color:#10B981;background:#f0fdf4;' : ''}">
       <div class="si-top">
         <div style="flex:1;min-width:0">
           <div class="si-name">${s.client_name||'TBD'}</div>
@@ -1184,14 +1184,19 @@ function renderSales(arr, showRep) {
             ${s.created_at ? '<span style="font-size:.67rem;color:#aaa">🖊 Booked: '+new Date(s.created_at).toLocaleString('en-CA',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'</span>' : ''}
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
-            <span class="si-tag">Confirmed</span>
+            ${s.completed
+              ? '<span style="background:#D1FAE5;color:#065F46;font-size:.62rem;font-weight:700;padding:2px 9px;border-radius:20px">✅ Completed</span>'
+              : '<span class="si-tag">Confirmed</span>'}
             ${psBadge}
           </div>
-          ${isManager ? `<div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+          <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+            ${!s.completed ? `<button onclick="markComplete('${s.id}')" style="flex:1;padding:6px 8px;border-radius:8px;border:1.5px solid #10B981;background:#f0fdf4;color:#065F46;font-size:.68rem;font-weight:700;cursor:pointer">✅ Mark Complete</button>` : `<button onclick="markIncomplete('${s.id}')" style="padding:5px 10px;border-radius:8px;border:1.5px solid #d1d5db;background:#f9fafb;color:#6b7280;font-size:.65rem;font-weight:600;cursor:pointer">↩ Undo</button>`}
+            ${isManager ? `
             <button onclick="setPayStatus('${s.id}','cash')" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid ${ps==='cash'?'#059669':'#d1d5db'};background:${ps==='cash'?'#D1FAE5':'#f9fafb'};color:${ps==='cash'?'#059669':'#6b7280'};font-size:.65rem;font-weight:700;cursor:pointer">💵 Cash</button>
             <button onclick="setPayStatus('${s.id}','etransfer')" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid ${ps==='etransfer'?'#2563EB':'#d1d5db'};background:${ps==='etransfer'?'#DBEAFE':'#f9fafb'};color:${ps==='etransfer'?'#2563EB':'#6b7280'};font-size:.65rem;font-weight:700;cursor:pointer">📲 e-Transfer</button>
             <button onclick="setPayStatus('${s.id}','pending')" style="flex:1;padding:5px 8px;border-radius:8px;border:1.5px solid ${ps==='pending'?'#D97706':'#d1d5db'};background:${ps==='pending'?'#FEF3C7':'#f9fafb'};color:${ps==='pending'?'#D97706':'#6b7280'};font-size:.65rem;font-weight:700;cursor:pointer">⏳ Pending</button>
-          </div>` : ''}
+            ` : ''}
+          </div>
         </div>
         <div style="text-align:right;flex-shrink:0;margin-left:10px">
           <div class="si-price">${fmtMoney(s.price)}</div>
@@ -1212,6 +1217,22 @@ async function setPayStatus(id, status) {
   toast('✅ Marked as '+labels[status]);
   await loadSales();
   await loadLb();
+}
+
+async function markComplete(id) {
+  const { error } = await db.from('sales').update({ completed: true }).eq('id', id);
+  if (error) { toast('❌ '+error.message); return; }
+  toast('✅ Job marked complete!');
+  await loadSales();
+  await loadDash();
+}
+
+async function markIncomplete(id) {
+  const { error } = await db.from('sales').update({ completed: false }).eq('id', id);
+  if (error) { toast('❌ '+error.message); return; }
+  toast('↩ Marked as incomplete');
+  await loadSales();
+  await loadDash();
 }
 
 async function delSale(id) {
@@ -2193,6 +2214,12 @@ function togglePayRep(rid) {
   renderPayReps(_payCache, _payWeekStr);
 }
 
+// ── COMMISSION HELPERS ──────────────────────────────────────────────────────
+// 30% if daily revenue < $750, 35% if >= $750
+function commissionRate(dayRev) { return dayRev >= 750 ? 0.35 : 0.30; }
+function commissionLabel(dayRev) { return dayRev >= 750 ? '35%' : '30%'; }
+function commissionTierColor(dayRev) { return dayRev >= 750 ? 'var(--green)' : 'var(--slate)'; }
+
 function renderPayReps(sorted, weekStr) {
   _payCache = sorted;
   _payWeekStr = weekStr;
@@ -2216,21 +2243,36 @@ function renderPayReps(sorted, weekStr) {
     var revColor  = isTop ? 'var(--gold)' : 'var(--ink)';
     var arrowRot  = open ? '90' : '0';
 
-    // Day breakdown (only when expanded)
+    // Commission = sum of each completed job's price * its pre-computed rate from loadPayroll
+    var repCommission = 0;
+    for (var si2 = 0; si2 < rep.sales.length; si2++) {
+      var s2 = rep.sales[si2];
+      repCommission += (parseFloat(s2.price)||0) * (s2._commRate || 0.30);
+    }
+
+    // Day breakdown — group completed jobs by BOOKING date, show booking-day totals & rate
     var detail = '';
     if (open) {
       var byDay = {};
       for (var si = 0; si < rep.sales.length; si++) {
         var s = rep.sales[si];
-        if (!byDay[s.date]) byDay[s.date] = [];
-        byDay[s.date].push(s);
+        var bd = s._bookingDate || (s.created_at ? s.created_at.split('T')[0] : s.date);
+        if (!byDay[bd]) byDay[bd] = [];
+        byDay[bd].push(s);
       }
       var days = Object.keys(byDay).sort();
       for (var di = 0; di < days.length; di++) {
         var date = days[di];
         var ds   = byDay[date];
+        // dayRev here = total of COMPLETED jobs in this booking-day group (for display)
         var dayRev = ds.reduce(function(s,x){ return s+(parseFloat(x.price)||0); }, 0);
-        var dayLabel = new Date(date + 'T12:00').toLocaleDateString('en-CA', {weekday:'long', month:'short', day:'numeric'});
+        // Rate comes from the booking-day TOTAL across ALL sales booked that day (pre-computed)
+        var dayRate  = ds[0]._commRate || 0.30;
+        var dayBDTotal = ds[0]._bookingDayTotal || dayRev;
+        var dayComm  = ds.reduce(function(acc,x){ return acc + (parseFloat(x.price)||0) * (x._commRate||0.30); }, 0);
+        var dayLabel = new Date(date + 'T12:00').toLocaleDateString('en-CA', {weekday:'long', month:'short', day:'numeric'}) + ' — Booked';
+        var tierLabel = commissionLabel(dayBDTotal);
+        var tierColor = commissionTierColor(dayBDTotal);
         var rows = '';
         for (var xi = 0; xi < ds.length; xi++) {
           var x   = ds[xi];
@@ -2262,12 +2304,35 @@ function renderPayReps(sorted, weekStr) {
             + '</div>'
             + '</div>';
         }
+        // Day header: completed-job revenue, booking-day total (for rate context), commission due
+        var bdTotalNote = dayBDTotal !== dayRev
+          ? '<span style="font-size:.62rem;color:rgba(255,255,255,.5);margin-left:6px">(' + fmtMoney(dayBDTotal) + ' booked total)</span>'
+          : '';
         detail += '<div style="margin-bottom:12px">'
-          + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--ink);border-radius:10px;margin-bottom:8px">'
-          + '<span style="font-weight:700;font-size:.78rem;color:#fff">' + dayLabel + '</span>'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--ink);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;gap:6px">'
+          + '<div>'
+          + '<span style="font-weight:700;font-size:.78rem;color:#fff">' + dayLabel + '</span>' + bdTotalNote
+          + '<br><span style="margin-top:4px;display:inline-block;background:' + tierColor + ';color:#fff;font-size:.58rem;font-weight:800;padding:2px 7px;border-radius:20px;letter-spacing:.04em">' + tierLabel + ' commission</span>'
+          + '</div>'
+          + '<div style="text-align:right">'
           + '<span style="font-weight:800;font-size:.82rem;color:var(--gold)">' + fmtMoney(dayRev) + '</span>'
+          + '<span style="font-size:.7rem;color:#10B981;font-weight:700;margin-left:8px">Pay: ' + fmtMoney(dayComm) + '</span>'
+          + '</div>'
           + '</div><div>' + rows + '</div></div>';
       }
+
+      // Weekly commission summary banner
+      detail = '<div style="background:linear-gradient(135deg,#0F0F13,#1A1A24);border-radius:12px;padding:13px 15px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+        + '<div>'
+        + '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A5A7A;margin-bottom:3px">Weekly Payout</div>'
+        + '<div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:1.4rem;color:var(--gold)">' + fmtMoney(repCommission) + '</div>'
+        + '</div>'
+        + '<div style="text-align:right">'
+        + '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A5A7A;margin-bottom:3px">Revenue</div>'
+        + '<div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:.95rem;color:#fff">' + fmtMoney(repRev) + '</div>'
+        + '</div>'
+        + '</div>'
+        + detail;
     }
 
     html += '<div style="background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden">'
@@ -2280,8 +2345,8 @@ function renderPayReps(sorted, weekStr) {
       + '</div></div>'
       + '<div style="display:flex;align-items:center;gap:10px">'
       + '<div style="text-align:right">'
-      + '<div style="font-weight:800;font-size:1.15rem;color:' + revColor + '">' + fmtMoney(repRev) + '</div>'
-      + '<div style="font-size:.64rem;font-weight:700;text-transform:uppercase;color:' + subColor + '">revenue</div>'
+      + '<div style="font-weight:800;font-size:1.15rem;color:' + revColor + '">' + fmtMoney(repCommission) + '</div>'
+      + '<div style="font-size:.64rem;font-weight:700;text-transform:uppercase;color:' + subColor + '">commission</div>'
       + '</div>'
       + '<div style="color:' + subColor + ';transform:rotate(' + arrowRot + 'deg);transition:transform .2s">&#9654;</div>'
       + '</div></div>'
@@ -2300,8 +2365,8 @@ async function loadPayroll() {
   if (!wl) return;
 
   var bounds  = payWeekBounds();
-  var monISO  = bounds.mon.toISOString();
-  var sunISO  = bounds.sun.toISOString();
+  var monDate = bounds.mon.toISOString().split('T')[0];
+  var sunDate = bounds.sun.toISOString().split('T')[0];
   var fmtOpts = { month: 'short', day: 'numeric' };
   var weekStr = bounds.mon.toLocaleDateString('en-CA', fmtOpts) + ' – ' + bounds.sun.toLocaleDateString('en-CA', fmtOpts);
 
@@ -2310,38 +2375,98 @@ async function loadPayroll() {
   wr.textContent = weekStr;
   pr.innerHTML   = '<div style="padding:16px;text-align:center;color:var(--slate);font-size:.82rem">Loading…</div>';
 
-  var result = await db.from('sales')
+  // STEP 1: Fetch jobs whose JOB DATE falls within this week AND are marked completed
+  var completedResult = await db.from('sales')
     .select('*, profiles(full_name)')
-    .gte('created_at', monISO)
-    .lte('created_at', sunISO)
+    .gte('date', monDate)
+    .lte('date', sunDate)
+    .eq('completed', true)
     .order('created_at', { ascending: true });
 
-  if (result.error) {
-    pr.innerHTML = '<div class="empty"><p>Error: ' + result.error.message + '</p></div>';
+  if (completedResult.error) {
+    pr.innerHTML = '<div class="empty"><p>Error: ' + completedResult.error.message + '</p></div>';
     return;
   }
 
-  var arr      = result.data || [];
-  var totalRev = arr.reduce(function(s,x){ return s+(parseFloat(x.price)||0); }, 0);
-  var repsSet  = new Set(arr.map(function(s){ return s.rep_id; }));
-  var numReps  = repsSet.size || 1;
+  var completedJobs = completedResult.data || [];
 
-  pt.innerHTML =
-    '<div class="sc dk"><div class="sn">' + arr.length + '</div><div class="sl">Total Sales</div></div>'
-    + '<div class="sc gd"><div class="sn">' + fmtMoney(totalRev) + '</div><div class="sl">Revenue</div></div>'
-    + '<div class="sc"><div class="sn" style="color:var(--ink)">' + repsSet.size + '</div><div class="sl" style="color:var(--slate)">Reps</div></div>'
-    + '<div class="sc"><div class="sn" style="color:var(--ink)">' + fmtMoney(totalRev/numReps) + '</div><div class="sl" style="color:var(--slate)">Avg/Rep</div></div>';
+  // STEP 2: For each completed job, we need the booking-day total for that rep
+  // to determine the commission rate (30% vs 35%).
+  // Collect all unique rep_id + booking_date combos from completed jobs.
+  var repBookingDays = {}; // key: "repId|bookingDate"
+  completedJobs.forEach(function(s) {
+    var bd = s.created_at ? s.created_at.split('T')[0] : s.date;
+    var key = s.rep_id + '|' + bd;
+    if (!repBookingDays[key]) repBookingDays[key] = { rep_id: s.rep_id, bookingDate: bd };
+  });
 
-  if (!arr.length) {
-    pr.innerHTML = '<div class="empty"><p>No sales this period yet</p></div>';
-    return;
+  // STEP 3: For each booking day, fetch ALL sales that rep booked that day
+  // (some may have job dates outside this week — we need them to compute the day total/threshold)
+  var bookingDayTotals = {}; // key: "repId|bookingDate" -> total revenue booked that day
+  var uniqueKeys = Object.keys(repBookingDays);
+
+  if (uniqueKeys.length > 0) {
+    // Fetch all sales for these reps, then filter client-side by booking date
+    var repIds = [...new Set(uniqueKeys.map(function(k){ return k.split('|')[0]; }))];
+    var bookingDates = [...new Set(uniqueKeys.map(function(k){ return k.split('|')[1]; }))];
+    var minDate = bookingDates.sort()[0];
+    var maxDate = bookingDates.sort()[bookingDates.length-1];
+
+    var allSalesResult = await db.from('sales')
+      .select('rep_id, price, created_at, date')
+      .in('rep_id', repIds)
+      .gte('created_at', minDate + 'T00:00:00.000Z')
+      .lte('created_at', maxDate + 'T23:59:59.999Z');
+
+    if (!allSalesResult.error) {
+      (allSalesResult.data || []).forEach(function(s) {
+        var bd = s.created_at ? s.created_at.split('T')[0] : s.date;
+        var key = s.rep_id + '|' + bd;
+        if (!bookingDayTotals[key]) bookingDayTotals[key] = 0;
+        bookingDayTotals[key] += (parseFloat(s.price)||0);
+      });
+    }
   }
 
+  // STEP 4: Attach the commission rate to each completed job based on its booking-day total
+  completedJobs.forEach(function(s) {
+    var bd = s.created_at ? s.created_at.split('T')[0] : s.date;
+    var key = s.rep_id + '|' + bd;
+    var dayTotal = bookingDayTotals[key] || (parseFloat(s.price)||0);
+    s._bookingDate = bd;
+    s._bookingDayTotal = dayTotal;
+    s._commRate = commissionRate(dayTotal);
+  });
+
+  // STEP 5: Group by rep for rendering
   var byRep = {};
-  arr.forEach(function(s) {
+  completedJobs.forEach(function(s) {
     if (!byRep[s.rep_id]) byRep[s.rep_id] = { name: (s.profiles ? s.profiles.full_name : 'Unknown'), sales: [] };
     byRep[s.rep_id].sales.push(s);
   });
+
+  var totalRev = completedJobs.reduce(function(s,x){ return s+(parseFloat(x.price)||0); }, 0);
+  var repsSet  = new Set(completedJobs.map(function(s){ return s.rep_id; }));
+
+  // STEP 6: Calculate total commission — per-job using its attached rate
+  var totalCommission = 0;
+  completedJobs.forEach(function(s){ totalCommission += (parseFloat(s.price)||0) * s._commRate; });
+
+  if (!completedJobs.length) {
+    pt.innerHTML =
+      '<div class="sc dk"><div class="sn">0</div><div class="sl">Total Sales</div></div>'
+      + '<div class="sc gd"><div class="sn">$0</div><div class="sl">Revenue</div></div>'
+      + '<div class="sc"><div class="sn" style="color:var(--ink)">0</div><div class="sl" style="color:var(--slate)">Reps</div></div>'
+      + '<div class="sc"><div class="sn" style="color:var(--green)">$0</div><div class="sl" style="color:var(--slate)">Total Payout</div></div>';
+    pr.innerHTML = '<div class="empty"><p>No completed jobs this period</p></div>';
+    return;
+  }
+
+  pt.innerHTML =
+    '<div class="sc dk"><div class="sn">' + completedJobs.length + '</div><div class="sl">Completed</div></div>'
+    + '<div class="sc gd"><div class="sn">' + fmtMoney(totalRev) + '</div><div class="sl">Revenue</div></div>'
+    + '<div class="sc"><div class="sn" style="color:var(--ink)">' + repsSet.size + '</div><div class="sl" style="color:var(--slate)">Reps</div></div>'
+    + '<div class="sc" style="border-color:var(--green);background:rgba(16,185,129,.06)"><div class="sn" style="color:var(--green)">' + fmtMoney(totalCommission) + '</div><div class="sl" style="color:var(--slate)">Total Payout</div></div>';
 
   var sorted = Object.entries(byRep).sort(function(a, b) {
     var ra = a[1].sales.reduce(function(s,x){ return s+(parseFloat(x.price)||0); }, 0);
