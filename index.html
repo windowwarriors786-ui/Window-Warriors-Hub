@@ -623,20 +623,6 @@ textarea.finp{resize:none;min-height:64px}
       </div>
       <div class="sg" id="pay-totals"></div>
       <div id="pay-reps"></div>
-
-      <!-- Deleted Sales Audit Log — manager only -->
-      <div style="margin-top:24px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div>
-            <div class="pg-h" style="font-size:1rem;margin-bottom:0">🗑️ Deleted Sales</div>
-            <div class="pg-s" style="margin-bottom:0">Audit log · tap Restore to recover a booking</div>
-          </div>
-          <button onclick="loadDeletedSales()" style="background:var(--off);border:1px solid var(--border);border-radius:8px;padding:6px 13px;cursor:pointer;font-size:.75rem;font-weight:600;color:var(--slate)">↻ Refresh</button>
-        </div>
-        <div id="deleted-sales-list">
-          <div style="color:var(--slate);font-size:.82rem;padding:8px">Loading…</div>
-        </div>
-      </div>
     </div>
 
   </div>
@@ -844,7 +830,7 @@ function goTo(pg, btn) {
   if (pg==='lb')    loadLb();
   if (pg==='dash')  loadDash();
   if (pg==='sales') loadSales();
-  if (pg==='pay')   { if(typeof loadPayroll==='function') loadPayroll(); if(typeof loadDeletedSales==='function') loadDeletedSales(); }
+  if (pg==='pay')   { if(typeof loadPayroll==='function') loadPayroll(); }
 }
 
 // ══════════════════════════════════════
@@ -1071,7 +1057,7 @@ async function loadDash() {
 }
 
 async function loadRepDash() {
-  const { data: mySales }  = await db.from('sales').select('*').eq('rep_id', ME.id).is('deleted_at', null);
+  const { data: mySales }  = await db.from('sales').select('*').eq('rep_id', ME.id);
   const { data: myUpcoming }= await db.from('bookings').select('id').eq('rep_id', ME.id).gte('date', todayStr());
   const arr = mySales || [];
   const rev = arr.reduce((s,x) => s+(parseFloat(x.price)||0), 0);
@@ -1079,7 +1065,7 @@ async function loadRepDash() {
   G('r-rev').textContent   = fmtMoney(rev);
   G('r-up').textContent    = (myUpcoming||[]).length;
   // Rank
-  const { data: allS } = await db.from('sales').select('rep_id').is('deleted_at', null);
+  const { data: allS } = await db.from('sales').select('rep_id');
   if (allS) {
     const cnt = {};
     allS.forEach(s => cnt[s.rep_id]=(cnt[s.rep_id]||0)+1);
@@ -1103,13 +1089,13 @@ async function loadRepDash() {
         </div>
       </div>`;
   }
-  const { data: rec } = await db.from('sales').select('*').eq('rep_id', ME.id).is('deleted_at', null)
+  const { data: rec } = await db.from('sales').select('*').eq('rep_id', ME.id)
     .order('created_at',{ascending:false}).limit(4);
   G('r-recent').innerHTML = renderSales(rec||[], false);
 }
 
 async function loadMgrDash() {
-  const { data: all }   = await db.from('sales').select('*').is('deleted_at', null);
+  const { data: all }   = await db.from('sales').select('*');
   const arr = all || [];
   const rev = arr.reduce((s,x) => s+(parseFloat(x.price)||0), 0);
   G('m-sales').textContent = arr.length;
@@ -1129,7 +1115,7 @@ async function loadMgrDash() {
   } else {
     G('m-winner').innerHTML = '<div class="card"><div class="empty"><p>No sales this week yet</p></div></div>';
   }
-  const { data: rec } = await db.from('sales').select('*,profiles(full_name)').is('deleted_at', null)
+  const { data: rec } = await db.from('sales').select('*,profiles(full_name)')
     .order('created_at',{ascending:false}).limit(6);
   G('m-recent').innerHTML = renderSales(rec||[], true);
 }
@@ -1138,7 +1124,6 @@ async function getWeekRanks() {
   const wb = currentWeekBounds();
   const { data } = await db.from('sales')
     .select('rep_id,price,profiles(full_name)')
-    .is('deleted_at', null)
     .gte('created_at', wb.mon.toISOString())
     .lte('created_at', wb.sun.toISOString());
   if (!data?.length) return [];
@@ -1155,7 +1140,7 @@ async function getWeekRanks() {
 //  SALES
 // ══════════════════════════════════════
 async function loadSales() {
-  let q = db.from('sales').select('*,profiles(full_name)').is('deleted_at', null).order('created_at',{ascending:false});
+  let q = db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
   if (ME.role==='rep') q = q.eq('rep_id', ME.id);
   const { data } = await q;
   const arr = data||[], tod = todayStr();
@@ -1252,57 +1237,12 @@ async function markIncomplete(id) {
 
 async function delSale(id) {
   if (!confirm('Delete this booking and sale?')) return;
-  const { error: sErr } = await db.from('sales').update({
-    deleted_at: new Date().toISOString(),
-    deleted_by: ME.full_name
-  }).eq('id', id);
+  // Delete from sales only — DB trigger handles bookings deletion automatically
+  const { error: sErr } = await db.from('sales').delete().eq('id', id);
   if (sErr) { toast('❌ ' + sErr.message); return; }
   toast('🗑️ Booking deleted');
   await loadSales();
   await loadDash();
-}
-
-async function restoreSale(id) {
-  const { error } = await db.from('sales').update({ deleted_at: null, deleted_by: null }).eq('id', id);
-  if (error) { toast('❌ ' + error.message); return; }
-  toast('↩ Sale restored');
-  await loadDeletedSales();
-}
-
-async function loadDeletedSales() {
-  if (ME.role !== 'manager') return;
-  const { data } = await db.from('sales')
-    .select('*,profiles(full_name)')
-    .not('deleted_at', 'is', null)
-    .order('deleted_at', { ascending: false });
-  const arr = data || [];
-  const el = document.getElementById('deleted-sales-list');
-  if (!el) return;
-  if (!arr.length) {
-    el.innerHTML = '<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><p>No deleted sales — clean record!</p></div>';
-    return;
-  }
-  el.innerHTML = arr.map(function(s) {
-    var deletedWhen = s.deleted_at ? new Date(s.deleted_at).toLocaleString('en-CA',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '—';
-    return '<div class="sitem" style="border-left:4px solid var(--red);opacity:.85">'
-      + '<div class="si-top">'
-      + '<div style="flex:1;min-width:0">'
-      + '<div class="si-name">' + (s.client_name||'TBD') + '</div>'
-      + '<div class="si-meta">'
-      + '<b>👤 ' + (s.profiles ? s.profiles.full_name : '—') + '</b><br>'
-      + '📅 <b>' + (s.date||'—') + '</b> · <span style="color:var(--m' + (s.machine_num||1) + ')">Machine ' + (s.machine_num||1) + '</span><br>'
-      + (s.address ? '📍 ' + s.address + '<br>' : '')
-      + '<span style="color:var(--red);font-weight:700;font-size:.72rem">🗑️ Deleted ' + deletedWhen + '</span><br>'
-      + '<span style="font-size:.7rem;color:var(--slate)">by <b>' + (s.deleted_by||'Unknown') + '</b></span>'
-      + '</div>'
-      + '</div>'
-      + '<div style="text-align:right;flex-shrink:0;margin-left:10px">'
-      + '<div class="si-price">' + fmtMoney(s.price) + '</div>'
-      + '<button onclick="restoreSale(\'' + s.id + '\')" style="margin-top:8px;padding:5px 11px;border-radius:8px;border:1.5px solid #10B981;background:#f0fdf4;color:#065F46;font-size:.7rem;font-weight:700;cursor:pointer">↩ Restore</button>'
-      + '</div>'
-      + '</div>'
-      + '</div>';
-  }).join('');
 }
 
 // ══════════════════════════════════════
@@ -1581,7 +1521,7 @@ async function loadLb() {
     until = wb.sun.toISOString();
   }
   if (lbPer==='month') since = monthAgo();
-  let q = db.from('sales').select('rep_id,price,profiles(full_name)').is('deleted_at', null);
+  let q = db.from('sales').select('rep_id,price,profiles(full_name)');
   if (since) q = q.gte('created_at', since);
   if (until) q = q.lte('created_at', until);
   const { data } = await q;
@@ -1610,7 +1550,7 @@ async function loadLb() {
   }).join('') : '<div class="empty"><p>No sales in this period yet 💪</p></div>';
 
   if (ME.role==='manager') {
-    let q2 = db.from('sales').select('*,profiles(full_name)').is('deleted_at', null).order('created_at',{ascending:false});
+    let q2 = db.from('sales').select('*,profiles(full_name)').order('created_at',{ascending:false});
     if (since) q2 = q2.gte('created_at', since);
     if (until) q2 = q2.lte('created_at', until);
     const { data: a } = await q2;
@@ -2438,7 +2378,6 @@ async function loadPayroll() {
   // STEP 1: Fetch jobs whose JOB DATE falls within this week AND are marked completed
   var completedResult = await db.from('sales')
     .select('*, profiles(full_name)')
-    .is('deleted_at', null)
     .gte('date', monDate)
     .lte('date', sunDate)
     .eq('completed', true)
@@ -2475,7 +2414,6 @@ async function loadPayroll() {
 
     var allSalesResult = await db.from('sales')
       .select('rep_id, price, created_at, date')
-      .is('deleted_at', null)
       .in('rep_id', repIds)
       .gte('created_at', minDate + 'T00:00:00.000Z')
       .lte('created_at', maxDate + 'T23:59:59.999Z');
