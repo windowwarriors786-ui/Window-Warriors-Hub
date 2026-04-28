@@ -17,6 +17,7 @@
   --green:#10B981;--red:#EF4444;
   --m1:#7C3AED;--m1l:rgba(124,58,237,.1);
   --m2:#0EA5E9;--m2l:rgba(14,165,233,.1);
+  --m3:#F59E0B;--m3l:rgba(245,158,11,.1);
   --r:14px;--sh:0 2px 8px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
 }
 html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--off);color:var(--ink);overflow:hidden}
@@ -125,10 +126,11 @@ textarea.inp{resize:none;min-height:68px}
 .sc.gd{background:var(--gold);border-color:var(--gold)}
 .sc.v1{background:var(--m1);border-color:var(--m1)}
 .sc.v2{background:var(--m2);border-color:var(--m2)}
+.sc.v3{background:var(--m3);border-color:var(--m3)}
 .sn{font-family:'Syne',sans-serif;font-size:1.85rem;font-weight:800;line-height:1}
 .sl{font-size:.63rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;margin-top:4px}
-.sc.dk .sn,.sc.gd .sn,.sc.v1 .sn,.sc.v2 .sn{color:#fff}
-.sc.dk .sl,.sc.v1 .sl,.sc.v2 .sl{color:rgba(255,255,255,.55)}
+.sc.dk .sn,.sc.gd .sn,.sc.v1 .sn,.sc.v2 .sn,.sc.v3 .sn{color:#fff}
+.sc.dk .sl,.sc.v1 .sl,.sc.v2 .sl,.sc.v3 .sl{color:rgba(255,255,255,.55)}
 .sc.gd .sl{color:rgba(15,15,15,.55)}
 .sc:not(.dk):not(.gd):not(.v1):not(.v2) .sn{color:var(--ink)}
 .sc:not(.dk):not(.gd):not(.v1):not(.v2) .sl{color:var(--slate)}
@@ -139,6 +141,7 @@ textarea.inp{resize:none;min-height:68px}
   text-align:center;cursor:pointer;background:#fff;transition:all .18s;box-shadow:var(--sh)}
 .mtab.on.t1{background:var(--m1);border-color:var(--m1)}
 .mtab.on.t2{background:var(--m2);border-color:var(--m2)}
+.mtab.on.t3{background:var(--m3);border-color:var(--m3)}
 .mtab:not(.on){color:var(--slate)}
 .mt-ico{font-size:1.2rem;margin-bottom:4px}
 .mt-lbl{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700}
@@ -172,6 +175,7 @@ textarea.inp{resize:none;min-height:68px}
 .slotrow.sr-taken{opacity:.55;cursor:not-allowed;background:var(--off)}
 .slotrow.sr-mine1{border-color:var(--m1);background:var(--m1l)}
 .slotrow.sr-mine2{border-color:var(--m2);background:var(--m2l)}
+.slotrow.sr-mine3{border-color:var(--m3);background:var(--m3l)}
 .slotrow.sr-sel{border-color:var(--ink);background:var(--ink);transform:translateY(-1px)}
 .slotrow.sr-sel .sr-time,.slotrow.sr-sel .sr-sub{color:#fff!important}
 .sr-time{font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;color:var(--ink)}
@@ -205,6 +209,7 @@ textarea.finp{resize:none;min-height:64px}
   border-left:4px solid var(--border)}
 .sitem.si1{border-left-color:var(--m1)}
 .sitem.si2{border-left-color:var(--m2)}
+.sitem.si3{border-left-color:var(--m3)}
 .si-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 .si-name{font-weight:700;font-size:.9rem;color:var(--ink)}
 .si-price{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:var(--ink);flex-shrink:0}
@@ -282,6 +287,7 @@ textarea.finp{resize:none;min-height:64px}
   font-size:.63rem;font-weight:700;margin-top:5px}
 .sj-m.m1{background:var(--m1l);color:var(--m1)}
 .sj-m.m2{background:var(--m2l);color:var(--m2)}
+.sj-m.m3{background:var(--m3l);color:var(--m3)}
 .sj-info h4{font-weight:700;font-size:.88rem;color:var(--ink)}
 .sj-info p{font-size:.72rem;color:var(--slate);margin-top:3px;line-height:1.65}
 .sj-rep{display:inline-block;background:var(--off);color:var(--slate);
@@ -409,6 +415,7 @@ textarea.finp{resize:none;min-height:64px}
           <div class="sc gd"><div class="sn" id="m-rev">$0</div><div class="sl">Total Revenue</div></div>
           <div class="sc v1"><div class="sn" id="m-m1">0</div><div class="sl">Machine 1</div></div>
           <div class="sc v2"><div class="sn" id="m-m2">0</div><div class="sl">Machine 2</div></div>
+          <div class="sc v3"><div class="sn" id="m-m3">0</div><div class="sl">G1</div></div>
         </div>
         <div id="m-winner"></div>
         <div class="card"><div class="ct">📊 Recent Sales</div><div id="m-recent"></div></div>
@@ -430,6 +437,11 @@ textarea.finp{resize:none;min-height:64px}
           <div class="mt-ico">🔵</div>
           <div class="mt-lbl" id="mt2-lbl">Machine 2</div>
           <div class="mt-cnt" id="mt2-cnt">0 booked today</div>
+        </div>
+        <div class="mtab t3" id="mt3" onclick="setMachine(3)">
+          <div class="mt-ico">🟡</div>
+          <div class="mt-lbl" id="mt3-lbl">G1</div>
+          <div class="mt-cnt" id="mt3-cnt">0 booked today</div>
         </div>
       </div>
 
@@ -596,7 +608,7 @@ textarea.finp{resize:none;min-height:64px}
           </div>
           <div style="font-size:.75rem;color:#5A5A7A;line-height:1.6">
             Set the time windows your reps can book. Each slot fits <strong style="color:#fff">1 booking per machine</strong>
-            (so 2 total — one for Machine 1, one for Machine 2).
+            (so 3 total — one for Machine 1, one for Machine 2, one for G1).
           </div>
         </div>
         <div id="slot-rows"></div>
@@ -848,8 +860,10 @@ function setMachine(m) {
   selMachine = m; selDate = null; selSlot = null;
   G('mt1').className = 'mtab '+(m===1?'on t1':'');
   G('mt2').className = 'mtab '+(m===2?'on t2':'');
+  G('mt3').className = 'mtab '+(m===3?'on t3':'');
   G('mt1-lbl').className = 'mt-lbl'+(m===1?' on':'');
   G('mt2-lbl').className = 'mt-lbl'+(m===2?' on':'');
+  G('mt3-lbl').className = 'mt-lbl'+(m===3?' on':'');
   G('slots-sec').style.display = 'none';
   G('form-sec').style.display  = 'none';
   buildCal();
@@ -861,6 +875,7 @@ async function refreshMachineCounts() {
   const bks = data || [];
   G('mt1-cnt').textContent = bks.filter(b=>b.machine_num===1).length+' booked today';
   G('mt2-cnt').textContent = bks.filter(b=>b.machine_num===2).length+' booked today';
+  G('mt3-cnt').textContent = bks.filter(b=>b.machine_num===3).length+' booked today';
 }
 
 // ══════════════════════════════════════
@@ -895,7 +910,7 @@ function calNext() { calM++; if(calM>11){calM=0;calY++;} buildCal(); }
 async function pickDay(ds) {
   selDate = ds; selSlot = null;
   buildCal();
-  G('slots-hd').textContent  = `🕐 Slots for Machine ${selMachine} — ${fmtDL(ds)}`;
+  G('slots-hd').textContent  = `🕐 Slots for ${selMachine===3?'G1':'Machine '+selMachine} — ${fmtDL(ds)}`;
   G('slots-sec').style.display = 'block';
   G('form-sec').style.display  = 'none';
   await renderSlots(ds);
@@ -961,7 +976,7 @@ async function renderSlots(ds) {
   });
 
   if (!html) {
-    html = `<div class="empty"><p>No slots available for this date on Machine ${selMachine}.<br>All slots are booked.</p></div>`;
+    html = `<div class="empty"><p>No slots available for this date on ${selMachine===3?'G1':'Machine '+selMachine}.<br>All slots are booked.</p></div>`;
   }
 
   el.innerHTML = html;
@@ -975,8 +990,8 @@ function selectSlot(id, label, start, end, i) {
   // Banner
   const bm = G('bbanner');
   bm.className = `bbanner b${selMachine}`;
-  G('bb-ico').textContent = selMachine===1 ? '🟣' : '🔵';
-  G('bb-t').textContent   = `Machine ${selMachine} — ${start} – ${end}`;
+  G('bb-ico').textContent = selMachine===1 ? '🟣' : selMachine===2 ? '🔵' : '🟡';
+  G('bb-t').textContent   = `Machine ${selMachine===3?'G1':selMachine} — ${start} – ${end}`;
   G('bb-s').textContent   = fmtDL(selDate);
   G('form-sec').style.display = 'block';
   setTimeout(() => G('form-sec').scrollIntoView({ behavior:'smooth', block:'start' }), 100);
@@ -1038,7 +1053,7 @@ async function confirmBooking() {
     ['b-nm','b-ph','b-pr','b-ad','b-nt'].forEach(id => G(id).value='');
     selSlot = null;
     G('form-sec').style.display = 'none';
-    toast(`✅ Booked! Machine ${doneMachine} · ${doneTime}`);
+    toast(`✅ Booked! ${doneMachine===3?'G1':'Machine '+doneMachine} · ${doneTime}`);
     await renderSlots(selDate);
     refreshMachineCounts();
     await loadDash();
@@ -1102,6 +1117,7 @@ async function loadMgrDash() {
   G('m-rev').textContent   = fmtMoney(rev);
   G('m-m1').textContent    = arr.filter(s=>s.machine_num===1).length;
   G('m-m2').textContent    = arr.filter(s=>s.machine_num===2).length;
+  G('m-m3').textContent    = arr.filter(s=>s.machine_num===3).length;
   const ranks = await getWeekRanks();
   if (ranks.length) {
     const w = ranks[0];
@@ -1177,7 +1193,7 @@ function renderSales(arr, showRep) {
           <div class="si-name">${s.client_name||'TBD'}</div>
           <div class="si-meta">
             ${showRep ? '<b>👤 '+(s.profiles ? s.profiles.full_name : ME.full_name)+'</b><br>' : ''}
-            📅 <b>${s.date||'—'}</b> · <span style="color:var(--m${s.machine_num||1})">Machine ${s.machine_num||1}</span><br>
+            📅 <b>${s.date||'—'}</b> · <span style="color:var(--m${s.machine_num||1})">${s.machine_num===3?'G1':'Machine '+(s.machine_num||1)}</span><br>
             ${s.time_start ? '🕐 <b>'+s.time_start+' – '+s.time_end+'</b><br>' : ''}
             ${s.phone   ? '📞 '+s.phone+'<br>'   : ''}
             ${s.address ? '📍 '+s.address+'<br>' : ''}
@@ -1314,6 +1330,7 @@ async function openEditModal(saleId) {
             <select class="finp" id="e-mc" onchange="refreshEditSlots()">
               <option value="1"${(s.machine_num||1)===1?' selected':''}>Machine 1</option>
               <option value="2"${(s.machine_num||1)===2?' selected':''}>Machine 2</option>
+              <option value="3"${(s.machine_num||1)===3?' selected':''}>G1</option>
             </select>
           </div>
           <div class="field" style="margin-bottom:0">
@@ -1758,7 +1775,7 @@ async function loadSchedule() {
       <div class="sj-t">
         <div class="sj-main">${j.time_start||'—'}</div>
         <div class="sj-end">to ${j.time_end||''}</div>
-        <span class="sj-m m${j.machine_num||1}">M${j.machine_num||1}</span>
+        <span class="sj-m m${j.machine_num||1}">${j.machine_num===3?'G1':'M'+(j.machine_num||1)}</span>
       </div>
       <div class="sj-info">
         <h4>${j.client_name||'TBD'}</h4>
@@ -1853,6 +1870,7 @@ async function loadWeekSchedule() {
   ];
   const M1_BG = '#EDE9FE'; const M1_BD = '#7C3AED';
   const M2_BG = '#DBEAFE'; const M2_BD = '#2563EB';
+  const M3_BG = '#FEF3C7'; const M3_BD = '#D97706';
 
   // Collect all unique time slots sorted
   const timeSet = new Set();
@@ -1917,8 +1935,8 @@ async function loadWeekSchedule() {
 
         cell.forEach(j => {
           const mc = j.machine_num||1;
-          const bg = mc===1 ? M1_BG : M2_BG;
-          const bd = mc===1 ? M1_BD : M2_BD;
+          const bg = mc===1 ? M1_BG : mc===2 ? M2_BG : M3_BG;
+          const bd = mc===1 ? M1_BD : mc===2 ? M2_BD : M3_BD;
           const rep = j.profiles?.full_name ? j.profiles.full_name.split(' ')[0] : '—';
           html += `<div style="background:${bg};border-left:3px solid ${bd};border-radius:6px;
             padding:5px 6px;margin-bottom:3px;font-size:.68rem;line-height:1.4">
@@ -1948,6 +1966,9 @@ async function loadWeekSchedule() {
     <div style="display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:var(--slate)">
       <div style="width:12px;height:12px;border-radius:3px;background:${M2_BG};border-left:3px solid ${M2_BD}"></div>Machine 2
     </div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:var(--slate)">
+      <div style="width:12px;height:12px;border-radius:3px;background:${M3_BG};border-left:3px solid ${M3_BD}"></div>G1
+    </div>
   </div>`;
 
   el.innerHTML = html;
@@ -1962,7 +1983,7 @@ async function copySchedule() {
   if (!jobs.length) { toast('No jobs to copy'); return; }
   let txt = `⚔️ WINDOW WARRIORS SCHEDULE\n📅 ${fmtDL(ds)}\n${'─'.repeat(32)}\n\n`;
   jobs.forEach((j,i) => {
-    txt += `${i+1}. [Machine ${j.machine_num||1}] ${j.time_start} – ${j.time_end}\n`;
+    txt += `${i+1}. [${j.machine_num===3?'G1':'Machine '+(j.machine_num||1)}] ${j.time_start} – ${j.time_end}\n`;
     txt += `   Client:  ${j.client_name||'TBD'}\n`;
     if (j.address) txt += `   Address: ${j.address}\n`;
     if (j.phone)   txt += `   Phone:   ${j.phone}\n`;
@@ -1981,7 +2002,7 @@ async function shareSchedule() {
   const slotOrd = {}; slots.forEach((s,i)=>{ slotOrd[s.time_start]=i; });
   const jobs = (bks||[]).sort((a,b)=>{ const oa=slotOrd[a.time_start]??999,ob=slotOrd[b.time_start]??999; return oa!==ob?oa-ob:(a.machine_num||1)-(b.machine_num||1); });
   let txt = `⚔️ WARRIORS\n📅 ${fmtDL(ds)}\n\n`;
-  jobs.forEach((j,i) => { txt+=`${i+1}. M${j.machine_num||1} · ${j.time_start}–${j.time_end} — ${j.client_name||'TBD'}\n${j.address||''} ${j.phone||''}\n\n`; });
+  jobs.forEach((j,i) => { txt+=`${i+1}. ${j.machine_num===3?'G1':'M'+(j.machine_num||1)} · ${j.time_start}–${j.time_end} — ${j.client_name||'TBD'}\n${j.address||''} ${j.phone||''}\n\n`; });
   if (navigator.share) { try { await navigator.share({ title:'Warriors Schedule', text:txt }); return; } catch{} }
   toast('📋 Use Copy button');
 }
